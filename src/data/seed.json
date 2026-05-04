@@ -26,7 +26,7 @@
       "type": "VISUAL",
       "vsnet_code": "ANDQR",
       "aavso_code": "QR AND",
-      "chart_id": "12.5",
+      "chart_id": "ID122",
       "sort_order": 1
     },
     {
@@ -35,7 +35,7 @@
       "type": "VISUAL",
       "vsnet_code": "CASV630",
       "aavso_code": "V630 CAS",
-      "chart_id": "na",
+      "chart_id": "X17378QH",
       "sort_order": 2
     },
     {
@@ -44,7 +44,7 @@
       "type": "VISUAL",
       "vsnet_code": "ANDV455",
       "aavso_code": "V455 AND",
-      "chart_id": "16.2",
+      "chart_id": "X17378PX",
       "sort_order": 3
     },
     {
@@ -53,7 +53,7 @@
       "type": "VISUAL",
       "vsnet_code": "ANDV402",
       "aavso_code": "V402 AND",
-      "chart_id": "na",
+      "chart_id": "X17378PW",
       "sort_order": 4
     },
     {
@@ -62,7 +62,7 @@
       "type": "VISUAL",
       "vsnet_code": "ANDLL",
       "aavso_code": "LL AND",
-      "chart_id": "na",
+      "chart_id": "X17378PK",
       "sort_order": 5
     },
     {
@@ -71,7 +71,7 @@
       "type": "VISUAL",
       "vsnet_code": "ANDLS",
       "aavso_code": "LS AND",
-      "chart_id": "na",
+      "chart_id": "X17378PM",
       "sort_order": 6
     },
     {
@@ -80,7 +80,7 @@
       "type": "VISUAL",
       "vsnet_code": "ANDRX",
       "aavso_code": "RX AND",
-      "chart_id": "11.46",
+      "chart_id": "ID003",
       "sort_order": 7
     },
     {
@@ -89,7 +89,7 @@
       "type": "VISUAL",
       "vsnet_code": "ANDIW",
       "aavso_code": "IW AND",
-      "chart_id": "na",
+      "chart_id": "X17378PC",
       "sort_order": 8
     },
     {
@@ -98,7 +98,7 @@
       "type": "VISUAL",
       "vsnet_code": "ANDFN",
       "aavso_code": "FN AND",
-      "chart_id": "na",
+      "chart_id": "2394BFU",
       "sort_order": 9
     },
     {
@@ -107,7 +107,7 @@
       "type": "VISUAL",
       "vsnet_code": "ANDFO",
       "aavso_code": "FO AND",
-      "chart_id": "na",
+      "chart_id": "2394BFX",
       "sort_order": 10
     },
     {
@@ -116,7 +116,7 @@
       "type": "VISUAL",
       "vsnet_code": "PSCTY",
       "aavso_code": "TY PSC",
-      "chart_id": "na",
+      "chart_id": "2394BGA",
       "sort_order": 11
     },
     {
@@ -125,7 +125,7 @@
       "type": "VISUAL",
       "vsnet_code": "TRITW",
       "aavso_code": "TW TRI",
-      "chart_id": "na",
+      "chart_id": "X17378QT",
       "sort_order": 12
     },
     {
@@ -134,7 +134,7 @@
       "type": "VISUAL",
       "vsnet_code": "ANDAR",
       "aavso_code": "AR AND",
-      "chart_id": "14.7",
+      "chart_id": "2394BGI",
       "sort_order": 13
     },
     {
@@ -143,7 +143,7 @@
       "type": "VISUAL",
       "vsnet_code": "ANDKV",
       "aavso_code": "KV AND",
-      "chart_id": "na",
+      "chart_id": "X17378PG",
       "sort_order": 14
     },
     {
@@ -152,7 +152,7 @@
       "type": "VISUAL",
       "vsnet_code": "ANDLX",
       "aavso_code": "LX AND",
-      "chart_id": "14.3",
+      "chart_id": "X17378PP",
       "sort_order": 15
     },
     {
@@ -161,7 +161,7 @@
       "type": "VISUAL",
       "vsnet_code": "ANDPQ",
       "aavso_code": "PQ AND",
-      "chart_id": "na",
+      "chart_id": "2394BGS",
       "sort_order": 16
     },
     {
@@ -170,7 +170,7 @@
       "type": "VISUAL",
       "vsnet_code": "3C 66A",
       "aavso_code": "3C 66A",
-      "chart_id": "15.3",
+      "chart_id": "2394BGV",
       "sort_order": 17
     },
     {
@@ -179,7 +179,7 @@
       "type": "VISUAL",
       "vsnet_code": "NSV895",
       "aavso_code": "NSV 895",
-      "chart_id": "na",
+      "chart_id": "2394BGV",
       "sort_order": 18
     },
     {
@@ -188,7 +188,7 @@
       "type": "VISUAL",
       "vsnet_code": "PERQY",
       "aavso_code": "QY PER",
-      "chart_id": "na",
+      "chart_id": "X17378QN",
       "sort_order": 19
     },
     {
@@ -197,7 +197,7 @@
       "type": "VISUAL",
       "vsnet_code": "PERPY",
       "aavso_code": "PY PER",
-      "chart_id": "na",
+      "chart_id": "X17378QM",
       "sort_order": 20
     },
     {
@@ -206,7 +206,7 @@
       "type": "VISUAL",
       "vsnet_code": "PERPV",
       "aavso_code": "PV PER",
-      "chart_id": "na",
+      "chart_id": "2394BHQ",
       "sort_order": 21
     },
     {
@@ -215,7 +215,7 @@
       "type": "VISUAL",
       "vsnet_code": "PERPU",
       "aavso_code": "PU PER",
-      "chart_id": "na",
+      "chart_id": "X17378QK",
       "sort_order": 22
     },
     {
@@ -224,7 +224,7 @@
       "type": "VISUAL",
       "vsnet_code": "PERV872",
       "aavso_code": "V872 PER",
-      "chart_id": "na",
+      "chart_id": "X17378QP",
       "sort_order": 23
     },
     {
@@ -233,7 +233,7 @@
       "type": "VISUAL",
       "vsnet_code": "TRIUW",
       "aavso_code": "UW TRI",
-      "chart_id": "na",
+      "chart_id": "X17378QX",
       "sort_order": 24
     },
     {
@@ -242,7 +242,7 @@
       "type": "VISUAL",
       "vsnet_code": "TRIWY",
       "aavso_code": "WY TRI",
-      "chart_id": "na",
+      "chart_id": "2394BID",
       "sort_order": 25
     },
     {
@@ -251,7 +251,7 @@
       "type": "VISUAL",
       "vsnet_code": "ARIBB",
       "aavso_code": "BB ARI",
-      "chart_id": "na",
+      "chart_id": "X17378PZ",
       "sort_order": 26
     },
     {
@@ -260,7 +260,7 @@
       "type": "VISUAL",
       "vsnet_code": "PERGK",
       "aavso_code": "GK PER",
-      "chart_id": "13.34",
+      "chart_id": "ID093",
       "sort_order": 27
     },
     {
@@ -269,7 +269,7 @@
       "type": "VISUAL",
       "vsnet_code": "PERV392",
       "aavso_code": "V392 PER",
-      "chart_id": "15.6",
+      "chart_id": "X23191UX",
       "sort_order": 28
     },
     {
@@ -278,7 +278,7 @@
       "type": "VISUAL",
       "vsnet_code": "CEPV730",
       "aavso_code": "V730 CEP",
-      "chart_id": "na",
+      "chart_id": "X17378KM",
       "sort_order": 29
     },
     {
@@ -287,7 +287,7 @@
       "type": "VISUAL",
       "vsnet_code": "CASV627",
       "aavso_code": "V627 CAS",
-      "chart_id": null,
+      "chart_id": "DPV2012",
       "sort_order": 30
     },
     {
@@ -296,7 +296,7 @@
       "type": "VISUAL",
       "vsnet_code": "CASUY",
       "aavso_code": "UY CAS",
-      "chart_id": "10.76",
+      "chart_id": "DPV2012",
       "sort_order": 31
     },
     {
@@ -305,7 +305,7 @@
       "type": "VISUAL",
       "vsnet_code": "CASEQ",
       "aavso_code": "EQ CAS",
-      "chart_id": null,
+      "chart_id": "ID020",
       "sort_order": 32
     },
     {
@@ -314,7 +314,7 @@
       "type": "VISUAL",
       "vsnet_code": "CASV1405",
       "aavso_code": "V1405 Cas",
-      "chart_id": "13.2",
+      "chart_id": "X26378UV",
       "sort_order": 33
     },
     {
@@ -323,7 +323,7 @@
       "type": "VISUAL",
       "vsnet_code": "CASV452",
       "aavso_code": "V452 CAS",
-      "chart_id": "na",
+      "chart_id": "X17378KK",
       "sort_order": 34
     },
     {
@@ -332,7 +332,7 @@
       "type": "VISUAL",
       "vsnet_code": "CASGX",
       "aavso_code": "GX CAS",
-      "chart_id": "na",
+      "chart_id": "X17378KI",
       "sort_order": 35
     },
     {
@@ -341,7 +341,7 @@
       "type": "VISUAL",
       "vsnet_code": "CASHT",
       "aavso_code": "HT CAS",
-      "chart_id": "na",
+      "chart_id": "X17378KJ",
       "sort_order": 36
     },
     {
@@ -350,7 +350,7 @@
       "type": "VISUAL",
       "vsnet_code": "PERKT",
       "aavso_code": "KT PER",
-      "chart_id": "na",
+      "chart_id": "X17378KP",
       "sort_order": 37
     },
     {
@@ -359,7 +359,7 @@
       "type": "VISUAL",
       "vsnet_code": "PERTZ",
       "aavso_code": "TZ PER",
-      "chart_id": "na",
+      "chart_id": "X17378KQ",
       "sort_order": 38
     },
     {
@@ -368,7 +368,7 @@
       "type": "VISUAL",
       "vsnet_code": "PERUV",
       "aavso_code": "UV PER",
-      "chart_id": "na",
+      "chart_id": "X17378KR",
       "sort_order": 39
     },
     {
@@ -377,7 +377,7 @@
       "type": "VISUAL",
       "vsnet_code": "PERUW",
       "aavso_code": "UW PER",
-      "chart_id": "na",
+      "chart_id": "X17378KT",
       "sort_order": 40
     },
     {
@@ -386,7 +386,7 @@
       "type": "VISUAL",
       "vsnet_code": "PERS",
       "aavso_code": "S PER",
-      "chart_id": "10.31",
+      "chart_id": "DPV2012",
       "sort_order": 41
     },
     {
@@ -395,7 +395,7 @@
       "type": "VISUAL",
       "vsnet_code": "CASBX",
       "aavso_code": "BX CAS",
-      "chart_id": "10.63",
+      "chart_id": "DPV2012",
       "sort_order": 42
     },
     {
@@ -404,7 +404,7 @@
       "type": "VISUAL",
       "vsnet_code": "PERFO",
       "aavso_code": "FO PER",
-      "chart_id": null,
+      "chart_id": "X17378RJ",
       "sort_order": 43
     },
     {
@@ -413,7 +413,7 @@
       "type": "VISUAL",
       "vsnet_code": "CAMCI",
       "aavso_code": "CI CAM",
-      "chart_id": "12.4",
+      "chart_id": "X17378RE",
       "sort_order": 44
     },
     {
@@ -422,7 +422,7 @@
       "type": "VISUAL",
       "vsnet_code": "CAMFT",
       "aavso_code": "FT CAM",
-      "chart_id": "na",
+      "chart_id": "X17378RO",
       "sort_order": 45
     },
     {
@@ -431,7 +431,7 @@
       "type": "VISUAL",
       "vsnet_code": "CAMNN",
       "aavso_code": "NN CAM",
-      "chart_id": "na",
+      "chart_id": "X17378RI",
       "sort_order": 46
     },
     {
@@ -440,7 +440,7 @@
       "type": "VISUAL",
       "vsnet_code": "CAMV342",
       "aavso_code": "V342 Cam",
-      "chart_id": "na",
+      "chart_id": "X17378RR",
       "sort_order": 47
     },
     {
@@ -449,7 +449,7 @@
       "type": "VISUAL",
       "vsnet_code": "CAMBZ",
       "aavso_code": "BZ CAM",
-      "chart_id": "13.4",
+      "chart_id": "X17378RC",
       "sort_order": 48
     },
     {
@@ -458,7 +458,7 @@
       "type": "VISUAL",
       "vsnet_code": "CAMV391",
       "aavso_code": "V391 CAM",
-      "chart_id": null,
+      "chart_id": "X17378RW",
       "sort_order": 49
     },
     {
@@ -467,7 +467,7 @@
       "type": "VISUAL",
       "vsnet_code": "AURSS",
       "aavso_code": "SS AUR",
-      "chart_id": "15.2",
+      "chart_id": "X17378QY",
       "sort_order": 50
     },
     {
@@ -476,7 +476,7 @@
       "type": "VISUAL",
       "vsnet_code": "AURBB",
       "aavso_code": "BB AUR",
-      "chart_id": "10.36",
+      "chart_id": "DPV2012",
       "sort_order": 51
     },
     {
@@ -485,7 +485,7 @@
       "type": "VISUAL",
       "vsnet_code": "AURGS",
       "aavso_code": "GS AUR",
-      "chart_id": null,
+      "chart_id": "DPV2012",
       "sort_order": 52
     },
     {
@@ -494,7 +494,7 @@
       "type": "VISUAL",
       "vsnet_code": "NSV16874",
       "aavso_code": "NSV 16874",
-      "chart_id": "11.12",
+      "chart_id": "DPV2003",
       "sort_order": 53
     },
     {
@@ -503,7 +503,7 @@
       "type": "VISUAL",
       "vsnet_code": "CAMSY",
       "aavso_code": "SY CAM",
-      "chart_id": "10.7",
+      "chart_id": "DPV2012",
       "sort_order": 54
     },
     {
@@ -512,7 +512,7 @@
       "type": "VISUAL",
       "vsnet_code": "CEPTZ",
       "aavso_code": "TZ CEP",
-      "chart_id": null,
+      "chart_id": "DPV2012",
       "sort_order": 55
     },
     {
@@ -521,7 +521,7 @@
       "type": "VISUAL",
       "vsnet_code": "CAMZ",
       "aavso_code": "Z CAM",
-      "chart_id": "11.9",
+      "chart_id": "2395CND",
       "sort_order": 56
     },
     {
@@ -530,7 +530,7 @@
       "type": "VISUAL",
       "vsnet_code": "CAMHT",
       "aavso_code": "HT CAM",
-      "chart_id": "na",
+      "chart_id": "2395CNN",
       "sort_order": 57
     },
     {
@@ -539,7 +539,7 @@
       "type": "VISUAL",
       "vsnet_code": "UMASU",
       "aavso_code": "SU UMA",
-      "chart_id": "14.8",
+      "chart_id": "2395CNW",
       "sort_order": 58
     },
     {
@@ -548,7 +548,7 @@
       "type": "VISUAL",
       "vsnet_code": "UMABZ",
       "aavso_code": "BZ UMA",
-      "chart_id": "na",
+      "chart_id": "2395COH",
       "sort_order": 59
     },
     {
@@ -557,7 +557,7 @@
       "type": "VISUAL",
       "vsnet_code": "UMASW",
       "aavso_code": "SW UMA",
-      "chart_id": "na",
+      "chart_id": "2395CON",
       "sort_order": 60
     },
     {
@@ -566,7 +566,7 @@
       "type": "VISUAL",
       "vsnet_code": "UMADI",
       "aavso_code": "DI UMA",
-      "chart_id": "na",
+      "chart_id": "2395CQF",
       "sort_order": 61
     },
     {
@@ -575,7 +575,7 @@
       "type": "VISUAL",
       "vsnet_code": "UMAER",
       "aavso_code": "ER UMA",
-      "chart_id": "14.2",
+      "chart_id": "2395CQM",
       "sort_order": 62
     },
     {
@@ -584,7 +584,7 @@
       "type": "VISUAL",
       "vsnet_code": "UMADV",
       "aavso_code": "DV UMA",
-      "chart_id": "na",
+      "chart_id": "2395CQT",
       "sort_order": 63
     },
     {
@@ -593,7 +593,7 @@
       "type": "VISUAL",
       "vsnet_code": "DRADO",
       "aavso_code": "DO DRA",
-      "chart_id": "15.1",
+      "chart_id": "2395COT",
       "sort_order": 64
     },
     {
@@ -602,7 +602,7 @@
       "type": "VISUAL",
       "vsnet_code": "DRACP",
       "aavso_code": "CP DRA",
-      "chart_id": "na",
+      "chart_id": "2395CPA",
       "sort_order": 65
     },
     {
@@ -611,7 +611,7 @@
       "type": "VISUAL",
       "vsnet_code": "UMACH",
       "aavso_code": "CH UMA",
-      "chart_id": "na",
+      "chart_id": "2395CPH",
       "sort_order": 66
     },
     {
@@ -620,7 +620,7 @@
       "type": "VISUAL",
       "vsnet_code": "UMAIY",
       "aavso_code": "IY UMA",
-      "chart_id": "na",
+      "chart_id": "2395CPN",
       "sort_order": 67
     },
     {
@@ -629,7 +629,7 @@
       "type": "VISUAL",
       "vsnet_code": "UMAKS",
       "aavso_code": "KS UMA",
-      "chart_id": "na",
+      "chart_id": "2395CPU",
       "sort_order": 68
     },
     {
@@ -638,7 +638,7 @@
       "type": "VISUAL",
       "vsnet_code": "UMACY",
       "aavso_code": "CY UMA",
-      "chart_id": "14.9",
+      "chart_id": "2395CRB",
       "sort_order": 69
     },
     {
@@ -647,7 +647,7 @@
       "type": "VISUAL",
       "vsnet_code": "UMABC",
       "aavso_code": "BC UMA",
-      "chart_id": "na",
+      "chart_id": "2395CRL",
       "sort_order": 70
     },
     {
@@ -656,7 +656,7 @@
       "type": "VISUAL",
       "vsnet_code": "UMAKV",
       "aavso_code": "KV UMA",
-      "chart_id": "na",
+      "chart_id": "2395CSD",
       "sort_order": 71
     },
     {
@@ -665,7 +665,7 @@
       "type": "VISUAL",
       "vsnet_code": "UMAMR",
       "aavso_code": "MR UMA",
-      "chart_id": "na",
+      "chart_id": "X17378MS",
       "sort_order": 72
     },
     {
@@ -674,7 +674,7 @@
       "type": "VISUAL",
       "vsnet_code": "Mrk421",
       "aavso_code": "Mrk 421",
-      "chart_id": "13.4",
+      "chart_id": "X24634AMN",
       "sort_order": 73
     },
     {
@@ -683,7 +683,7 @@
       "type": "VISUAL",
       "vsnet_code": "CRBR",
       "aavso_code": "R CRB",
-      "chart_id": "7.1",
+      "chart_id": "2395DNW",
       "sort_order": 74
     },
     {
@@ -692,7 +692,7 @@
       "type": "VISUAL",
       "vsnet_code": "CRBT",
       "aavso_code": "T CRB",
-      "chart_id": "10.5",
+      "chart_id": "X23014AUM",
       "sort_order": 75
     },
     {
@@ -701,7 +701,7 @@
       "type": "VISUAL",
       "vsnet_code": "BOOKV",
       "aavso_code": "KV BOO",
-      "chart_id": null,
+      "chart_id": "DPV2002",
       "sort_order": 76
     },
     {
@@ -710,7 +710,7 @@
       "type": "VISUAL",
       "vsnet_code": "SERNY",
       "aavso_code": "NY SER",
-      "chart_id": "na",
+      "chart_id": "X24525IL",
       "sort_order": 77
     },
     {
@@ -719,7 +719,7 @@
       "type": "VISUAL",
       "vsnet_code": "SERLX",
       "aavso_code": "LX SER",
-      "chart_id": "na",
+      "chart_id": "X24525IK",
       "sort_order": 78
     },
     {
@@ -728,7 +728,7 @@
       "type": "VISUAL",
       "vsnet_code": "SERQZ",
       "aavso_code": "QZ SER",
-      "chart_id": "na",
+      "chart_id": "X17353A",
       "sort_order": 79
     },
     {
@@ -737,7 +737,7 @@
       "type": "VISUAL",
       "vsnet_code": "BOOUZ",
       "aavso_code": "UZ BOO",
-      "chart_id": "na",
+      "chart_id": "2395DKA",
       "sort_order": 80
     },
     {
@@ -746,7 +746,7 @@
       "type": "VISUAL",
       "vsnet_code": "BOOTT",
       "aavso_code": "TT BOO",
-      "chart_id": "na",
+      "chart_id": "X17378KP",
       "sort_order": 81
     },
     {
@@ -755,7 +755,7 @@
       "type": "VISUAL",
       "vsnet_code": "HERV844",
       "aavso_code": "V844 HER",
-      "chart_id": "na",
+      "chart_id": "X17346BFW",
       "sort_order": 82
     },
     {
@@ -764,7 +764,7 @@
       "type": "VISUAL",
       "vsnet_code": "CRBCY",
       "aavso_code": "CY CRB",
-      "chart_id": "na",
+      "chart_id": "X24525FV",
       "sort_order": 83
     },
     {
@@ -773,7 +773,7 @@
       "type": "VISUAL",
       "vsnet_code": "CRBVW",
       "aavso_code": "VW CRB",
-      "chart_id": "na",
+      "chart_id": "2395DJV",
       "sort_order": 84
     },
     {
@@ -782,7 +782,7 @@
       "type": "VISUAL",
       "vsnet_code": "HERV592",
       "aavso_code": "V592 HER",
-      "chart_id": "na",
+      "chart_id": "2395DLM",
       "sort_order": 85
     },
     {
@@ -791,7 +791,7 @@
       "type": "VISUAL",
       "vsnet_code": "HERAH",
       "aavso_code": "AH HER",
-      "chart_id": "14.2",
+      "chart_id": "2395DNI",
       "sort_order": 86
     },
     {
@@ -800,7 +800,7 @@
       "type": "VISUAL",
       "vsnet_code": "HERHZ",
       "aavso_code": "HZ HER",
-      "chart_id": "13.5",
+      "chart_id": "ID103",
       "sort_order": 87
     },
     {
@@ -809,7 +809,7 @@
       "type": "VISUAL",
       "vsnet_code": "HERV660",
       "aavso_code": "V660 HER",
-      "chart_id": "na",
+      "chart_id": "X17346BFR",
       "sort_order": 88
     },
     {
@@ -818,7 +818,7 @@
       "type": "VISUAL",
       "vsnet_code": "FSVS J1722+2723",
       "aavso_code": "FSVS J1722+2723",
-      "chart_id": "na",
+      "chart_id": "X24637PD",
       "sort_order": 89
     },
     {
@@ -827,7 +827,7 @@
       "type": "VISUAL",
       "vsnet_code": "HERYY",
       "aavso_code": "YY HER",
-      "chart_id": "13.04",
+      "chart_id": "ID164",
       "sort_order": 90
     },
     {
@@ -836,7 +836,7 @@
       "type": "VISUAL",
       "vsnet_code": "HERPR",
       "aavso_code": "PR HER",
-      "chart_id": "na",
+      "chart_id": "2395DMZ",
       "sort_order": 91
     },
     {
@@ -845,7 +845,7 @@
       "type": "VISUAL",
       "vsnet_code": "HERAM",
       "aavso_code": "AM HER",
-      "chart_id": "13.97",
+      "chart_id": "ID033",
       "sort_order": 92
     },
     {
@@ -854,7 +854,7 @@
       "type": "VISUAL",
       "vsnet_code": "DRADV",
       "aavso_code": "DV DRA",
-      "chart_id": "na",
+      "chart_id": "2395DNO",
       "sort_order": 93
     },
     {
@@ -863,1222 +863,1222 @@
       "type": "VISUAL",
       "vsnet_code": "HERV1008",
       "aavso_code": "V1008 HER",
-      "chart_id": "na",
+      "chart_id": "X24525HI",
       "sort_order": 94
     },
     {
       "name": "T UMi",
       "constellation": "DRACO",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "UMIT",
       "aavso_code": "T UMI",
-      "chart_id": null,
+      "chart_id": "DPV2002",
       "sort_order": 95
     },
     {
       "name": "Z UMi",
       "constellation": "DRACO",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "UMIZ",
       "aavso_code": "Z UMI",
-      "chart_id": "11.6",
+      "chart_id": "DPV2002",
       "sort_order": 96
     },
     {
       "name": "SS UMi",
       "constellation": "DRACO",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "UMISS",
       "aavso_code": "SS UMI",
-      "chart_id": "15.6",
+      "chart_id": "2395GFM",
       "sort_order": 97
     },
     {
       "name": "DM Dra",
       "constellation": "DRACO",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "DRADM",
       "aavso_code": "DM DRA",
-      "chart_id": "na",
+      "chart_id": "X17454AOX",
       "sort_order": 98
     },
     {
       "name": "ES Dra",
       "constellation": "DRACO",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "DRAES",
       "aavso_code": "ES DRA",
-      "chart_id": "na",
+      "chart_id": "2395GFA",
       "sort_order": 99
     },
     {
       "name": "KV Dra",
       "constellation": "DRACO",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "DRAKV",
       "aavso_code": "KV DRA",
-      "chart_id": "na",
+      "chart_id": "2395GFG",
       "sort_order": 100
     },
     {
       "name": "IX Dra",
       "constellation": "DRACO",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "DRAIX",
       "aavso_code": "IX DRA",
-      "chart_id": "na",
+      "chart_id": "2395GFT",
       "sort_order": 101
     },
     {
       "name": "SDSS173062 Dra",
       "constellation": "DRACO",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "SDSSpJ173008.38+624754.7",
       "aavso_code": "SDSS J173008.38+624754.7",
-      "chart_id": "na",
+      "chart_id": "2395GFY",
       "sort_order": 102
     },
     {
       "name": "AB Dra",
       "constellation": "DRACO",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "DRAAB",
       "aavso_code": "AB DRA",
-      "chart_id": "15.3",
+      "chart_id": "2395GGF",
       "sort_order": 103
     },
     {
       "name": "AO Dra",
       "constellation": "DRACO",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "DRAAO",
       "aavso_code": "AO DRA",
-      "chart_id": null,
+      "chart_id": "DPV2012",
       "sort_order": 104
     },
     {
       "name": "EQ Dra",
       "constellation": "DRACO",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "DRAEQ",
       "aavso_code": "EQ DRA",
-      "chart_id": null,
+      "chart_id": "DPV2012",
       "sort_order": 105
     },
     {
       "name": "V 443 Her",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "HERV443",
       "aavso_code": "V443 HER",
-      "chart_id": "11.8",
+      "chart_id": "X24525HM",
       "sort_order": 106
     },
     {
       "name": "V 1108 Her",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "HERV1108",
       "aavso_code": "V1108 HER",
-      "chart_id": "na",
+      "chart_id": "X24525HL",
       "sort_order": 107
     },
     {
       "name": "CY Lyr",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "LYRCY",
       "aavso_code": "CY LYR",
-      "chart_id": "13.9",
+      "chart_id": "2569HYB",
       "sort_order": 108
     },
     {
       "name": "DM Lyr",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "LYRDM",
       "aavso_code": "DM LYR",
-      "chart_id": "na",
+      "chart_id": "X17354BU",
       "sort_order": 109
     },
     {
       "name": "HR Lyr",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "LYRHR",
       "aavso_code": "HR LYR",
-      "chart_id": "15.6",
+      "chart_id": "X24439AJS",
       "sort_order": 110
     },
     {
       "name": "AY Lyr",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "LYRAY",
       "aavso_code": "AY LYR",
-      "chart_id": "na",
+      "chart_id": "X17354BT",
       "sort_order": 111
     },
     {
       "name": "LL Lyr",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "LYRLL",
       "aavso_code": "LL LYR",
-      "chart_id": "na",
+      "chart_id": "X17354BW",
       "sort_order": 112
     },
     {
       "name": "V 587 Lyr",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "LYRV587",
       "aavso_code": "V587 LYR",
-      "chart_id": "na",
+      "chart_id": "X17378PA",
       "sort_order": 113
     },
     {
       "name": "V 585 Lyr",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "LYRV585",
       "aavso_code": "V585 LYR",
-      "chart_id": "na",
+      "chart_id": "X17378OZ",
       "sort_order": 114
     },
     {
       "name": "V 358 Lyr",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "LYRV358",
       "aavso_code": "V358 LYR",
-      "chart_id": "na",
+      "chart_id": "X24525HR",
       "sort_order": 115
     },
     {
       "name": "MV Lyr",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "LYRMV",
       "aavso_code": "MV LYR",
-      "chart_id": "12.9",
+      "chart_id": "X17354BY",
       "sort_order": 116
     },
     {
       "name": "DQ Her",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "HERDQ",
       "aavso_code": "DQ HER",
-      "chart_id": "14.4",
+      "chart_id": "X24525HH",
       "sort_order": 117
     },
     {
       "name": "V 562 Lyr",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "LYRV562",
       "aavso_code": "V562 LYR",
-      "chart_id": "12.1",
+      "chart_id": "X24525HU",
       "sort_order": 118
     },
     {
       "name": "V 742 Lyr",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "LYRV742",
       "aavso_code": "V742 LYR",
-      "chart_id": "11.9",
+      "chart_id": "X24525HX",
       "sort_order": 119
     },
     {
       "name": "V 529 Dra",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "DRAV529",
       "aavso_code": "V529 DRA",
-      "chart_id": "na",
+      "chart_id": "X24525HE",
       "sort_order": 120
     },
     {
       "name": "V 1504 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV1504",
       "aavso_code": "V1504 CYG",
-      "chart_id": "na",
+      "chart_id": "X17354BN",
       "sort_order": 121
     },
     {
       "name": "V 1113 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV1113",
       "aavso_code": "V1113 CYG",
-      "chart_id": "na",
+      "chart_id": "2569IAS",
       "sort_order": 122
     },
     {
       "name": "V 2176 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV2176",
       "aavso_code": "V2176 CYG",
-      "chart_id": "na",
+      "chart_id": "X17354BQ",
       "sort_order": 123
     },
     {
       "name": "V 1028 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV1028",
       "aavso_code": "V1028 CYG",
-      "chart_id": "na",
+      "chart_id": "X17354BD",
       "sort_order": 124
     },
     {
       "name": "V 1742 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV1742",
       "aavso_code": "V1742 CYG",
-      "chart_id": "10.43",
+      "chart_id": "DPV2012",
       "sort_order": 125
     },
     {
       "name": "V 840 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV840",
       "aavso_code": "V840 CYG",
-      "chart_id": "10.01",
+      "chart_id": "DPV2002",
       "sort_order": 126
     },
     {
       "name": "BF Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGBF",
       "aavso_code": "BF CYG",
-      "chart_id": "10.68",
+      "chart_id": "DPV2012",
       "sort_order": 127
     },
     {
       "name": "EM Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGEM",
       "aavso_code": "EM CYG",
-      "chart_id": "13.4",
+      "chart_id": "2562BQG",
       "sort_order": 128
     },
     {
       "name": "V 550 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV550",
       "aavso_code": "V550 CYG",
-      "chart_id": "na",
+      "chart_id": "X17354AT",
       "sort_order": 129
     },
     {
       "name": "V 1363 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV1363",
       "aavso_code": "V1363 CYG",
-      "chart_id": "na",
+      "chart_id": "X17354BI",
       "sort_order": 130
     },
     {
       "name": "V 1454 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV1454",
       "aavso_code": "V1454 CYG",
-      "chart_id": "na",
+      "chart_id": "X17354BJ",
       "sort_order": 131
     },
     {
       "name": "CI Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGCI",
       "aavso_code": "CI CYG",
-      "chart_id": "10.67",
+      "chart_id": "DPV2012",
       "sort_order": 132
     },
     {
       "name": "V 482 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV482",
       "aavso_code": "V482 CYG",
-      "chart_id": "13.29",
+      "chart_id": "DPV2002",
       "sort_order": 133
     },
     {
       "name": "V 1016 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV1016",
       "aavso_code": "V1016 CYG",
-      "chart_id": "11.4",
+      "chart_id": "X24525GK",
       "sort_order": 134
     },
     {
       "name": "V 441 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV441",
       "aavso_code": "V441 CYG",
-      "chart_id": "10.18",
+      "chart_id": "DPV2012",
       "sort_order": 135
     },
     {
       "name": "V 404 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV404",
       "aavso_code": "V404 CYG",
-      "chart_id": "na",
+      "chart_id": "X17354AS",
       "sort_order": 136
     },
     {
       "name": "V 1329 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV1329",
       "aavso_code": "V1329 CYG",
-      "chart_id": "14.3",
+      "chart_id": "2569IGA",
       "sort_order": 137
     },
     {
       "name": "V 503 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV503",
       "aavso_code": "V503 CYG",
-      "chart_id": "na",
+      "chart_id": "2569IHN",
       "sort_order": 138
     },
     {
       "name": "V 751 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV751",
       "aavso_code": "V751 CYG",
-      "chart_id": "14.3",
+      "chart_id": "X17354BC",
       "sort_order": 139
     },
     {
       "name": "V3101 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV3101",
       "aavso_code": "V3101 CYG",
-      "chart_id": "na",
+      "chart_id": "X25241VU",
       "sort_order": 140
     },
     {
       "name": "Q Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGQ",
       "aavso_code": "Q CYG",
-      "chart_id": "na",
+      "chart_id": "2569IJR",
       "sort_order": 141
     },
     {
       "name": "SS Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGSS",
       "aavso_code": "SS CYG",
-      "chart_id": "9.6",
+      "chart_id": "2562BQJ",
       "sort_order": 142
     },
     {
       "name": "V 632 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV632",
       "aavso_code": "V632 CYG",
-      "chart_id": "na",
+      "chart_id": "X17354BB",
       "sort_order": 143
     },
     {
       "name": "V 630 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV630",
       "aavso_code": "V630 CYG",
-      "chart_id": "na",
+      "chart_id": "X23014AUJ",
       "sort_order": 144
     },
     {
       "name": "V 1251 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV1251",
       "aavso_code": "V1251 CYG",
-      "chart_id": "na",
+      "chart_id": "X17354BE",
       "sort_order": 145
     },
     {
       "name": "BL Lac",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "LACBL",
       "aavso_code": "BL LAC",
-      "chart_id": "14.3",
+      "chart_id": "X17354BS",
       "sort_order": 146
     },
     {
       "name": "AY Lac",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "LACAY",
       "aavso_code": "AY LAC",
-      "chart_id": null,
+      "chart_id": "2569IKW",
       "sort_order": 147
     },
     {
       "name": "V 1805 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV1805",
       "aavso_code": "V1805 CYG",
-      "chart_id": "10.59",
+      "chart_id": "DPV2012",
       "sort_order": 148
     },
     {
       "name": "V 2037 Cyg",
       "constellation": "CYGNUS",
-      "type": "BINAR",
+      "type": "VISUAL",
       "vsnet_code": "CYGV2037",
       "aavso_code": "V2037 CYG",
-      "chart_id": "12.05",
+      "chart_id": "DPV2012",
       "sort_order": 149
     },
     {
       "name": "SV Ari",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "ARISV",
       "aavso_code": "SV ARI",
-      "chart_id": "na",
+      "chart_id": "X17332BIQ",
       "sort_order": 150
     },
     {
       "name": "V 701 Tau",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "TAUV701",
       "aavso_code": "V701 TAU",
-      "chart_id": null,
+      "chart_id": "X17332BIK",
       "sort_order": 151
     },
     {
       "name": "SU Tau",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "TAUSU",
       "aavso_code": "SU TAU",
-      "chart_id": "10",
+      "chart_id": "X18525GB",
       "sort_order": 152
     },
     {
       "name": "FS Aur",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "AURFS",
       "aavso_code": "FS AUR",
-      "chart_id": null,
+      "chart_id": "X18525GT",
       "sort_order": 153
     },
     {
       "name": "AQ Eri",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "ERIAQ",
       "aavso_code": "AQ ERI",
-      "chart_id": "na",
+      "chart_id": "X18525GE",
       "sort_order": 154
     },
     {
       "name": "V 1159 Ori",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "ORIV1159",
       "aavso_code": "V1159 ORI",
-      "chart_id": "na",
+      "chart_id": "X18525GG",
       "sort_order": 155
     },
     {
       "name": "HL CMa",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "CMAHL",
       "aavso_code": "HL CMA",
-      "chart_id": "na",
+      "chart_id": "X2518UQ",
       "sort_order": 156
     },
     {
       "name": "KT Mon",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "MONKT",
       "aavso_code": "KT MON",
-      "chart_id": "na",
+      "chart_id": "X18525GI",
       "sort_order": 157
     },
     {
       "name": "EP Tau",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "TAUEP",
       "aavso_code": "EP TAU",
-      "chart_id": null,
+      "chart_id": "ID161",
       "sort_order": 158
     },
     {
       "name": "BG Tau",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "TAUBG",
       "aavso_code": "BG TAU",
-      "chart_id": null,
+      "chart_id": "ID142",
       "sort_order": 159
     },
     {
       "name": "WW Tau",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "TAUWW",
       "aavso_code": "WW TAU",
-      "chart_id": "9.63",
+      "chart_id": "ID144",
       "sort_order": 160
     },
     {
       "name": "T Tau",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "TAUT",
       "aavso_code": "T TAU",
-      "chart_id": "10.82",
+      "chart_id": "ID098",
       "sort_order": 161
     },
     {
       "name": "W Ori",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "ORIW",
       "aavso_code": "W ORI",
-      "chart_id": "6.31",
+      "chart_id": "OSE2001",
       "sort_order": 162
     },
     {
       "name": "UX Ori",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "ORIUX",
       "aavso_code": "UX ORI",
-      "chart_id": null,
+      "chart_id": "OSE2001",
       "sort_order": 163
     },
     {
       "name": "BF Ori",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "ORIBF",
       "aavso_code": "BF ORI",
-      "chart_id": "10.51",
+      "chart_id": "OSE2001",
       "sort_order": 164
     },
     {
       "name": "V 380 Ori",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "ORIV380",
       "aavso_code": "V380 ORI",
-      "chart_id": "10.81",
+      "chart_id": "OSE2001",
       "sort_order": 165
     },
     {
       "name": "PR Ori",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "ORIV380",
       "aavso_code": "V380 ORI",
-      "chart_id": "10.81",
+      "chart_id": "OSE2001",
       "sort_order": 166
     },
     {
       "name": "V586 Ori",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "ORIV380",
       "aavso_code": "V380 ORI",
-      "chart_id": "9.79",
+      "chart_id": "OSE2001",
       "sort_order": 167
     },
     {
       "name": "EV Ori",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "ORIEV",
       "aavso_code": "EV ORI",
-      "chart_id": "10.69",
+      "chart_id": "DPV2012",
       "sort_order": 168
     },
     {
       "name": "QR Mon",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "MONQR",
       "aavso_code": "QR MON",
-      "chart_id": null,
+      "chart_id": "ID157",
       "sort_order": 169
     },
     {
       "name": "V 838 Mon",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "MONV838",
       "aavso_code": "V838 MON",
-      "chart_id": null,
+      "chart_id": "X18525GL",
       "sort_order": 170
     },
     {
       "name": "T Mon",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "MONT",
       "aavso_code": "T MON",
-      "chart_id": "6.72",
+      "chart_id": "DeBernardini2001",
       "sort_order": 171
     },
     {
       "name": "BX Mon",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "MONBX",
       "aavso_code": "BX MON",
-      "chart_id": "9.52",
+      "chart_id": "OSE2002",
       "sort_order": 172
     },
     {
       "name": "U Mon",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "MONU",
       "aavso_code": "U MON",
-      "chart_id": "5.92",
+      "chart_id": "OSE2002",
       "sort_order": 173
     },
     {
       "name": "V694 Mon",
       "constellation": "ORION",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "MONV694",
       "aavso_code": "V694 MON",
-      "chart_id": "8.6",
+      "chart_id": "X25131Q",
       "sort_order": 174
     },
     {
       "name": "U Gem",
       "constellation": "GEMINI",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "GEMU",
       "aavso_code": "U GEM",
-      "chart_id": "11.6",
+      "chart_id": "X18525HU",
       "sort_order": 175
     },
     {
       "name": "YZ Cnc",
       "constellation": "GEMINI",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "CNCYZ",
       "aavso_code": "YZ CNC",
-      "chart_id": "14.5",
+      "chart_id": "X18525HX",
       "sort_order": 176
     },
     {
       "name": "AT Cnc",
       "constellation": "GEMINI",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "CNCAT",
       "aavso_code": "AT CNC",
-      "chart_id": "15.4",
+      "chart_id": "X18525HY",
       "sort_order": 177
     },
     {
       "name": "EG Cnc",
       "constellation": "GEMINI",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "CNCEG",
       "aavso_code": "EG CNC",
-      "chart_id": "na",
+      "chart_id": "X18525IC",
       "sort_order": 178
     },
     {
       "name": "OJ287 Cnc",
       "constellation": "GEMINI",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "OJ 287",
       "aavso_code": "OJ 287",
-      "chart_id": "15.2",
+      "chart_id": "SDSS",
       "sort_order": 179
     },
     {
       "name": "SY Cnc",
       "constellation": "GEMINI",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "CNCSY",
       "aavso_code": "SY CNC",
-      "chart_id": "13.6",
+      "chart_id": "X18525IE",
       "sort_order": 180
     },
     {
       "name": "GY Cnc",
       "constellation": "GEMINI",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "CNCGY",
       "aavso_code": "GY CNC",
-      "chart_id": "na",
+      "chart_id": "X18525IF",
       "sort_order": 181
     },
     {
       "name": "AK Cnc",
       "constellation": "GEMINI",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "CNCAK",
       "aavso_code": "AK CNC",
-      "chart_id": "na",
+      "chart_id": "X18525IJ",
       "sort_order": 182
     },
     {
       "name": "RZ LMi",
       "constellation": "LEO",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "LMIRZ",
       "aavso_code": "RZ LMI",
-      "chart_id": "na",
+      "chart_id": "X24604EA",
       "sort_order": 183
     },
     {
       "name": "MRK 421 UMa",
       "constellation": "LEO",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "Mrk421",
       "aavso_code": "Mrk 421",
-      "chart_id": "13.7",
+      "chart_id": "X24634AMN",
       "sort_order": 184
     },
     {
       "name": "TX CVn",
       "constellation": "LEO",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "CVNTX",
       "aavso_code": "TX CVN",
-      "chart_id": "10.1",
+      "chart_id": "X24604DQ",
       "sort_order": 185
     },
     {
       "name": "X Leo",
       "constellation": "LEO",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "LEOX",
       "aavso_code": "X LEO",
-      "chart_id": "14.3",
+      "chart_id": "X24604DV",
       "sort_order": 186
     },
     {
       "name": "AB Leo",
       "constellation": "LEO",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "LEOAB",
       "aavso_code": "AB LEO",
-      "chart_id": "10.23",
+      "chart_id": "ID119",
       "sort_order": 187
     },
     {
       "name": "W LMi",
       "constellation": "LEO",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "LMIW",
       "aavso_code": "W LMI",
-      "chart_id": null,
+      "chart_id": "ID164",
       "sort_order": 188
     },
     {
       "name": "SY Com",
       "constellation": "LEO",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "COMSY",
       "aavso_code": "SY COM",
-      "chart_id": null,
+      "chart_id": "ID160",
       "sort_order": 189
     },
     {
       "name": "CK Vir",
       "constellation": "LEO",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "VIRCK",
       "aavso_code": "CK VIR",
-      "chart_id": null,
+      "chart_id": "ID101",
       "sort_order": 190
     },
     {
       "name": "QZ Vir",
       "constellation": "LEO",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "VIRQZ",
       "aavso_code": "QZ VIR",
-      "chart_id": "15.3",
+      "chart_id": "X24604EK",
       "sort_order": 191
     },
     {
       "name": "RZ Leo",
       "constellation": "LEO",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "LEORZ",
       "aavso_code": "RZ LEO",
-      "chart_id": "na",
+      "chart_id": "X24604EJ",
       "sort_order": 192
     },
     {
       "name": "3C273 Vir",
       "constellation": "LEO",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "3C 273",
       "aavso_code": "3C 273",
-      "chart_id": "13.5",
+      "chart_id": "X24604EO",
       "sort_order": 193
     },
     {
       "name": "3C279 Vir",
       "constellation": "LEO",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "3C 279",
       "aavso_code": "3C 279",
-      "chart_id": "na",
+      "chart_id": "X24604EQ",
       "sort_order": 194
     },
     {
       "name": "AL Com",
       "constellation": "LEO",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "COMAL",
       "aavso_code": "AL COM",
-      "chart_id": "na",
+      "chart_id": "X2460FEC",
       "sort_order": 195
     },
     {
       "name": "CR Boo",
       "constellation": "LEO",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "BOOCR",
       "aavso_code": "CR BOO",
-      "chart_id": "15",
+      "chart_id": "X24525FD",
       "sort_order": 196
     },
     {
       "name": "QW Ser",
       "constellation": "LEO",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "SERQW",
       "aavso_code": "QW SER",
-      "chart_id": "na",
+      "chart_id": "X25130AVA",
       "sort_order": 197
     },
     {
       "name": "R Sct",
       "constellation": "AQUILA",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "SCTR",
       "aavso_code": "R SCT",
-      "chart_id": "5.41",
+      "chart_id": "OSE0803",
       "sort_order": 198
     },
     {
       "name": "V 426 Oph",
       "constellation": "AQUILA",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "OPHV426",
       "aavso_code": "V426 OPH",
-      "chart_id": "13.2",
+      "chart_id": "X24523CV",
       "sort_order": 199
     },
     {
       "name": "RS Oph",
       "constellation": "AQUILA",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "OPHRS",
       "aavso_code": "RS OPH",
-      "chart_id": "10.84",
+      "chart_id": "OSE0603",
       "sort_order": 200
     },
     {
       "name": "V 603 Aql",
       "constellation": "AQUILA",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "AQLV603",
       "aavso_code": "V603 AQL",
-      "chart_id": "12.2",
+      "chart_id": "X24523CY",
       "sort_order": 201
     },
     {
       "name": "CI Aql",
       "constellation": "AQUILA",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "AQLCI",
       "aavso_code": "CI AQL",
-      "chart_id": "na",
+      "chart_id": "X24523DP",
       "sort_order": 202
     },
     {
       "name": "V 1141 Aql",
       "constellation": "AQUILA",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "AQLV1141",
       "aavso_code": "V1141 AQL",
-      "chart_id": "na",
+      "chart_id": "X24523CM",
       "sort_order": 203
     },
     {
       "name": "V 725 Aql",
       "constellation": "AQUILA",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "AQLV725",
       "aavso_code": "V725 AQL",
-      "chart_id": "na",
+      "chart_id": "X24523CO",
       "sort_order": 204
     },
     {
       "name": "KX Aql",
       "constellation": "AQUILA",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "AQLKX",
       "aavso_code": "KX AQL",
-      "chart_id": "na",
+      "chart_id": "X24523CR",
       "sort_order": 205
     },
     {
       "name": "V 1413 Aql",
       "constellation": "AQUILA",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "AQLV1413",
       "aavso_code": "V1413 AQL",
-      "chart_id": "12.6",
+      "chart_id": "X24523CM",
       "sort_order": 206
     },
     {
       "name": "AE Aqr",
       "constellation": "AQUILA",
-      "type": "ECL faint",
+      "type": "VISUAL",
       "vsnet_code": "AQRAE",
       "aavso_code": "AE AQR",
-      "chart_id": "11.5",
+      "chart_id": "X24523DM",
       "sort_order": 207
     },
     {
       "name": "HM Sge",
       "constellation": "SAGITTA",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "SGEHM",
       "aavso_code": "HM SGE",
-      "chart_id": "12.7",
+      "chart_id": "X24523DH",
       "sort_order": 208
     },
     {
       "name": "QW Sge",
       "constellation": "SAGITTA",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "SGEQW",
       "aavso_code": "QW SGE",
-      "chart_id": "13.4",
+      "chart_id": "X24604DF",
       "sort_order": 209
     },
     {
       "name": "PU Vul",
       "constellation": "SAGITTA",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "VULPU",
       "aavso_code": "PU VUL",
-      "chart_id": "12.7",
+      "chart_id": "X24523DR",
       "sort_order": 210
     },
     {
       "name": "V 339 Del",
       "constellation": "SAGITTA",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "DELV339",
       "aavso_code": "V339 DEL",
-      "chart_id": "na",
+      "chart_id": "X24525HC",
       "sort_order": 211
     },
     {
       "name": "V Sge",
       "constellation": "SAGITTA",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "SGEV",
       "aavso_code": "V SGE",
-      "chart_id": "10.9",
+      "chart_id": "X24524C",
       "sort_order": 212
     },
     {
       "name": "FG Sge",
       "constellation": "SAGITTA",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "SGEFG",
       "aavso_code": "FG SGE",
-      "chart_id": "na",
+      "chart_id": "X24524F",
       "sort_order": 213
     },
     {
       "name": "WZ Sge",
       "constellation": "SAGITTA",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "SGEWZ",
       "aavso_code": "WZ SGE",
-      "chart_id": "15.2",
+      "chart_id": "X24523DL",
       "sort_order": 214
     },
     {
       "name": "RZ Sge",
       "constellation": "SAGITTA",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "SGERZ",
       "aavso_code": "RZ SGE",
-      "chart_id": "na",
+      "chart_id": "X24524I",
       "sort_order": 215
     },
     {
       "name": "AW Sge",
       "constellation": "SAGITTA",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "SGEAW",
       "aavso_code": "AW SGE",
-      "chart_id": "na",
+      "chart_id": "X24524J",
       "sort_order": 216
     },
     {
       "name": "TY Vul",
       "constellation": "SAGITTA",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "VULTY",
       "aavso_code": "TY VUL",
-      "chart_id": "na",
+      "chart_id": "X24524O",
       "sort_order": 217
     },
     {
       "name": "VW Vul",
       "constellation": "SAGITTA",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "VULVW",
       "aavso_code": "VW VUL",
-      "chart_id": "na",
+      "chart_id": "X24525H",
       "sort_order": 218
     },
     {
       "name": "CM Del",
       "constellation": "SAGITTA",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "DELCM",
       "aavso_code": "CM DEL",
-      "chart_id": "13.7",
+      "chart_id": "X24525J",
       "sort_order": 219
     },
     {
       "name": "IO Del",
       "constellation": "SAGITTA",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "DELIO",
       "aavso_code": "IO DEL",
-      "chart_id": "na",
+      "chart_id": "X24525IB",
       "sort_order": 220
     },
     {
       "name": "HR Del",
       "constellation": "SAGITTA",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "DELHR",
       "aavso_code": "HR DEL",
-      "chart_id": "12.4",
+      "chart_id": "X24525AC",
       "sort_order": 221
     },
     {
       "name": "HO Del",
       "constellation": "SAGITTA",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "DELHO",
       "aavso_code": "HO DEL",
-      "chart_id": "14.9",
+      "chart_id": "X24525T",
       "sort_order": 222
     },
     {
       "name": "AG Peg",
       "constellation": "PEGASUS",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "PEGAG",
       "aavso_code": "AG PEG",
-      "chart_id": "9.1",
+      "chart_id": "X24525AW",
       "sort_order": 223
     },
     {
       "name": "RU Peg",
       "constellation": "PEGASUS",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "PEGRU",
       "aavso_code": "RU PEG",
-      "chart_id": "12.6",
+      "chart_id": "ID088",
       "sort_order": 224
     },
     {
       "name": "V 627 Peg",
       "constellation": "PEGASUS",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "PEGV627",
       "aavso_code": "V627 PEG",
-      "chart_id": "na",
+      "chart_id": "X24637HD",
       "sort_order": 225
     },
     {
       "name": "IP Peg",
       "constellation": "PEGASUS",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "PEGIP",
       "aavso_code": "IP PEG",
-      "chart_id": "15.4",
+      "chart_id": "X24525EG",
       "sort_order": 226
     },
     {
       "name": "HX Peg",
       "constellation": "PEGASUS",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "PEGHX",
       "aavso_code": "HX PEG",
-      "chart_id": "13.9",
+      "chart_id": "X24525EP",
       "sort_order": 227
     },
     {
       "name": "EI Psc",
       "constellation": "PEGASUS",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "PSCEI",
       "aavso_code": "EI PSC",
-      "chart_id": "na",
+      "chart_id": "X24525FA",
       "sort_order": 228
     },
     {
       "name": "GY Cet",
       "constellation": "PEGASUS",
-      "type": "ECL bright",
+      "type": "VISUAL",
       "vsnet_code": "CETGY",
       "aavso_code": "GY CET",
-      "chart_id": "12.1",
+      "chart_id": "X25561NT",
       "sort_order": 229
     },
     {
@@ -2087,7 +2087,7 @@
       "type": "VISUAL",
       "vsnet_code": "SCODEL",
       "aavso_code": "DEL SCO",
-      "chart_id": "1.84",
+      "chart_id": "OSE2001",
       "sort_order": 230
     },
     {
@@ -2096,7 +2096,7 @@
       "type": "VISUAL",
       "vsnet_code": "AQLETA",
       "aavso_code": "ETA AQL",
-      "chart_id": "4.02",
+      "chart_id": "OSE2001",
       "sort_order": 231
     },
     {
@@ -2105,7 +2105,7 @@
       "type": "VISUAL",
       "vsnet_code": "CETOMI",
       "aavso_code": "OMI CET",
-      "chart_id": "3.47",
+      "chart_id": "OSE2002",
       "sort_order": 232
     },
     {
@@ -2114,7 +2114,7 @@
       "type": "VISUAL",
       "vsnet_code": "CASRHO",
       "aavso_code": "RHO CAS",
-      "chart_id": "4.44",
+      "chart_id": "DPV2003",
       "sort_order": 233
     },
     {
@@ -2123,7 +2123,7 @@
       "type": "VISUAL",
       "vsnet_code": "CEPDEL",
       "aavso_code": "DEL CEP",
-      "chart_id": "3.77",
+      "chart_id": "DPV2005",
       "sort_order": 234
     },
     {
@@ -2132,7 +2132,7 @@
       "type": "VISUAL",
       "vsnet_code": "AUREPS",
       "aavso_code": "EPS AUR",
-      "chart_id": "3.18",
+      "chart_id": "DPV2009",
       "sort_order": 235
     },
     {
@@ -2141,7 +2141,7 @@
       "type": "VISUAL",
       "vsnet_code": "AURZET",
       "aavso_code": "ZET AUR",
-      "chart_id": "3.79",
+      "chart_id": "DPV2009",
       "sort_order": 236
     },
     {
@@ -2150,7 +2150,7 @@
       "type": "VISUAL",
       "vsnet_code": "AURPSI 1",
       "aavso_code": "PSI 1 AUR",
-      "chart_id": "5.01",
+      "chart_id": "DPV2002",
       "sort_order": 237
     },
     {
@@ -2159,7 +2159,7 @@
       "type": "VISUAL",
       "vsnet_code": "AURUU",
       "aavso_code": "UU AUR",
-      "chart_id": null,
+      "chart_id": "DPV2002",
       "sort_order": 238
     },
     {
@@ -2168,7 +2168,7 @@
       "type": "VISUAL",
       "vsnet_code": "GEMETA",
       "aavso_code": "ETA GEM",
-      "chart_id": "3.18",
+      "chart_id": "OSE2001",
       "sort_order": 239
     },
     {
@@ -2177,7 +2177,7 @@
       "type": "VISUAL",
       "vsnet_code": "GEMZET",
       "aavso_code": "ZET GEM",
-      "chart_id": "4.13",
+      "chart_id": "OSE2001",
       "sort_order": 240
     },
     {
@@ -2186,7 +2186,7 @@
       "type": "VISUAL",
       "vsnet_code": "GEMMU",
       "aavso_code": "MU GEM",
-      "chart_id": "2.99",
+      "chart_id": "OSE2001",
       "sort_order": 241
     },
     {
@@ -2195,7 +2195,7 @@
       "type": "VISUAL",
       "vsnet_code": "CRBR",
       "aavso_code": "R CRB",
-      "chart_id": "6.47",
+      "chart_id": "BED2001",
       "sort_order": 242
     },
     {
@@ -2204,7 +2204,7 @@
       "type": "VISUAL",
       "vsnet_code": "CRBTET",
       "aavso_code": "TET CRB",
-      "chart_id": "4.28",
+      "chart_id": "OSE2003",
       "sort_order": 243
     },
     {
@@ -2213,7 +2213,7 @@
       "type": "VISUAL",
       "vsnet_code": "CYGP",
       "aavso_code": "P CYG",
-      "chart_id": "4.93",
+      "chart_id": "DPV2002",
       "sort_order": 244
     },
     {
@@ -2222,7 +2222,7 @@
       "type": "VISUAL",
       "vsnet_code": "ORIALF",
       "aavso_code": "ALF ORI",
-      "chart_id": "0.87",
+      "chart_id": "OSE2001",
       "sort_order": 245
     },
     {
@@ -2231,7 +2231,7 @@
       "type": "VISUAL",
       "vsnet_code": "ERITAU4",
       "aavso_code": "TAU4 ERI",
-      "chart_id": null,
+      "chart_id": "OSE2002",
       "sort_order": 246
     },
     {
@@ -2240,916 +2240,916 @@
       "type": "VISUAL",
       "vsnet_code": "TAUZET",
       "aavso_code": "ZET TAU",
-      "chart_id": "3.18",
+      "chart_id": "OSE2001",
       "sort_order": 247
     },
     {
       "name": "TT Ari",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "ARITT",
       "aavso_code": "TT ARI",
-      "chart_id": "11.01",
+      "chart_id": "020114",
       "sort_order": 248
     },
     {
       "name": "EG And",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "ANDEG",
       "aavso_code": "EG AND",
-      "chart_id": "8.4",
+      "chart_id": "X24604DK",
       "sort_order": 249
     },
     {
       "name": "WY And",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "ANDWY",
       "aavso_code": "WY AND",
-      "chart_id": "9.26",
+      "chart_id": "DPV2012",
       "sort_order": 250
     },
     {
       "name": "Z And",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "ANDZ",
       "aavso_code": "Z AND",
-      "chart_id": "11.19",
+      "chart_id": "DPV2012",
       "sort_order": 251
     },
     {
       "name": "V 465 Cas",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CASV465",
       "aavso_code": "V465 CAS",
-      "chart_id": "6.68",
+      "chart_id": "DPV2001",
       "sort_order": 252
     },
     {
       "name": "V 764 Cas",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CASV764",
       "aavso_code": "V764 CAS",
-      "chart_id": "7.12",
+      "chart_id": "DPV2001",
       "sort_order": 253
     },
     {
       "name": "NSV 650 Cas",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "NSV650",
       "aavso_code": "NSV 650",
-      "chart_id": "7.72",
+      "chart_id": "DPV2001",
       "sort_order": 254
     },
     {
       "name": "BX Cas",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CASBX",
       "aavso_code": "BX CAS",
-      "chart_id": "10.63",
+      "chart_id": "DPV2012",
       "sort_order": 255
     },
     {
       "name": "TU Cas",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CASTU",
       "aavso_code": "TU CAS",
-      "chart_id": "7.64",
+      "chart_id": "050621",
       "sort_order": 256
     },
     {
       "name": "ST Cas",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CASST",
       "aavso_code": "ST CAS",
-      "chart_id": "9.18",
+      "chart_id": "DPV2012",
       "sort_order": 257
     },
     {
       "name": "KS Cas",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CASKS",
       "aavso_code": "KS CAS",
-      "chart_id": "9.92",
+      "chart_id": "DPV2012",
       "sort_order": 258
     },
     {
       "name": "NSV 332 Cas",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "NSV332",
       "aavso_code": "NSV 332",
-      "chart_id": "9.07",
+      "chart_id": "DPV2001",
       "sort_order": 259
     },
     {
       "name": "V 365 Cas",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CASV365",
       "aavso_code": "V365 CAS",
-      "chart_id": "9.2",
+      "chart_id": "DPV2012",
       "sort_order": 260
     },
     {
       "name": "VY Cas",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CASVY",
       "aavso_code": "VY CAS",
-      "chart_id": "10.02",
+      "chart_id": "DPV2012",
       "sort_order": 261
     },
     {
       "name": "UY Cas",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CASUY",
       "aavso_code": "UY CAS",
-      "chart_id": "10.76",
+      "chart_id": "DPV2012",
       "sort_order": 262
     },
     {
       "name": "V 466 Per",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "PERV466",
       "aavso_code": "V466 PER",
-      "chart_id": "8.94",
+      "chart_id": "DPV2012",
       "sort_order": 263
     },
     {
       "name": "V 500 Per",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "PERV500",
       "aavso_code": "V500 PER",
-      "chart_id": "9.94",
+      "chart_id": "DPV2012",
       "sort_order": 264
     },
     {
       "name": "XX Cam",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CAMXX",
       "aavso_code": "XX CAM",
-      "chart_id": "7.35",
+      "chart_id": "DPV2002",
       "sort_order": 265
     },
     {
       "name": "U Cam",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CAMU",
       "aavso_code": "U CAM",
-      "chart_id": "8.17",
+      "chart_id": "DPV2012",
       "sort_order": 266
     },
     {
       "name": "XX Per",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "PERXX",
       "aavso_code": "XX PER",
-      "chart_id": "8.81",
+      "chart_id": "DPV2012",
       "sort_order": 267
     },
     {
       "name": "S Per",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "PERS",
       "aavso_code": "S PER",
-      "chart_id": "10.59",
+      "chart_id": "DPV2012",
       "sort_order": 268
     },
     {
       "name": "T Per",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "PERT",
       "aavso_code": "T PER",
-      "chart_id": "8.93",
+      "chart_id": "DPV2012",
       "sort_order": 269
     },
     {
       "name": "TV Per",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "PERTV",
       "aavso_code": "TV PER",
-      "chart_id": null,
+      "chart_id": "DPV2012",
       "sort_order": 270
     },
     {
       "name": "BU Tau",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "TAUBU",
       "aavso_code": "BU TAU",
-      "chart_id": null,
+      "chart_id": "OSE2001",
       "sort_order": 271
     },
     {
       "name": "WW Tau",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "TAUWW",
       "aavso_code": "WW TAU",
-      "chart_id": "9.86",
+      "chart_id": "DPV2012",
       "sort_order": 272
     },
     {
       "name": "BL Tau",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "TAUBL",
       "aavso_code": "BL TAU",
-      "chart_id": "9.3",
+      "chart_id": "DPV2012",
       "sort_order": 273
     },
     {
       "name": "T Tau",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "TAUT",
       "aavso_code": "T TAU",
-      "chart_id": "10.82",
+      "chart_id": "DPV2012",
       "sort_order": 274
     },
     {
       "name": "V 1060 Tau",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "TAUV1060",
       "aavso_code": "V1060 TAU",
-      "chart_id": "9.48",
+      "chart_id": "DPV2012",
       "sort_order": 275
     },
     {
       "name": "EV Ori",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "ORIEV",
       "aavso_code": "EV ORI",
-      "chart_id": "10.17",
+      "chart_id": "DPV2012",
       "sort_order": 276
     },
     {
       "name": "Y Lyn",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "LYNY",
       "aavso_code": "Y LYN",
-      "chart_id": "7.63",
+      "chart_id": "DPV2012",
       "sort_order": 277
     },
     {
       "name": "NSV 3171 Aur",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "NSV3171",
       "aavso_code": "NSV 3171",
-      "chart_id": null,
+      "chart_id": "DPV2002",
       "sort_order": 278
     },
     {
       "name": "NSV 16874 Aur",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "NSV16874",
       "aavso_code": "NSV 16874",
-      "chart_id": "11.12",
+      "chart_id": "DPV2012",
       "sort_order": 279
     },
     {
       "name": "NSV 2426 Tau",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "NSV2426",
       "aavso_code": "NSV 2426",
-      "chart_id": null,
+      "chart_id": "BED2001",
       "sort_order": 280
     },
     {
       "name": "BB Aur",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "AURBB",
       "aavso_code": "BB AUR",
-      "chart_id": "10.36",
+      "chart_id": "DPV2012",
       "sort_order": 281
     },
     {
       "name": "VW Aur",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "AURVW",
       "aavso_code": "VW AUR",
-      "chart_id": "10.12",
+      "chart_id": "DPV2012",
       "sort_order": 282
     },
     {
       "name": "Z Cam",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CAMZ",
       "aavso_code": "Z CAM",
-      "chart_id": "11.9",
+      "chart_id": "2395CND",
       "sort_order": 283
     },
     {
       "name": "AB Leo",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "LEOAB",
       "aavso_code": "AB LEO",
-      "chart_id": "10.88",
+      "chart_id": "DPV2012",
       "sort_order": 284
     },
     {
       "name": "AF Leo",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "LEOAF",
       "aavso_code": "AF LEO",
-      "chart_id": "9.84",
+      "chart_id": "DPV2012",
       "sort_order": 285
     },
     {
       "name": "CK Vir",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "VIRCK",
       "aavso_code": "CK VIR",
-      "chart_id": "10.47",
+      "chart_id": "DPV2012",
       "sort_order": 286
     },
     {
       "name": "SV UMa",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "UMASV",
       "aavso_code": "SV UMA",
-      "chart_id": "9.95",
+      "chart_id": "DPV2012",
       "sort_order": 287
     },
     {
       "name": "AZ UMa",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "UMAAZ",
       "aavso_code": "AZ UMA",
-      "chart_id": "8.92",
+      "chart_id": "DPV2012",
       "sort_order": 288
     },
     {
       "name": "Z UMa",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "UMAZ",
       "aavso_code": "Z UMA",
-      "chart_id": "7.46",
+      "chart_id": "DPV2002",
       "sort_order": 289
     },
     {
       "name": "TX CVn",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CVNTX",
       "aavso_code": "TX CVN",
-      "chart_id": "10.5",
+      "chart_id": "X24604DQ",
       "sort_order": 290
     },
     {
       "name": "V Boo",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "BOOV",
       "aavso_code": "V BOO",
-      "chart_id": "9.27",
+      "chart_id": "DPV2002",
       "sort_order": 291
     },
     {
       "name": "KV Boo",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "BOOKV",
       "aavso_code": "KV BOO",
-      "chart_id": "11.19",
+      "chart_id": "DPV2002",
       "sort_order": 292
     },
     {
       "name": "R CrB",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CRBR",
       "aavso_code": "R CRB",
-      "chart_id": "6.47",
+      "chart_id": "BED2001",
       "sort_order": 293
     },
     {
       "name": "T CrB",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CRBT",
       "aavso_code": "T CRB",
-      "chart_id": "10.5",
+      "chart_id": "X22880AAQ",
       "sort_order": 294
     },
     {
       "name": "V 939 Her",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "HERV939",
       "aavso_code": "V939 HER",
-      "chart_id": "8",
+      "chart_id": "DPV2012",
       "sort_order": 295
     },
     {
       "name": "V 818 Her",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "HERV818",
       "aavso_code": "V818 HER",
-      "chart_id": "8.65",
+      "chart_id": "DPV2012",
       "sort_order": 296
     },
     {
       "name": "V 1294 Aql",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "AQLV1294",
       "aavso_code": "V1294 AQL",
-      "chart_id": "7.33",
+      "chart_id": "OSE2005",
       "sort_order": 297
     },
     {
       "name": "V 923 Aql",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "AQLV923",
       "aavso_code": "V923 AQL",
-      "chart_id": null,
+      "chart_id": "OSE2005",
       "sort_order": 298
     },
     {
       "name": "V 1293 Aql",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "AQLV1293",
       "aavso_code": "V1293 AQL",
-      "chart_id": null,
+      "chart_id": "OSE2005",
       "sort_order": 299
     },
     {
       "name": "V 450 Aql",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "AQLV450",
       "aavso_code": "V450 AQL",
-      "chart_id": null,
+      "chart_id": "OSE2005",
       "sort_order": 300
     },
     {
       "name": "CT Del",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "DELCT",
       "aavso_code": "CT DEL",
-      "chart_id": "7.57",
+      "chart_id": "BED2001",
       "sort_order": 301
     },
     {
       "name": "CZ Del",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "DELCZ",
       "aavso_code": "CZ DEL",
-      "chart_id": null,
+      "chart_id": "BED2001",
       "sort_order": 302
     },
     {
       "name": "KP Lyr",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "LYRKP",
       "aavso_code": "KP LYR",
-      "chart_id": "9.05",
+      "chart_id": "DPV2012",
       "sort_order": 303
     },
     {
       "name": "V 491 Lyr",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "LYRV491",
       "aavso_code": "V491 LYR",
-      "chart_id": "8.76",
+      "chart_id": "DPV2012",
       "sort_order": 304
     },
     {
       "name": "CH Cyg",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CYGCH",
       "aavso_code": "CH CYG",
-      "chart_id": "8.01",
+      "chart_id": "DPV2012",
       "sort_order": 305
     },
     {
       "name": "V 927 Cyg",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CYGV927",
       "aavso_code": "V927 CYG",
-      "chart_id": "10.37",
+      "chart_id": "DPV2012",
       "sort_order": 306
     },
     {
       "name": "AF Cyg",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CYGAF",
       "aavso_code": "AF CYG",
-      "chart_id": "7.23",
+      "chart_id": "DPV2002",
       "sort_order": 307
     },
     {
       "name": "AW Cyg",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CYGAW",
       "aavso_code": "AW CYG",
-      "chart_id": null,
+      "chart_id": "DPV2002",
       "sort_order": 308
     },
     {
       "name": "CI Cyg",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CYGCI",
       "aavso_code": "CI CYG",
-      "chart_id": "11.15",
+      "chart_id": "DPV2012",
       "sort_order": 309
     },
     {
       "name": "V 482 Cyg",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CYGV482",
       "aavso_code": "V482 CYG",
-      "chart_id": "10.92",
+      "chart_id": "DPV2002",
       "sort_order": 310
     },
     {
       "name": "V 1742 Cyg",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CYGV1742",
       "aavso_code": "V1742 CYG",
-      "chart_id": "10.43",
+      "chart_id": "DPV2012",
       "sort_order": 311
     },
     {
       "name": "V 840 Cyg",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CYGV840",
       "aavso_code": "V840 CYG",
-      "chart_id": "10.15",
+      "chart_id": "DPV2002",
       "sort_order": 312
     },
     {
       "name": "AV Cyg",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CYGAV",
       "aavso_code": "AV CYG",
-      "chart_id": null,
+      "chart_id": "DPV2002",
       "sort_order": 313
     },
     {
       "name": "BF Cyg",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CYGBF",
       "aavso_code": "BF CYG",
-      "chart_id": "11.15",
+      "chart_id": "DPV2012",
       "sort_order": 314
     },
     {
       "name": "V 441 Cyg",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CYGV441",
       "aavso_code": "V441 CYG",
-      "chart_id": "10.12",
+      "chart_id": "DPV2012",
       "sort_order": 315
     },
     {
       "name": "V 1805 Cyg",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CYGV1805",
       "aavso_code": "V1805 CYG",
-      "chart_id": "10.59",
+      "chart_id": "DPV2012",
       "sort_order": 316
     },
     {
       "name": "V 1981 Cyg",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CYGV1981",
       "aavso_code": "V1981 CYG",
-      "chart_id": "6.64",
+      "chart_id": "DPV2012",
       "sort_order": 317
     },
     {
       "name": "V 1070 Cyg",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CYGV1070",
       "aavso_code": "V1070 CYG",
-      "chart_id": "7.48",
+      "chart_id": "DPV2012",
       "sort_order": 318
     },
     {
       "name": "SS Cyg",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CYGSS",
       "aavso_code": "SS CYG",
-      "chart_id": "12.1",
+      "chart_id": "2562BQJ",
       "sort_order": 319
     },
     {
       "name": "V 539 Cyg",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CYGV539",
       "aavso_code": "V539 CYG",
-      "chart_id": "9.19",
+      "chart_id": "DPV2012",
       "sort_order": 320
     },
     {
       "name": "CX Lac",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "LACCX",
       "aavso_code": "CX LAC",
-      "chart_id": null,
+      "chart_id": "DPV2012",
       "sort_order": 321
     },
     {
       "name": "SX Lac",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "LACSX",
       "aavso_code": "SX LAC",
-      "chart_id": null,
+      "chart_id": "DPV2012",
       "sort_order": 322
     },
     {
       "name": "TZ Cep",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CEPTZ",
       "aavso_code": "TZ CEP",
-      "chart_id": "10.25",
+      "chart_id": "DPV2012",
       "sort_order": 323
     },
     {
       "name": "SY Cam",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "CAMSY",
       "aavso_code": "SY CAM",
-      "chart_id": "10.14",
+      "chart_id": "DPV2012",
       "sort_order": 324
     },
     {
       "name": "AG Dra",
       "constellation": "BINAR",
-      "type": "VISUAL",
+      "type": "BINAR",
       "vsnet_code": "DRAAG",
       "aavso_code": "AG DRA",
-      "chart_id": "9.48",
+      "chart_id": "DPV2012",
       "sort_order": 325
     },
     {
       "name": "NSV 15581 Cas",
       "constellation": "ECLIPSANTES faint",
-      "type": "VISUAL",
+      "type": "ECL faint",
       "vsnet_code": "NSV15581",
       "aavso_code": "NSV 15581",
-      "chart_id": "na",
+      "chart_id": "DPV2005",
       "sort_order": 326
     },
     {
       "name": "GSC3695-18 Per",
       "constellation": "ECLIPSANTES faint",
-      "type": "VISUAL",
+      "type": "ECL faint",
       "vsnet_code": "GSC36951845",
       "aavso_code": "GSC3695-18",
-      "chart_id": "na",
+      "chart_id": "DPV2005",
       "sort_order": 327
     },
     {
       "name": "NSV 1853 Aur",
       "constellation": "ECLIPSANTES faint",
-      "type": "VISUAL",
+      "type": "ECL faint",
       "vsnet_code": "NSV1853",
       "aavso_code": "NSV 1853",
-      "chart_id": "na",
+      "chart_id": "DPV2005",
       "sort_order": 328
     },
     {
       "name": "NSV 3224 Gem",
       "constellation": "ECLIPSANTES faint",
-      "type": "VISUAL",
+      "type": "ECL faint",
       "vsnet_code": "NSV3224",
       "aavso_code": "NSV 3224",
-      "chart_id": "na",
+      "chart_id": "DPV2005",
       "sort_order": 329
     },
     {
       "name": "NSV 4128 Cam",
       "constellation": "ECLIPSANTES faint",
-      "type": "VISUAL",
+      "type": "ECL faint",
       "vsnet_code": "NSV4128",
       "aavso_code": "NSV 4128",
-      "chart_id": "na",
+      "chart_id": "DPV2005",
       "sort_order": 330
     },
     {
       "name": "NSV 13204 Cyg",
       "constellation": "ECLIPSANTES faint",
-      "type": "VISUAL",
+      "type": "ECL faint",
       "vsnet_code": "NSV13204",
       "aavso_code": "NSV 13204",
-      "chart_id": null,
+      "chart_id": "prosper",
       "sort_order": 331
     },
     {
       "name": "GSC3180-21 Cyg",
       "constellation": "ECLIPSANTES faint",
-      "type": "VISUAL",
+      "type": "ECL faint",
       "vsnet_code": "GSC31802110",
       "aavso_code": "GSC3180-21",
-      "chart_id": "na",
+      "chart_id": "DPV2005",
       "sort_order": 332
     },
     {
       "name": "GSC3612-15 Cyg",
       "constellation": "ECLIPSANTES faint",
-      "type": "VISUAL",
+      "type": "ECL faint",
       "vsnet_code": "GSC36121565",
       "aavso_code": "GSC3612-15",
-      "chart_id": "na",
+      "chart_id": "DPV2005",
       "sort_order": 333
     },
     {
       "name": "GSC4613-03 Cep",
       "constellation": "Eclipsantes bright",
-      "type": "VISUAL",
+      "type": "ECL bright",
       "vsnet_code": "GSC46130333",
       "aavso_code": "GSC4613-03",
-      "chart_id": "na",
+      "chart_id": "DPV2005",
       "sort_order": 334
     },
     {
       "name": "V 389 And",
       "constellation": "Eclipsantes bright",
-      "type": "VISUAL",
+      "type": "ECL bright",
       "vsnet_code": "ANDV389",
       "aavso_code": "V389 AND",
-      "chart_id": "na",
+      "chart_id": "DPV2005",
       "sort_order": 335
     },
     {
       "name": "V 381 And",
       "constellation": "Eclipsantes bright",
-      "type": "VISUAL",
+      "type": "ECL bright",
       "vsnet_code": "ANDV381",
       "aavso_code": "V381 AND",
-      "chart_id": "na",
+      "chart_id": "DPV2005",
       "sort_order": 336
     },
     {
       "name": "NSV 310 And",
       "constellation": "Eclipsantes bright",
-      "type": "VISUAL",
+      "type": "ECL bright",
       "vsnet_code": "NSV310",
       "aavso_code": "NSV 310",
-      "chart_id": "na",
+      "chart_id": "DPV2005",
       "sort_order": 337
     },
     {
       "name": "V 795 Cas",
       "constellation": "Eclipsantes bright",
-      "type": "VISUAL",
+      "type": "ECL bright",
       "vsnet_code": "CASV795",
       "aavso_code": "V795 CAS",
-      "chart_id": "na",
+      "chart_id": "DPV2005",
       "sort_order": 338
     },
     {
       "name": "V 1166 Tau",
       "constellation": "Eclipsantes bright",
-      "type": "VISUAL",
+      "type": "ECL bright",
       "vsnet_code": "TAUV1166",
       "aavso_code": "V1166 TAU",
-      "chart_id": "na",
+      "chart_id": "DPV2005",
       "sort_order": 339
     },
     {
       "name": "NSV 15737 Tau",
       "constellation": "Eclipsantes bright",
-      "type": "VISUAL",
+      "type": "ECL bright",
       "vsnet_code": "NSV15737",
       "aavso_code": "NSV 15737",
-      "chart_id": "na",
+      "chart_id": "OSE2005",
       "sort_order": 340
     },
     {
       "name": "V 1125 Tau",
       "constellation": "Eclipsantes bright",
-      "type": "VISUAL",
+      "type": "ECL bright",
       "vsnet_code": "TAUV1125",
       "aavso_code": "V1125 TAU",
-      "chart_id": "na",
+      "chart_id": "BED2001",
       "sort_order": 341
     },
     {
       "name": "PW Gem",
       "constellation": "Eclipsantes bright",
-      "type": "VISUAL",
+      "type": "ECL bright",
       "vsnet_code": "GEMPW",
       "aavso_code": "PW GEM",
-      "chart_id": "na",
+      "chart_id": "DPV2005",
       "sort_order": 342
     },
     {
       "name": "HD 74057 Cnc",
       "constellation": "Eclipsantes bright",
-      "type": "VISUAL",
+      "type": "ECL bright",
       "vsnet_code": "HD74057",
       "aavso_code": "HD 74057",
-      "chart_id": "na",
+      "chart_id": "DPV2005",
       "sort_order": 343
     },
     {
       "name": "FX UMa",
       "constellation": "Eclipsantes bright",
-      "type": "VISUAL",
+      "type": "ECL bright",
       "vsnet_code": "UMAFX",
       "aavso_code": "FX UMA",
-      "chart_id": "na",
+      "chart_id": "DPV2005",
       "sort_order": 344
     },
     {
       "name": "TV LMi",
       "constellation": "Eclipsantes bright",
-      "type": "VISUAL",
+      "type": "ECL bright",
       "vsnet_code": "LMITV",
       "aavso_code": "TV LMI",
-      "chart_id": "na",
+      "chart_id": "DPV2005",
       "sort_order": 345
     },
     {
       "name": "V 916 Her",
       "constellation": "Eclipsantes bright",
-      "type": "VISUAL",
+      "type": "ECL bright",
       "vsnet_code": "HERV916",
       "aavso_code": "V916 HER",
-      "chart_id": "na",
+      "chart_id": "OSE2004",
       "sort_order": 346
     },
     {
       "name": "V 539 Lyr",
       "constellation": "Eclipsantes bright",
-      "type": "VISUAL",
+      "type": "ECL bright",
       "vsnet_code": "LYRV539",
       "aavso_code": "V539 LYR",
-      "chart_id": "na",
+      "chart_id": "DPV2005",
       "sort_order": 347
     },
     {
       "name": "V 2077 Cyg",
       "constellation": "Eclipsantes bright",
-      "type": "VISUAL",
+      "type": "ECL bright",
       "vsnet_code": "CYGV2077",
       "aavso_code": "V2077 CYG",
-      "chart_id": "na",
+      "chart_id": "DPV2005",
       "sort_order": 348
     },
     {
@@ -3158,7 +3158,7 @@
       "type": "VISUAL",
       "vsnet_code": "CYGV2468",
       "aavso_code": "V2468 CYG",
-      "chart_id": null,
+      "chart_id": "080424",
       "sort_order": 349
     },
     {
@@ -3167,7 +3167,7 @@
       "type": "VISUAL",
       "vsnet_code": "CYGV2491",
       "aavso_code": "V2491 CYG",
-      "chart_id": null,
+      "chart_id": "080424",
       "sort_order": 350
     },
     {
@@ -3176,7 +3176,7 @@
       "type": "VISUAL",
       "vsnet_code": "SGRV5579",
       "aavso_code": "V5579 SGR",
-      "chart_id": null,
+      "chart_id": "080424",
       "sort_order": 351
     },
     {
@@ -3185,7 +3185,7 @@
       "type": "VISUAL",
       "vsnet_code": "SN2014J",
       "aavso_code": "SN 2014J",
-      "chart_id": null,
+      "chart_id": "13174AAF",
       "sort_order": 352
     },
     {
@@ -3194,7 +3194,7 @@
       "type": "VISUAL",
       "vsnet_code": "DELV339",
       "aavso_code": "V339 DEL",
-      "chart_id": null,
+      "chart_id": "13512SBV",
       "sort_order": 353
     },
     {
@@ -3203,7 +3203,7 @@
       "type": "VISUAL",
       "vsnet_code": "CEPV962",
       "aavso_code": "V962 CEP",
-      "chart_id": null,
+      "chart_id": "13257AAO",
       "sort_order": 354
     },
     {
@@ -3212,7 +3212,7 @@
       "type": "VISUAL",
       "vsnet_code": "CEPEE",
       "aavso_code": "EE CEP",
-      "chart_id": null,
+      "chart_id": "DPV2014",
       "sort_order": 355
     },
     {
@@ -3221,7 +3221,7 @@
       "type": "VISUAL",
       "vsnet_code": "SN2017eaw",
       "aavso_code": "SN 2017eaw",
-      "chart_id": null,
+      "chart_id": "X18809MM",
       "sort_order": 356
     },
     {
@@ -3230,7 +3230,7 @@
       "type": "VISUAL",
       "vsnet_code": "PERV392",
       "aavso_code": "V392 PER",
-      "chart_id": null,
+      "chart_id": "X22399DW",
       "sort_order": 357
     },
     {
@@ -3239,7 +3239,7 @@
       "type": "VISUAL",
       "vsnet_code": "ASASSN-20aj",
       "aavso_code": "ASASSN-20aj",
-      "chart_id": "na",
+      "chart_id": "X25108BRQ",
       "sort_order": 358
     },
     {
@@ -3248,7 +3248,7 @@
       "type": "VISUAL",
       "vsnet_code": "C/2019 Y4 (ATLAS)",
       "aavso_code": "C/2019 Y4 (ATLAS)",
-      "chart_id": "9.86",
+      "chart_id": "X22399DW",
       "sort_order": 359
     },
     {
@@ -3257,7 +3257,7 @@
       "type": "VISUAL",
       "vsnet_code": "PGIR20dkk",
       "aavso_code": "PGIR20dkk",
-      "chart_id": "na",
+      "chart_id": "X25381HB",
       "sort_order": 360
     },
     {
@@ -3266,7 +3266,7 @@
       "type": "VISUAL",
       "vsnet_code": "PNV J17580848-300537",
       "aavso_code": "N Sgr 2020 No. 3",
-      "chart_id": "11.6",
+      "chart_id": "X25561NR",
       "sort_order": 361
     },
     {
@@ -3275,7 +3275,7 @@
       "type": "VISUAL",
       "vsnet_code": "CASV1405",
       "aavso_code": "V1405 Cas",
-      "chart_id": "12",
+      "chart_id": "X26378UV",
       "sort_order": 362
     },
     {
@@ -3284,7 +3284,7 @@
       "type": "VISUAL",
       "vsnet_code": "HERV1674",
       "aavso_code": "V1674 Her",
-      "chart_id": "11.6",
+      "chart_id": "X26664AIB",
       "sort_order": 363
     },
     {
@@ -3293,7 +3293,7 @@
       "type": "VISUAL",
       "vsnet_code": "SCOU",
       "aavso_code": "U SCO",
-      "chart_id": "13.5",
+      "chart_id": "X27999ALQ",
       "sort_order": 364
     },
     {
@@ -3302,7 +3302,7 @@
       "type": "VISUAL",
       "vsnet_code": "SN2023ixf",
       "aavso_code": "SN 2023ixf",
-      "chart_id": "15.5",
+      "chart_id": "X28720DK",
       "sort_order": 365
     },
     {
@@ -3311,7 +3311,7 @@
       "type": "VISUAL",
       "vsnet_code": "SN2023ixf",
       "aavso_code": "SN 2023ixf",
-      "chart_id": "15.2",
+      "chart_id": "X37610AZ",
       "sort_order": 366
     },
     {
@@ -3320,7 +3320,7 @@
       "type": "VISUAL",
       "vsnet_code": "SERV691",
       "aavso_code": "V691 SER",
-      "chart_id": "13.95",
+      "chart_id": "X40489UU",
       "sort_order": 367
     }
   ],
