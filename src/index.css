@@ -8,35 +8,44 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Astronomy logbook — deep night sky theme */
+    --background: 230 35% 7%;
+    --foreground: 210 40% 96%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 230 30% 10%;
+    --card-foreground: 210 40% 96%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 230 30% 10%;
+    --popover-foreground: 210 40% 96%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 45 95% 62%;
+    --primary-foreground: 230 40% 10%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 230 25% 16%;
+    --secondary-foreground: 210 40% 96%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 230 22% 14%;
+    --muted-foreground: 220 15% 65%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 200 90% 60%;
+    --accent-foreground: 230 40% 10%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 75% 58%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 230 25% 18%;
+    --input: 230 25% 16%;
+    --ring: 45 95% 62%;
 
     --radius: 0.5rem;
+
+    /* Constellation link colors (matches the inspiration image) */
+    --link: 220 95% 70%;
+    --link-visited: 280 70% 70%;
+    --link-active: 175 80% 55%;
+
+    --gradient-night: radial-gradient(ellipse at top, hsl(230 40% 14%) 0%, hsl(230 35% 6%) 70%);
+    --shadow-glow: 0 0 30px hsl(45 95% 62% / 0.15);
 
     --sidebar-background: 0 0% 98%;
 
@@ -101,5 +110,24 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    background-image: var(--gradient-night);
+    background-attachment: fixed;
+    font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  }
+
+  /* Old-school underlined constellation links */
+  .nav-link {
+    @apply underline underline-offset-2 cursor-pointer transition-colors;
+    color: hsl(var(--link));
+  }
+  .nav-link:visited {
+    color: hsl(var(--link-visited));
+  }
+  .nav-link[data-active="true"] {
+    color: hsl(var(--link-active));
+    font-weight: 600;
+  }
+  .nav-link:hover {
+    color: hsl(var(--primary));
   }
 }

@@ -1,0 +1,102 @@
+// Astronomical helpers: Julian Date conversion + magnitude estimate.
+
+/**
+ * Convert a Date (UTC) to Julian Date (full).
+ * Standard Meeus algorithm.
+ */
+export function dateToJD(d: Date): number {
+  const year = d.getUTCFullYear();
+  const month = d.getUTCMonth() + 1;
+  const day =
+    d.getUTCDate() +
+    (d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600) / 24;
+
+  let Y = year;
+  let M = month;
+  if (M <= 2) {
+    Y -= 1;
+    M += 12;
+  }
+  const A = Math.floor(Y / 100);
+  const B = 2 - A + Math.floor(A / 4);
+  return (
+    Math.floor(365.25 * (Y + 4716)) +
+    Math.floor(30.6001 * (M + 1)) +
+    day +
+    B -
+    1524.5
+  );
+}
+
+/** YYYYMMDD.fff for VSNET (UT date with day fraction, 3 decimals). */
+export function vsnetDate(d: Date): string {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = d.getUTCDate();
+  const frac =
+    (d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600) / 24;
+  const dayWithFrac = (day + frac).toFixed(3).padStart(6, "0");
+  return `${y}${m}${dayWithFrac}`;
+}
+
+/** YYYY-MM-DD.fff for MEDUZA */
+export function meduzaDate(d: Date): string {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = d.getUTCDate();
+  const frac =
+    (d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600) / 24;
+  const dayWithFrac = (day + frac).toFixed(3).padStart(6, "0");
+  return `${y}-${m}-${dayWithFrac}`;
+}
+
+/** Filename prefix yyyymmdd */
+export function filenameDate(d: Date): string {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}${m}${day}`;
+}
+
+export interface ObsInput {
+  a?: string | null;
+  pasos_a?: number | null;
+  pasos_b?: number | null;
+  b?: string | null;
+  limit_value?: string | null;
+}
+
+/**
+ * Compute the visual magnitude using the Argelander step method:
+ *   mag = A + (Pasos A / (Pasos A + Pasos B)) * (B - A)
+ * Returns a string formatted to 2 decimals, or a "<x.x" limit, or null if not estimable.
+ */
+export function computeMagnitude(o: ObsInput): { value: string | null; numeric: number | null } {
+  if (o.limit_value && o.limit_value.trim()) {
+    return { value: o.limit_value.trim(), numeric: null };
+  }
+  const aNum = parseFloat((o.a ?? "").toString());
+  const bNum = parseFloat((o.b ?? "").toString());
+  const pa = o.pasos_a ?? null;
+  const pb = o.pasos_b ?? null;
+  if (
+    Number.isFinite(aNum) &&
+    Number.isFinite(bNum) &&
+    pa !== null &&
+    pb !== null &&
+    pa + pb > 0
+  ) {
+    const mag = aNum + (pa / (pa + pb)) * (bNum - aNum);
+    return { value: mag.toFixed(2), numeric: mag };
+  }
+  return { value: null, numeric: null };
+}
+
+/** Build the AAVSO comment field "A-paV-pb-B" matching the ODS column. */
+export function aavsoEstima(o: ObsInput): string {
+  if (o.limit_value && o.limit_value.trim()) return o.limit_value.trim();
+  if (o.a && o.b && o.pasos_a !== null && o.pasos_b !== null) {
+    return `${o.a}-${o.pasos_a}V${o.pasos_b}-${o.b}`;
+  }
+  return "";
+}
