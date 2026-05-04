@@ -110,5 +110,24 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    background-image: var(--gradient-night);
+    background-attachment: fixed;
+    font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  }
+
+  /* Old-school underlined constellation links */
+  .nav-link {
+    @apply underline underline-offset-2 cursor-pointer transition-colors;
+    color: hsl(var(--link));
+  }
+  .nav-link:visited {
+    color: hsl(var(--link-visited));
+  }
+  .nav-link[data-active="true"] {
+    color: hsl(var(--link-active));
+    font-weight: 600;
+  }
+  .nav-link:hover {
+    color: hsl(var(--primary));
   }
 }
