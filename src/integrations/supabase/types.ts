@@ -14,7 +14,171 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      observations: {
+        Row: {
+          a: string | null
+          b: string | null
+          created_at: string
+          id: string
+          limit_value: string | null
+          note: string | null
+          pasos_a: number | null
+          pasos_b: number | null
+          session_id: string
+          star_id: string
+          updated_at: string
+          user_id: string
+          ut_time: string | null
+        }
+        Insert: {
+          a?: string | null
+          b?: string | null
+          created_at?: string
+          id?: string
+          limit_value?: string | null
+          note?: string | null
+          pasos_a?: number | null
+          pasos_b?: number | null
+          session_id: string
+          star_id: string
+          updated_at?: string
+          user_id: string
+          ut_time?: string | null
+        }
+        Update: {
+          a?: string | null
+          b?: string | null
+          created_at?: string
+          id?: string
+          limit_value?: string | null
+          note?: string | null
+          pasos_a?: number | null
+          pasos_b?: number | null
+          session_id?: string
+          star_id?: string
+          updated_at?: string
+          user_id?: string
+          ut_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "observations_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "observations_star_id_fkey"
+            columns: ["star_id"]
+            isOneToOne: false
+            referencedRelation: "stars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          catalog_seeded: boolean
+          created_at: string
+          fecha_referencia: string
+          obs_code: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          catalog_seeded?: boolean
+          created_at?: string
+          fecha_referencia?: string
+          obs_code?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          catalog_seeded?: boolean
+          created_at?: string
+          fecha_referencia?: string
+          obs_code?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sessions: {
+        Row: {
+          created_at: string
+          id: string
+          jd: number | null
+          notes: string | null
+          observed_at_utc: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          jd?: number | null
+          notes?: string | null
+          observed_at_utc?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          jd?: number | null
+          notes?: string | null
+          observed_at_utc?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      stars: {
+        Row: {
+          aavso_code: string | null
+          chart_id: string | null
+          constellation: string
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          sort_order: number
+          type: Database["public"]["Enums"]["star_type"]
+          updated_at: string
+          user_id: string
+          vsnet_code: string | null
+        }
+        Insert: {
+          aavso_code?: string | null
+          chart_id?: string | null
+          constellation: string
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          sort_order?: number
+          type?: Database["public"]["Enums"]["star_type"]
+          updated_at?: string
+          user_id: string
+          vsnet_code?: string | null
+        }
+        Update: {
+          aavso_code?: string | null
+          chart_id?: string | null
+          constellation?: string
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          sort_order?: number
+          type?: Database["public"]["Enums"]["star_type"]
+          updated_at?: string
+          user_id?: string
+          vsnet_code?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +187,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      star_type: "VISUAL" | "BINAR" | "ECL faint" | "ECL bright"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +314,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      star_type: ["VISUAL", "BINAR", "ECL faint", "ECL bright"],
+    },
   },
 } as const
