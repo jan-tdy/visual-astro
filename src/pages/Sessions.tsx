@@ -76,6 +76,7 @@ export default function Sessions() {
       if (lastObs && lastObs.length > 0) {
         const rows = lastObs.map((o) => ({
           ...o,
+          ut_time: null,
           session_id: created.id,
           user_id: user.id,
         }));

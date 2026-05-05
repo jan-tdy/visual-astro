@@ -112,7 +112,20 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
     background-image: var(--gradient-night);
     background-attachment: fixed;
-    font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+    font-family: 'Roboto Flex', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-optical-sizing: auto;
+    font-variation-settings: "wdth" 100;
+    letter-spacing: -0.005em;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Roboto Serif', 'Roboto Flex', serif;
+    font-optical-sizing: auto;
+    letter-spacing: -0.02em;
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
   }
 
   /* Old-school underlined constellation links */

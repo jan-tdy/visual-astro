@@ -172,6 +172,8 @@ export default function SessionEditor() {
     for (const o of Object.values(obsByStar)) {
       const s = byId.get(o.star_id);
       if (!s) continue;
+      // Iba záznamy s vyplneným časom (UT)
+      if (!o.ut_time || !o.ut_time.trim()) continue;
       rows.push({
         star_name: s.name,
         vsnet_code: s.vsnet_code,
