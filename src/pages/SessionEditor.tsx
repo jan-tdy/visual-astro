@@ -226,7 +226,7 @@ export default function SessionEditor() {
   })();
 
   const filledCount = Object.values(obsByStar).filter(
-    (o) => computeMagnitude(o).value !== null,
+    (o) => !!(o.ut_time && o.ut_time.trim()) && computeMagnitude(o).value !== null,
   ).length;
 
   return (
