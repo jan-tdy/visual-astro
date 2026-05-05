@@ -181,7 +181,6 @@ export default function SessionEditor() {
         chart_id: s.chart_id,
         a: o.a, pasos_a: o.pasos_a, pasos_b: o.pasos_b, b: o.b,
         limit_value: o.limit_value, note: o.note,
-        ut_time: o.ut_time,
       });
     }
     return rows;
