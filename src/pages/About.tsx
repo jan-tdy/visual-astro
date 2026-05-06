@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { AppHeader } from "@/components/app/AppHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Telescope, Star, Clock, Download, BookOpen, Settings as SettingsIcon, Layers, Sparkles, ScanLine } from "lucide-react";
+import { Telescope, Star, Clock, Download, BookOpen, Settings as SettingsIcon, Layers, Sparkles, ScanLine, HelpCircle, Cpu } from "lucide-react";
 
 const features = [
   { icon: Telescope, title: "Pozorovacie session", desc: "Vytvor novú session jedným klikom — buď prázdnu, alebo ako kópiu z poslednej s automaticky vynulovanými časmi." },
@@ -90,6 +90,53 @@ export default function About() {
                 záznam a aplikácia sama vyplní hviezdy, hodnoty A/Paso/B aj UT časy. Cieľom je úplne odstrániť manuálne prepisovanie.
               </p>
             </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 mt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <HelpCircle className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">Návod — ako používať</h2>
+          </div>
+          <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
+            <li><strong>Vytvor session</strong> v zozname Sessions — buď prázdnu, alebo kópiu poslednej (predvyplnené hodnoty, vynulované UT časy).</li>
+            <li><strong>Nastav UT dátum a čas</strong> v hlavičke editora. JD sa dopočíta automaticky.</li>
+            <li><strong>Naviguj cez súhvezdia</strong> hore alebo filtruj podľa typu (VISUAL, BINAR, ECL).</li>
+            <li><strong>Pre každú hviezdu</strong> zadaj porovnávacie hviezdy A a B, počty pasos (Paso A, Paso B) a UT čas pozorovania v tvare <code>hh:mm</code> (medzeru nahradí dvojbodka automaticky).</li>
+            <li>Ak hviezda nebola viditeľná, zadaj iba <strong>limit</strong> (napr. <code>&lt;14.9</code>).</li>
+            <li>Vpravo hore vidíš počet <strong>vyplnených pozorovaní</strong> (so zadaným časom).</li>
+            <li><strong>Importuj</strong> existujúcu tabuľku (.xlsx / .ods / .csv) tlačidlom „Import" v hlavičke editora — hodnoty sa namapujú podľa názvov hviezd.</li>
+            <li><strong>Exportuj</strong> do VSNET / AAVSO / MEDUZA. Ikona oka zobrazí náhľad pred stiahnutím.</li>
+          </ol>
+        </Card>
+
+        <Card className="p-6 mt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Cpu className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">Ako to funguje technicky</h2>
+          </div>
+          <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+            <p>
+              Aplikácia je <strong>React + TypeScript</strong> single-page app, postavená na Vite. UI komponenty
+              sú postavené nad <strong>Tailwind CSS</strong> a knižnicou shadcn/ui. Pre stav pozorovaní využíva
+              optimistický update s debounced zápisom do databázy (~600 ms), takže neexistuje tlačidlo „Uložiť" —
+              všetko sa ukladá automaticky.
+            </p>
+            <p>
+              Backend beží na <strong>Lovable Cloud</strong> (PostgreSQL + autentifikácia). Tabuľky <code>sessions</code>,
+              <code> observations</code>, <code>stars</code> a <code>profiles</code> sú zabezpečené pomocou
+              <strong> Row-Level Security</strong> — vidíš a meníš iba vlastné dáta.
+            </p>
+            <p>
+              <strong>Juliánsky dátum</strong> sa počíta z UT pomocou klasickej Meeusovej formuly. <strong>Magnitúda</strong>
+              vychádza z Argelanderovej metódy: <code className="font-mono">mag = A + (PA / (PA + PB)) · (B − A)</code>,
+              zaokrúhlená na jedno desatinné miesto. Limity sa exportujú s prefixom <code>&lt;</code>.
+            </p>
+            <p>
+              <strong>Exporty</strong> sú generované klientsky — VSNET, AAVSO (Visual File Format) a MEDUZA majú každý
+              vlastný formátovač s presne danou šírkou stĺpcov a hlavičkami. Importér používa knižnicu <code>SheetJS (xlsx)</code>
+              a párovanie podľa názvu hviezdy (case-insensitive).
+            </p>
           </div>
         </Card>
       </main>
