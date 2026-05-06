@@ -6,10 +6,11 @@ import { AppHeader } from "@/components/app/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, Download, FileText, ChevronLeft, X } from "lucide-react";
+import { Loader2, Download, FileText, ChevronLeft, X, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
 import { buildAAVSO, buildMEDUZA, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
+import * as XLSX from "xlsx";
 
 type StarType = "VISUAL" | "BINAR" | "ECL faint" | "ECL bright";
 type Star = {
@@ -71,6 +72,7 @@ export default function SessionEditor() {
   const [activeConst, setActiveConst] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState<{ name: string; text: string; filename: string } | null>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load session, stars, observations, profile
   useEffect(() => {
@@ -205,6 +207,76 @@ export default function SessionEditor() {
     }
     if (preview) setPreviewing({ name, text, filename });
     else downloadText(filename, text);
+  };
+
+  // ------- Import from XLSX/ODS -------
+  const handleImportFile = async (file: File) => {
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json<any>(sheet, { header: 1, defval: null }) as any[][];
+      // Try detect header row containing "Hviezda" or "Star"
+      let headerIdx = rows.findIndex((r) =>
+        r?.some((c) => typeof c === "string" && /hviezda|star|estrella/i.test(c)),
+      );
+      if (headerIdx < 0) headerIdx = 0;
+      const header = rows[headerIdx].map((c) => (c == null ? "" : String(c).trim().toLowerCase()));
+      const findCol = (...keys: string[]) =>
+        header.findIndex((h) => keys.some((k) => h === k || h.includes(k)));
+      const cName = findCol("hviezda", "star", "estrella");
+      const cA = header.findIndex((h) => h === "a");
+      const cPA = findCol("paso a", "pa");
+      const cPB = findCol("paso b", "pb");
+      const cB = header.findIndex((h) => h === "b");
+      const cLim = findCol("</=", "<=", "limit");
+      const cUT = findCol("ut", "čas", "cas", "time");
+      const cNote = findCol("nota", "note", "poznám");
+      if (cName < 0) {
+        toast.error("Nenašiel sa stĺpec s názvom hviezdy");
+        return;
+      }
+      const byName = new Map(stars.map((s) => [s.name.toLowerCase().trim(), s]));
+      let matched = 0;
+      for (let i = headerIdx + 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r) continue;
+        const nameRaw = r[cName];
+        if (!nameRaw) continue;
+        const name = String(nameRaw).toLowerCase().trim();
+        const star = byName.get(name);
+        if (!star) continue;
+        const get = (idx: number) => (idx >= 0 && r[idx] != null && r[idx] !== "" ? r[idx] : null);
+        const num = (v: any) => (v == null ? null : Number.isFinite(+v) ? parseInt(String(v)) : null);
+        const utRaw = get(cUT);
+        let ut: string | null = null;
+        if (utRaw != null) {
+          if (typeof utRaw === "number") {
+            // Excel time fraction of a day
+            const totalMin = Math.round(utRaw * 24 * 60);
+            const hh = Math.floor(totalMin / 60) % 24;
+            const mm = totalMin % 60;
+            ut = `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+          } else {
+            ut = String(utRaw).trim().replace(/\s+/g, ":");
+          }
+        }
+        const patch: Partial<Obs> = {
+          a: get(cA) != null ? String(get(cA)) : null,
+          pasos_a: num(get(cPA)),
+          pasos_b: num(get(cPB)),
+          b: get(cB) != null ? String(get(cB)) : null,
+          limit_value: get(cLim) != null ? String(get(cLim)) : null,
+          ut_time: ut,
+          note: get(cNote) != null ? String(get(cNote)) : null,
+        };
+        updateObs(star.id, patch);
+        matched++;
+      }
+      toast.success(`Importovaných ${matched} hviezd`);
+    } catch (e: any) {
+      toast.error("Chyba pri importe: " + e.message);
+    }
   };
 
   if (loading) {
