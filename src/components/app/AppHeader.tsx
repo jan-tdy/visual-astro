@@ -28,9 +28,9 @@ export function AppHeader() {
   return (
     <header className="border-b border-border bg-card/60 backdrop-blur sticky top-0 z-30">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
-        <Link to="/" className="text-lg font-semibold tracking-wide text-primary inline-flex items-center gap-1.5">
+        <Link to="/" className="text-lg font-semibold tracking-wide text-primary inline-flex items-center gap-2">
           ✦ Reducciones
-          <span className="text-[9px] font-semibold uppercase tracking-wider px-1 py-px rounded bg-accent/15 text-accent border border-accent/30 leading-none">
+          <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-accent/15 text-accent border border-accent/30">
             beta
           </span>
         </Link>
