@@ -6,7 +6,7 @@ import { AppHeader } from "@/components/app/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, Download, FileText, ChevronLeft, X } from "lucide-react";
+import { Loader2, Download, FileText, ChevronLeft, X, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
 import { buildAAVSO, buildMEDUZA, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
@@ -359,15 +359,30 @@ export default function SessionEditor() {
                             <Input value={o?.limit_value ?? ""} onChange={(e) => updateObs(s.id, { limit_value: e.target.value || null })} className="h-7 text-xs" placeholder="<14.9" />
                           </td>
                           <td className="px-1 py-1">
-                            <Input
-                              value={o?.ut_time ?? ""}
-                              onChange={(e) => {
-                                const v = e.target.value.replace(/\s+/g, ":");
-                                updateObs(s.id, { ut_time: v || null });
-                              }}
-                              className="h-7 text-xs"
-                              placeholder="hh:mm"
-                            />
+                            <div className="flex gap-0.5">
+                              <Input
+                                value={o?.ut_time ?? ""}
+                                onChange={(e) => {
+                                  const v = e.target.value.replace(/\s+/g, ":");
+                                  updateObs(s.id, { ut_time: v || null });
+                                }}
+                                className="h-7 text-xs"
+                                placeholder="hh:mm"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const now = new Date();
+                                  const hh = String(now.getUTCHours()).padStart(2, "0");
+                                  const mm = String(now.getUTCMinutes()).padStart(2, "0");
+                                  updateObs(s.id, { ut_time: `${hh}:${mm}` });
+                                }}
+                                title="Vložiť aktuálny UT čas"
+                                className="h-7 w-7 shrink-0 flex items-center justify-center rounded-md text-muted-foreground hover:text-primary hover:bg-secondary transition-colors"
+                              >
+                                <Clock className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </td>
                           <td className="px-1 py-1">
                             <Input value={o?.note ?? ""} onChange={(e) => updateObs(s.id, { note: e.target.value || null })} className="h-7 text-xs" />
