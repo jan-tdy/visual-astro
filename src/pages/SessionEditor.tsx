@@ -359,7 +359,15 @@ export default function SessionEditor() {
                             <Input value={o?.limit_value ?? ""} onChange={(e) => updateObs(s.id, { limit_value: e.target.value || null })} className="h-7 text-xs" placeholder="<14.9" />
                           </td>
                           <td className="px-1 py-1">
-                            <Input value={o?.ut_time ?? ""} onChange={(e) => updateObs(s.id, { ut_time: e.target.value || null })} className="h-7 text-xs" />
+                            <Input
+                              value={o?.ut_time ?? ""}
+                              onChange={(e) => {
+                                const v = e.target.value.replace(/\s+/g, ":");
+                                updateObs(s.id, { ut_time: v || null });
+                              }}
+                              className="h-7 text-xs"
+                              placeholder="hh:mm"
+                            />
                           </td>
                           <td className="px-1 py-1">
                             <Input value={o?.note ?? ""} onChange={(e) => updateObs(s.id, { note: e.target.value || null })} className="h-7 text-xs" />

@@ -42,7 +42,7 @@ export default function Sessions() {
     setLoading(true);
     const { data, error } = await supabase
       .from("sessions")
-      .select("id, observed_at_utc, jd, notes, observations(count)")
+      .select("id, observed_at_utc, jd, notes, observations(ut_time)")
       .order("observed_at_utc", { ascending: false });
     if (error) {
       toast.error(error.message);
@@ -50,7 +50,9 @@ export default function Sessions() {
       setSessions(
         (data ?? []).map((s: any) => ({
           ...s,
-          obs_count: s.observations?.[0]?.count ?? 0,
+          obs_count: (s.observations ?? []).filter(
+            (o: any) => o.ut_time && String(o.ut_time).trim(),
+          ).length,
         })),
       );
     }
@@ -89,6 +91,10 @@ export default function Sessions() {
   };
 
   const remove = async (id: string) => {
+    if (sessions[0]?.id === id) {
+      toast.error("Poslednú session nie je možné vymazať");
+      return;
+    }
     if (!confirm("Naozaj zmazať session?")) return;
     const { error } = await supabase.from("sessions").delete().eq("id", id);
     if (error) return toast.error(error.message);
@@ -124,7 +130,7 @@ export default function Sessions() {
           </Card>
         ) : (
           <div className="space-y-2">
-            {sessions.map((s) => (
+            {sessions.map((s, idx) => (
               <Card key={s.id} className="p-4 flex items-center justify-between hover:border-primary/40 transition-colors">
                 <Link to={`/session/${s.id}`} className="flex-1">
                   <div className="font-medium">
@@ -135,9 +141,11 @@ export default function Sessions() {
                     {s.notes ? ` · ${s.notes}` : ""}
                   </div>
                 </Link>
-                <Button variant="ghost" size="icon" onClick={() => remove(s.id)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+                {idx !== 0 && (
+                  <Button variant="ghost" size="icon" onClick={() => remove(s.id)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                )}
               </Card>
             ))}
           </div>
