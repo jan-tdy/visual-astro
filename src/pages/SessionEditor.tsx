@@ -321,7 +321,7 @@ export default function SessionEditor() {
               className="scroll-mt-40"
             >
               <h2 className="text-lg font-semibold mb-2 text-primary">{c}</h2>
-              <Card className="overflow-x-auto">
+              <Card className="overflow-x-auto rounded-md">
                 <table className="w-full text-sm">
                   <thead className="border-b border-border bg-secondary/40">
                     <tr className="text-left whitespace-nowrap">
@@ -388,8 +388,21 @@ export default function SessionEditor() {
 
       {/* Preview overlay */}
       {previewing && (
-        <div className="fixed inset-0 bg-background/90 z-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-3xl max-h-[80vh] flex flex-col">
+        <div
+          className="fixed inset-0 bg-background/90 z-50 flex items-center justify-center p-4"
+          onClick={() => setPreviewing(null)}
+        >
+          <Card
+            className="w-full max-w-3xl max-h-[80vh] flex flex-col relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setPreviewing(null)}
+              aria-label="Zavrieť"
+              className="absolute -top-3 -right-3 h-9 w-9 rounded-full bg-card border border-border shadow-md flex items-center justify-center hover:bg-secondary transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
             <div className="flex items-center justify-between p-4 border-b border-border">
               <div>
                 <div className="font-semibold">{previewing.name}</div>

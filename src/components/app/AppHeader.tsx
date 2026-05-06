@@ -28,7 +28,12 @@ export function AppHeader() {
   return (
     <header className="border-b border-border bg-card/60 backdrop-blur sticky top-0 z-30">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
-        <Link to="/" className="text-lg font-semibold tracking-wide text-primary">✦ Reducciones</Link>
+        <Link to="/" className="text-lg font-semibold tracking-wide text-primary inline-flex items-center gap-2">
+          ✦ Reducciones
+          <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-accent/15 text-accent border border-accent/30">
+            beta
+          </span>
+        </Link>
         <nav className="hidden sm:flex items-center gap-1">
           {link("/", "Sessions", ListChecks)}
           {link("/catalog", "Katalóg", BookOpen)}

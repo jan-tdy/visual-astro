@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { AppHeader } from "@/components/app/AppHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Telescope, Star, Clock, Download, BookOpen, Settings as SettingsIcon, Layers, Sparkles } from "lucide-react";
+import { Telescope, Star, Clock, Download, BookOpen, Settings as SettingsIcon, Layers, Sparkles, ScanLine } from "lucide-react";
 
 const features = [
   { icon: Telescope, title: "Pozorovacie session", desc: "Vytvor novú session jedným klikom — buď prázdnu, alebo ako kópiu z poslednej s automaticky vynulovanými časmi." },
@@ -71,6 +71,26 @@ export default function About() {
           <p className="text-xs text-muted-foreground">
             Údaje sú uložené v zabezpečenej cloudovej databáze, viazané na tvoje konto.
           </p>
+        </Card>
+
+        <Card className="p-6 mt-6 border-accent/40 bg-accent/5">
+          <div className="flex items-start gap-3">
+            <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-accent/15 text-accent shrink-0">
+              <ScanLine className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-xl font-semibold">OCR & AI skenovanie</h2>
+                <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-accent/15 text-accent border border-accent/30">
+                  čoskoro
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                V budúcnosti pribudne automatické rozpoznávanie ručne písaných tabuliek pomocou AI — odfotíš svoj papierový
+                záznam a aplikácia sama vyplní hviezdy, hodnoty A/Paso/B aj UT časy. Cieľom je úplne odstrániť manuálne prepisovanie.
+              </p>
+            </div>
+          </div>
         </Card>
       </main>
     </div>
