@@ -503,9 +503,6 @@ export default function SessionEditor() {
                 <Button size="sm" onClick={() => downloadText(previewing.filename, previewing.text)}>
                   <Download className="h-4 w-4 mr-1" /> Stiahnuť
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => setPreviewing(null)}>
-                  <X className="h-4 w-4" />
-                </Button>
               </div>
             </div>
             <pre className="p-4 overflow-auto text-xs font-mono whitespace-pre">{previewing.text}</pre>
