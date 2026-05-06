@@ -353,6 +353,22 @@ export default function SessionEditor() {
                 </Button>
               </div>
             ))}
+            <div className="ml-auto">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls,.ods,.csv"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleImportFile(f);
+                  e.target.value = "";
+                }}
+              />
+              <Button size="sm" variant="secondary" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="h-3.5 w-3.5 mr-1" /> Import (.xlsx/.ods)
+              </Button>
+            </div>
           </div>
         </Card>
 
