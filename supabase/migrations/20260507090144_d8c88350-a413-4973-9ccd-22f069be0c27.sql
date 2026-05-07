@@ -1,0 +1,1 @@
+ALTER TABLE public.sessions ADD COLUMN IF NOT EXISTS is_favorite boolean NOT NULL DEFAULT false;

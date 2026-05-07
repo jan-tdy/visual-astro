@@ -108,6 +108,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_favorite: boolean
           jd: number | null
           notes: string | null
           observed_at_utc: string
@@ -117,6 +118,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_favorite?: boolean
           jd?: number | null
           notes?: string | null
           observed_at_utc?: string
@@ -126,6 +128,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_favorite?: boolean
           jd?: number | null
           notes?: string | null
           observed_at_utc?: string
