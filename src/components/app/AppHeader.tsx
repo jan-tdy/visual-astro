@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { LogOut, BookOpen, Settings as SettingsIcon, ListChecks, Info, Sun, Moon, Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
-import logo from "@/assets/logo.png";
 
 export function AppHeader() {
   const { signOut, user } = useAuth();
@@ -30,9 +29,8 @@ export function AppHeader() {
     <header className="border-b border-border bg-card/60 backdrop-blur sticky top-0 z-30">
       <div className="container mx-auto px-4 py-1.5 flex items-center justify-between gap-4">
         <Link to="/" className="text-lg font-semibold tracking-wide text-primary inline-flex items-center gap-2">
-          <img src={logo} alt="Visual Astro" width={24} height={24} className="h-6 w-6" />
-          Visual Astro
-          <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-accent/15 text-accent border border-accent/30">
+          ✦ Reducciones
+          <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/30">
             beta
           </span>
         </Link>

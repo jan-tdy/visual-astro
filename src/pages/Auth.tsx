@@ -48,7 +48,7 @@ export default function Auth() {
       <Card className="w-full max-w-sm p-6 space-y-5">
         <div className="text-center">
           <div className="text-3xl mb-1 text-primary">✦</div>
-          <h1 className="text-xl font-semibold">Visual Astro</h1>
+          <h1 className="text-xl font-semibold">Reducciones</h1>
           <p className="text-sm text-muted-foreground">Pozorovateľský denník premenných hviezd</p>
         </div>
         <form onSubmit={submit} className="space-y-3">
