@@ -1,4 +1,4 @@
-import { computeMagnitude, vsnetDate, meduzaDate, aavsoEstima, type ObsInput } from "@/lib/astro";
+import { computeMagnitude, vsnetDate, meduzaDate, aavsoEstima, resolveCompValue, type ObsInput } from "@/lib/astro";
 
 export interface ExportRow extends ObsInput {
   star_name: string;
@@ -6,6 +6,7 @@ export interface ExportRow extends ObsInput {
   aavso_code?: string | null;
   chart_id?: string | null;
   note?: string | null;
+  ut_time?: string | null;
 }
 
 export interface ExportContext {
@@ -19,14 +20,24 @@ function magOrLimit(r: ExportRow): string | null {
   return m.value;
 }
 
+function rowDate(row: ExportRow, ctx: ExportContext): Date {
+  if (!row.ut_time) return ctx.observedAt;
+  const m = String(row.ut_time).trim().match(/^(\d{1,2})[:.\s]+(\d{1,2})/);
+  if (!m) return ctx.observedAt;
+  const h = parseInt(m[1]), mm = parseInt(m[2]);
+  const d = new Date(ctx.observedAt);
+  d.setUTCHours(h, mm, 0, 0);
+  return d;
+}
+
 export function buildVSNET(rows: ExportRow[], ctx: ExportContext): string {
-  const dateStr = vsnetDate(ctx.observedAt);
   const lines: string[] = [];
   for (const r of rows) {
     const mag = magOrLimit(r);
     if (!mag) continue;
     if (!r.vsnet_code) continue;
     const code = r.vsnet_code.trim().padEnd(8, " ");
+    const dateStr = vsnetDate(rowDate(r, ctx));
     lines.push(`${code} ${dateStr} ${mag.padStart(5, " ")} ${ctx.obsCode}`);
   }
   return lines.join("\n") + "\n";
@@ -47,12 +58,18 @@ export function buildAAVSO(rows: ExportRow[], ctx: ExportContext): string {
     if (!mag) continue;
     if (!r.aavso_code) continue;
     const isLimit = !!(r.limit_value && r.limit_value.trim());
-    const comp1 = isLimit ? (r.b ? r.b.replace("<", "") : (r.limit_value ?? "").replace("<", "")) : (r.a ?? "");
-    const comp2 = isLimit ? "na" : (r.b ?? "");
+    // Resolve A/B (which may be a letter) to numeric magnitudes for the AAVSO comp fields.
+    const aVal = resolveCompValue(r.star_name, r.a ?? null);
+    const bVal = resolveCompValue(r.star_name, r.b ?? null);
+    const comp1 = isLimit
+      ? (Number.isFinite(bVal) ? bVal.toFixed(2) : (r.limit_value ?? "").replace("<", ""))
+      : (Number.isFinite(aVal) ? aVal.toFixed(2) : (r.a ?? ""));
+    const comp2 = isLimit ? "na" : (Number.isFinite(bVal) ? bVal.toFixed(2) : (r.b ?? ""));
+    const jd = ctx.jd + (rowDate(r, ctx).getTime() - ctx.observedAt.getTime()) / 86400000;
     body.push(
       [
         r.aavso_code,
-        ctx.jd.toFixed(4),
+        jd.toFixed(4),
         mag,
         "na",
         comp1 || "na",
