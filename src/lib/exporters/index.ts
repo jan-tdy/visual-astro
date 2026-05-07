@@ -15,7 +15,7 @@ export interface ExportContext {
 }
 
 function magOrLimit(r: ExportRow): string | null {
-  const m = computeMagnitude(r);
+  const m = computeMagnitude(r, r.star_name);
   return m.value;
 }
 
