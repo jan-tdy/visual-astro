@@ -66,17 +66,37 @@ export interface ObsInput {
   limit_value?: string | null;
 }
 
+import promTable from "@/data/prom.json";
+
+/**
+ * Resolve a comparator value: either a numeric string ("4.02") or a single letter
+ * ("a", "B", "za") that maps to a magnitude in the per-star comparator table
+ * (sheet "prom" of the original ODS). Returns NaN if not resolvable.
+ */
+export function resolveCompValue(starName: string | undefined, raw: string | null | undefined): number {
+  if (raw == null) return NaN;
+  const s = String(raw).trim();
+  if (!s) return NaN;
+  const direct = parseFloat(s);
+  if (Number.isFinite(direct) && /^-?\d/.test(s)) return direct;
+  if (!starName) return NaN;
+  const tbl = (promTable as Record<string, Record<string, number>>)[starName];
+  if (!tbl) return NaN;
+  const v = tbl[s.toLowerCase()];
+  return typeof v === "number" ? v : NaN;
+}
+
 /**
  * Compute the visual magnitude using the Argelander step method:
  *   mag = A + (Pasos A / (Pasos A + Pasos B)) * (B - A)
  * Returns a string formatted to 2 decimals, or a "<x.x" limit, or null if not estimable.
  */
-export function computeMagnitude(o: ObsInput): { value: string | null; numeric: number | null } {
+export function computeMagnitude(o: ObsInput, starName?: string): { value: string | null; numeric: number | null } {
   if (o.limit_value && o.limit_value.trim()) {
     return { value: o.limit_value.trim(), numeric: null };
   }
-  const aNum = parseFloat((o.a ?? "").toString());
-  const bNum = parseFloat((o.b ?? "").toString());
+  const aNum = resolveCompValue(starName, o.a ?? null);
+  const bNum = resolveCompValue(starName, o.b ?? null);
   const pa = o.pasos_a ?? null;
   const pb = o.pasos_b ?? null;
   if (
