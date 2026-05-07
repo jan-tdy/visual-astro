@@ -215,29 +215,59 @@ export default function SessionEditor() {
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array" });
       const sheet = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json<any>(sheet, { header: 1, defval: null }) as any[][];
+      // Pick the first non-template sheet that has actual observation data
+      let chosen = wb.SheetNames[0];
+      for (const n of wb.SheetNames) {
+        if (n.toLowerCase() === "template" || n.toLowerCase() === "prom" || n.toLowerCase() === "katalog") continue;
+        chosen = n; break;
+      }
+      const rows = XLSX.utils.sheet_to_json<any>(wb.Sheets[chosen], { header: 1, defval: null }) as any[][];
       // Try detect header row containing "Hviezda" or "Star"
       let headerIdx = rows.findIndex((r) =>
         r?.some((c) => typeof c === "string" && /hviezda|star|estrella/i.test(c)),
       );
+      if (headerIdx < 0) {
+        // ODS template has header "A | Pasos A | Pasos B | B | < / = | UT | : | Nota"
+        headerIdx = rows.findIndex((r) =>
+          r?.some((c) => typeof c === "string" && /pasos\s*a/i.test(c)),
+        );
+      }
       if (headerIdx < 0) headerIdx = 0;
       const header = rows[headerIdx].map((c) => (c == null ? "" : String(c).trim().toLowerCase()));
       const findCol = (...keys: string[]) =>
         header.findIndex((h) => keys.some((k) => h === k || h.includes(k)));
-      const cName = findCol("hviezda", "star", "estrella");
+      // The "name" column in the ODS template is the very first column (index 0) with no header.
+      let cName = findCol("hviezda", "star", "estrella");
+      if (cName < 0) cName = 0;
       const cA = header.findIndex((h) => h === "a");
       const cPA = findCol("paso a", "pa");
       const cPB = findCol("paso b", "pb");
       const cB = header.findIndex((h) => h === "b");
       const cLim = findCol("</=", "<=", "limit");
-      const cUT = findCol("ut", "čas", "cas", "time");
+      const cUT = header.findIndex((h) => h === "ut" || h === "čas" || h === "cas" || h === "time");
       const cNote = findCol("nota", "note", "poznám");
-      if (cName < 0) {
-        toast.error("Nenašiel sa stĺpec s názvom hviezdy");
-        return;
+      // Try to detect observation date from anywhere above header (e.g. "17/04/2026")
+      let importedDate: Date | null = null;
+      for (let i = 0; i < headerIdx; i++) {
+        const r = rows[i] || [];
+        for (const cell of r) {
+          if (typeof cell === "string") {
+            const m = cell.match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/);
+            if (m) {
+              const d = parseInt(m[1]), mo = parseInt(m[2]);
+              let y = parseInt(m[3]); if (y < 100) y += 2000;
+              importedDate = new Date(Date.UTC(y, mo - 1, d, 0, 0, 0));
+              break;
+            }
+          } else if (cell instanceof Date) {
+            importedDate = cell; break;
+          }
+        }
+        if (importedDate) break;
       }
       const byName = new Map(stars.map((s) => [s.name.toLowerCase().trim(), s]));
       let matched = 0;
+      const upserts: any[] = [];
       for (let i = headerIdx + 1; i < rows.length; i++) {
         const r = rows[i];
         if (!r) continue;
@@ -258,7 +288,8 @@ export default function SessionEditor() {
             const mm = totalMin % 60;
             ut = `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
           } else {
-            ut = String(utRaw).trim().replace(/\s+/g, ":");
+            const s = String(utRaw).trim().replace(/\s+/g, ":");
+            ut = s || null;
           }
         }
         const patch: Partial<Obs> = {
@@ -270,10 +301,32 @@ export default function SessionEditor() {
           ut_time: ut,
           note: get(cNote) != null ? String(get(cNote)) : null,
         };
-        updateObs(star.id, patch);
+        // Update local state immediately
+        setObsByStar((prev) => {
+          const cur = prev[star.id] ?? {
+            star_id: star.id, a: null, pasos_a: null, pasos_b: null, b: null,
+            limit_value: null, ut_time: null, note: null,
+          };
+          return { ...prev, [star.id]: { ...cur, ...patch, _dirty: true } };
+        });
+        upserts.push({
+          session_id: id!, user_id: user!.id, star_id: star.id, ...patch,
+        });
         matched++;
       }
-      toast.success(`Importovaných ${matched} hviezd`);
+      // Bulk save to DB
+      for (let i = 0; i < upserts.length; i += 200) {
+        const chunk = upserts.slice(i, i + 200);
+        const { error } = await supabase
+          .from("observations")
+          .upsert(chunk, { onConflict: "session_id,star_id" });
+        if (error) { toast.error(error.message); return; }
+      }
+      // If we extracted a date, update session date too
+      if (importedDate) {
+        setObservedAt(importedDate);
+      }
+      toast.success(`Importovaných ${matched} hviezd${importedDate ? " + dátum" : ""}`);
     } catch (e: any) {
       toast.error("Chyba pri importe: " + e.message);
     }
@@ -298,7 +351,10 @@ export default function SessionEditor() {
   })();
 
   const filledCount = Object.values(obsByStar).filter(
-    (o) => !!(o.ut_time && o.ut_time.trim()) && computeMagnitude(o).value !== null,
+    (o) => {
+      const s = stars.find((x) => x.id === o.star_id);
+      return !!(o.ut_time && o.ut_time.trim()) && computeMagnitude(o, s?.name).value !== null;
+    },
   ).length;
 
   return (
@@ -427,7 +483,7 @@ export default function SessionEditor() {
                   <tbody>
                     {grouped.map[c].map((s) => {
                       const o = obsByStar[s.id];
-                      const mag = computeMagnitude(o ?? { a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null });
+                      const mag = computeMagnitude(o ?? { a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null }, s.name);
                       return (
                         <tr key={s.id} className="border-b border-border/40 hover:bg-secondary/20">
                           <td className="px-2 py-1 font-medium sticky left-0 bg-card">{s.name}</td>
