@@ -9,14 +9,22 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Check, Sparkles, Database, RefreshCw } from "lucide-react";
+import { Check, Sparkles, Database, RefreshCw, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { useSubscription } from "@/hooks/useSubscription";
+import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
+import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
+import { getStripeEnvironment, PLUS_PRICE_ID } from "@/lib/stripe";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function Settings() {
   const { user } = useAuth();
+  const { isPlusActive, sub } = useSubscription();
   const [obsCode, setObsCode] = useState("DPV");
   const [refDate, setRefDate] = useState("1980-01-01");
   const [busy, setBusy] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [portalBusy, setPortalBusy] = useState(false);
   const [usage, setUsage] = useState<{
     bytes: number;
     counts: { stars: number; sessions: number; observations: number; promOverrides: number };
@@ -94,8 +102,25 @@ export default function Settings() {
     return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
   };
 
+  const openPortal = async () => {
+    setPortalBusy(true);
+    const { data, error } = await supabase.functions.invoke("create-portal-session", {
+      body: { returnUrl: window.location.origin + "/settings", environment: getStripeEnvironment() },
+    });
+    setPortalBusy(false);
+    if (error || !data?.url) {
+      toast.error(error?.message || "Nepodarilo sa otvoriť správu predplatného");
+      return;
+    }
+    window.open(data.url, "_blank");
+  };
+
+  const PLAN_LIMIT_GB = isPlusActive ? 2.8 : 1.8;
+  const LIMIT_BYTES = PLAN_LIMIT_GB * 1024 * 1024 * 1024;
+
   return (
     <div className="min-h-screen">
+      <PaymentTestModeBanner />
       <AppHeader />
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <h1 className="text-2xl font-semibold mb-6">Nastavenia</h1>
@@ -121,15 +146,16 @@ export default function Settings() {
           </TabsContent>
 
           <TabsContent value="billing" className="space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
             <Card className="p-6">
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-lg font-semibold">Beta testing</h2>
-                    <Badge variant="secondary" className="rounded-full">Aktívny plán</Badge>
+                    {!isPlusActive && <Badge variant="secondary" className="rounded-full">Aktívny</Badge>}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Počas bety má každý používateľ rovnaký plán. Iné plány zatiaľ nie sú dostupné.
+                    Základný plán pre testerov.
                   </p>
                 </div>
                 <div className="text-right">
@@ -141,26 +167,69 @@ export default function Settings() {
               <ul className="mt-4 space-y-2 text-sm">
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span>Všetky aktuálne funkcie aplikácie bez obmedzení</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span>Neobmedzený počet session, hviezd v katalógu a pozorovaní</span>
+                  <span>Všetky aktuálne funkcie aplikácie</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                   <span>Exporty VSNET / AAVSO / MEDUZA, import .xlsx/.ods, JSON katalógov</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <span>Limit úložiska <strong>1.8 GB</strong></span>
                 </li>
                 <li className="flex items-start gap-2 text-muted-foreground">
                   <Sparkles className="h-4 w-4 mt-0.5 shrink-0" />
                   <span>V budúcnosti: <strong className="text-foreground">5 AI skenov</strong> denne</span>
                 </li>
               </ul>
-
-              <Button className="mt-5" disabled variant="secondary">
-                Iné plány nie sú dostupné
-              </Button>
             </Card>
+
+            <Card className="p-6 border-primary/40">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-semibold">Plus</h2>
+                    {isPlusActive && <Badge className="rounded-full">Aktívny</Badge>}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Pre aktívnych pozorovateľov.
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-semibold text-primary">2 €</div>
+                  <div className="text-xs text-muted-foreground">/ mesačne</div>
+                </div>
+              </div>
+              <ul className="mt-4 space-y-2 text-sm">
+                <li className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <span>Všetko z plánu Beta testing</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <span><strong>15 AI skenov</strong> denne</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Database className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <span>Limit úložiska <strong>2.8 GB</strong></span>
+                </li>
+              </ul>
+              {isPlusActive ? (
+                <Button className="mt-5 w-full" variant="secondary" onClick={openPortal} disabled={portalBusy}>
+                  <ExternalLink className="h-4 w-4 mr-1.5" /> Spravovať predplatné
+                </Button>
+              ) : (
+                <Button className="mt-5 w-full" onClick={() => setCheckoutOpen(true)}>
+                  Aktivovať Plus
+                </Button>
+              )}
+              {sub?.cancel_at_period_end && sub.current_period_end && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Predplatné končí {new Date(sub.current_period_end).toLocaleDateString("sk-SK")}.
+                </p>
+              )}
+            </Card>
+            </div>
 
             <Card className="p-6">
               <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
@@ -174,17 +243,16 @@ export default function Settings() {
               </div>
 
               {(() => {
-                const LIMIT = 1.8 * 1024 * 1024 * 1024; // 1.8 GB
-                const pct = Math.min(100, (usage.bytes / LIMIT) * 100);
+                const pct = Math.min(100, (usage.bytes / LIMIT_BYTES) * 100);
                 return (
                   <>
                     <div className="flex items-baseline gap-2">
                       <span className="text-2xl font-semibold">{fmtBytes(usage.bytes)}</span>
-                      <span className="text-sm text-muted-foreground">/ 1.8 GB</span>
+                      <span className="text-sm text-muted-foreground">/ {PLAN_LIMIT_GB} GB</span>
                     </div>
                     <Progress value={pct} className="mt-2 h-2" />
                     <p className="text-xs text-muted-foreground mt-2">
-                      Využitých {pct.toFixed(2)} % z limitu plánu Beta testing. Veľkosť tvojich dát (hviezdy, session, pozorovania, prom katalóg).
+                      Využitých {pct.toFixed(2)} % z limitu plánu {isPlusActive ? "Plus" : "Beta testing"}. Veľkosť tvojich dát (hviezdy, session, pozorovania, prom katalóg).
                     </p>
                   </>
                 );
@@ -206,6 +274,22 @@ export default function Settings() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Aktivovať plán Plus — 2 € / mesačne</DialogTitle>
+            </DialogHeader>
+            {checkoutOpen && user && (
+              <StripeEmbeddedCheckout
+                priceId={PLUS_PRICE_ID}
+                customerEmail={user.email ?? undefined}
+                userId={user.id}
+                returnUrl={`${window.location.origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}`}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
