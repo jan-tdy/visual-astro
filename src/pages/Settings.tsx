@@ -167,7 +167,7 @@ export default function Settings() {
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-0.5">
                   <Label htmlFor="autofill" className="flex items-center gap-2">
-                    Auto-vyplniť aktuálny UT čas
+                    Auto-vyplniť čas
                     {!isPlusActive && (
                       <Badge variant="outline" className="rounded-full text-[10px] gap-1 px-2 py-0">
                         <Lock className="h-2.5 w-2.5" /> Plus
@@ -240,7 +240,7 @@ export default function Settings() {
                 </Select>
                 {!isPlusActive && (
                   <p className="text-xs text-muted-foreground">
-                    Auto-vyplnenie UT času a predvolené súhvezdie sú dostupné v pláne <strong>Plus</strong>.
+                    Predvolené súhvezdie je dostupné v pláne <strong>Plus</strong>.
                   </p>
                 )}
               </div>
@@ -376,7 +376,7 @@ export default function Settings() {
               <ul className="mt-4 space-y-2 text-sm">
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span>Všetky aktuálne funkcie aplikácie + <strong>auto-vyplnenie UT času</strong> a <strong>predvolené súhvezdie</strong></span>
+                  <span>Všetky aktuálne funkcie aplikácie</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
