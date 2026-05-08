@@ -10,6 +10,7 @@ import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson } from "l
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
 import { buildAAVSO, buildMEDUZA, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
+import { getPrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
 
 type StarType = "VISUAL" | "BINAR" | "ECL faint" | "ECL bright";
 type Star = {
@@ -205,7 +206,14 @@ export default function SessionEditor() {
       name = "MEDUZA";
     }
     if (preview) setPreviewing({ name, text, filename });
-    else downloadText(filename, text);
+    else {
+      downloadText(filename, text);
+      const prefs = getPrefs();
+      if (prefs.openPortalAfterExport[kind]) {
+        const portal = SUBMISSION_PORTALS[kind];
+        setTimeout(() => window.open(portal.url, "_blank", "noopener,noreferrer"), 250);
+      }
+    }
   };
 
   // ------- JSON Export / Import of full session -------
