@@ -210,8 +210,8 @@ export default function SessionEditor() {
       downloadText(filename, text);
       const prefs = getPrefs();
       if (prefs.openPortalAfterExport[kind]) {
-        const portal = SUBMISSION_PORTALS[kind];
-        setTimeout(() => window.open(portal.url, "_blank", "noopener,noreferrer"), 250);
+        const url = prefs.portalUrls?.[kind] || SUBMISSION_PORTALS[kind].url;
+        setTimeout(() => window.open(url, "_blank", "noopener,noreferrer"), 250);
       }
     }
   };
