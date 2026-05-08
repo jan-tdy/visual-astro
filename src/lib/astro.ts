@@ -66,7 +66,7 @@ export interface ObsInput {
   limit_value?: string | null;
 }
 
-import promTable from "@/data/prom.json";
+import { getPromStar } from "@/lib/promStore";
 
 /**
  * Resolve a comparator value: either a numeric string ("4.02") or a single letter
@@ -80,7 +80,7 @@ export function resolveCompValue(starName: string | undefined, raw: string | nul
   const direct = parseFloat(s);
   if (Number.isFinite(direct) && /^-?\d/.test(s)) return direct;
   if (!starName) return NaN;
-  const tbl = (promTable as Record<string, Record<string, number>>)[starName];
+  const tbl = getPromStar(starName);
   if (!tbl) return NaN;
   const v = tbl[s.toLowerCase()];
   return typeof v === "number" ? v : NaN;
