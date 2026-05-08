@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { AppHeader } from "@/components/app/AppHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Telescope, Star, Clock, Download, BookOpen, Settings as SettingsIcon, Layers, Sparkles, ScanLine, HelpCircle, Cpu, Languages, Heart } from "lucide-react";
+import { Telescope, Star, Clock, Download, BookOpen, Settings as SettingsIcon, Layers, Sparkles, ScanLine, HelpCircle, Cpu, Languages, Heart, CreditCard } from "lucide-react";
 
 const features = [
   { icon: Telescope, title: "Pozorovacie session", desc: "Vytvor novú session jedným klikom — prázdnu, ako kópiu z poslednej alebo z obľúbenej (s vynulovanými časmi)." },
@@ -13,6 +13,9 @@ const features = [
   { icon: Sparkles, title: "Auto-save & JD", desc: "Všetko sa ukladá priebežne. Juliánsky dátum sa prepočítava v reálnom čase z UT." },
   { icon: Heart, title: "Obľúbená session", desc: "Označ si jednu session ako šablónu — chráni sa pred vymazaním a dá sa z nej kedykoľvek vytvoriť nová." },
   { icon: Languages, title: "Slovenčina / Angličtina", desc: "Prepínač jazyka v hlavičke (SK / EN) — voľba sa pamätá medzi reláciami." },
+  { icon: Sparkles, title: "Prom katalóg", desc: "Samostatný editovateľný katalóg premenných hviezd — pridávanie, úpravy aj mazanie s potvrdením." },
+  { icon: Download, title: "JSON export & import", desc: "Zálohuj si katalóg aj jednotlivé sessions ako JSON a kedykoľvek ich obnov či prenes inde." },
+  { icon: CreditCard, title: "Plán Plus", desc: "Beta testing zadarmo (1.8 GB), alebo Plus za 2 €/mesačne — 15 AI skenov denne a 2.8 GB úložiska." },
 ];
 
 export default function About() {
@@ -100,10 +103,38 @@ export default function About() {
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 V budúcnosti pribudne automatické rozpoznávanie ručne písaných tabuliek pomocou AI — odfotíš svoj papierový
-                záznam a aplikácia sama vyplní hviezdy, hodnoty A/Paso/B aj UT časy. Cieľom je úplne odstrániť manuálne prepisovanie.
+                záznam a aplikácia sama vyplní hviezdy, hodnoty A/Paso/B aj UT časy. V pláne <strong>Plus</strong> bude k dispozícii
+                15 skenov denne, v Beta testing pláne 5 skenov denne. Cieľom je úplne odstrániť manuálne prepisovanie.
               </p>
             </div>
           </div>
+        </Card>
+
+        <Card className="p-6 mt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <CreditCard className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">Plány & fakturácia</h2>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3 text-sm">
+            <div className="rounded-lg border border-border p-4">
+              <div className="flex items-center justify-between mb-1">
+                <strong>Beta testing</strong>
+                <span className="text-primary font-semibold">0 €</span>
+              </div>
+              <p className="text-muted-foreground text-xs">Všetky funkcie · 1.8 GB úložiska · 5 AI skenov / deň (čoskoro).</p>
+            </div>
+            <div className="rounded-lg border border-primary/40 p-4">
+              <div className="flex items-center justify-between mb-1">
+                <strong>Plus</strong>
+                <span className="text-primary font-semibold">2 € / mes.</span>
+              </div>
+              <p className="text-muted-foreground text-xs">2.8 GB úložiska · 15 AI skenov / deň · prioritná podpora.</p>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            Predplatné spravuješ v <Link to="/settings" className="text-primary underline underline-offset-2">Nastaveniach → Plán & fakturácia</Link>.
+            V náhľade prebiehajú platby v testovacom režime (karta <code className="font-mono">4242 4242 4242 4242</code>).
+          </p>
         </Card>
 
         <Card className="p-6 mt-6">
