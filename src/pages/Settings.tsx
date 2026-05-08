@@ -412,7 +412,7 @@ export default function Settings() {
                     </div>
                     <Progress value={pct} className="mt-2 h-2" />
                     <p className="text-xs text-muted-foreground mt-2">
-                      Využitých {pct.toFixed(2)} % z limitu plánu {isPlusActive ? "Plus" : "Beta testing"}. Veľkosť tvojich dát (hviezdy, session, pozorovania, prom katalóg).
+                      Využitých {pct.toFixed(2)} % z limitu plánu {isPlusActive ? "Plus" : "Free"}. Veľkosť tvojich dát (hviezdy, session, pozorovania, prom katalóg).
                     </p>
                   </>
                 );
