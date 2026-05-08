@@ -9,6 +9,9 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Check, Sparkles, Database, RefreshCw, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -16,10 +19,12 @@ import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { getStripeEnvironment, PLUS_PRICE_ID } from "@/lib/stripe";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { usePrefs } from "@/hooks/usePrefs";
 
 export default function Settings() {
   const { user } = useAuth();
   const { isPlusActive, sub } = useSubscription();
+  const { prefs, update: setPrefs } = usePrefs();
   const [obsCode, setObsCode] = useState("DPV");
   const [refDate, setRefDate] = useState("1980-01-01");
   const [busy, setBusy] = useState(false);
