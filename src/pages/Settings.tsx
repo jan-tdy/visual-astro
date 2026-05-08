@@ -12,14 +12,14 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, Sparkles, Database, RefreshCw, ExternalLink } from "lucide-react";
+import { Check, Sparkles, Database, RefreshCw, ExternalLink, Lock, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
 import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { getStripeEnvironment, PLUS_PRICE_ID } from "@/lib/stripe";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { usePrefs } from "@/hooks/usePrefs";
+import { usePrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
 
 export default function Settings() {
   const { user } = useAuth();
@@ -154,14 +154,22 @@ export default function Settings() {
 
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-0.5">
-                  <Label htmlFor="autofill">Auto-vyplniť aktuálny UT čas</Label>
+                  <Label htmlFor="autofill" className="flex items-center gap-2">
+                    Auto-vyplniť aktuálny UT čas
+                    {!isPlusActive && (
+                      <Badge variant="outline" className="rounded-full text-[10px] gap-1 px-2 py-0">
+                        <Lock className="h-2.5 w-2.5" /> Plus
+                      </Badge>
+                    )}
+                  </Label>
                   <p className="text-xs text-muted-foreground">
                     Pri vstupe do prázdneho riadku sa do UT predvyplní aktuálny čas (hh:mm).
                   </p>
                 </div>
                 <Switch
                   id="autofill"
-                  checked={prefs.autofillUtNow}
+                  checked={isPlusActive && prefs.autofillUtNow}
+                  disabled={!isPlusActive}
                   onCheckedChange={(v) => setPrefs({ autofillUtNow: v })}
                 />
               </div>
@@ -198,10 +206,18 @@ export default function Settings() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="defcon">Predvolené súhvezdie po otvorení session</Label>
+                <Label htmlFor="defcon" className="flex items-center gap-2">
+                  Predvolené súhvezdie po otvorení session
+                  {!isPlusActive && (
+                    <Badge variant="outline" className="rounded-full text-[10px] gap-1 px-2 py-0">
+                      <Lock className="h-2.5 w-2.5" /> Plus
+                    </Badge>
+                  )}
+                </Label>
                 <Select
                   value={prefs.defaultConstellation}
                   onValueChange={(v) => setPrefs({ defaultConstellation: v })}
+                  disabled={!isPlusActive}
                 >
                   <SelectTrigger id="defcon"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -210,7 +226,42 @@ export default function Settings() {
                     ))}
                   </SelectContent>
                 </Select>
+                {!isPlusActive && (
+                  <p className="text-xs text-muted-foreground">
+                    Auto-vyplnenie UT času a predvolené súhvezdie sú dostupné v pláne <strong>Plus</strong>.
+                  </p>
+                )}
               </div>
+            </Card>
+
+            <Card className="p-6 space-y-4 mt-4">
+              <div className="flex items-center gap-2">
+                <Upload className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-lg font-semibold">Po stiahnutí exportu</h2>
+              </div>
+              <p className="text-xs text-muted-foreground -mt-2">
+                Po stiahnutí súboru sa automaticky otvorí príslušná stránka v novom okne — pre rýchlejšie odoslanie pozorovaní.
+              </p>
+
+              {(["aavso", "vsnet", "meduza"] as const).map((k) => (
+                <div key={k} className="flex items-start justify-between gap-4">
+                  <div className="space-y-0.5 min-w-0">
+                    <Label htmlFor={`portal-${k}`} className="uppercase">{k}</Label>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {SUBMISSION_PORTALS[k].label}
+                    </p>
+                  </div>
+                  <Switch
+                    id={`portal-${k}`}
+                    checked={prefs.openPortalAfterExport[k]}
+                    onCheckedChange={(v) =>
+                      setPrefs({
+                        openPortalAfterExport: { ...prefs.openPortalAfterExport, [k]: v },
+                      })
+                    }
+                  />
+                </div>
+              ))}
             </Card>
           </TabsContent>
 
