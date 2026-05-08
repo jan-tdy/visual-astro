@@ -6,11 +6,10 @@ import { AppHeader } from "@/components/app/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, Download, FileText, ChevronLeft, X, Upload } from "lucide-react";
+import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
 import { buildAAVSO, buildMEDUZA, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
-import * as XLSX from "xlsx";
 
 type StarType = "VISUAL" | "BINAR" | "ECL faint" | "ECL bright";
 type Star = {
@@ -209,105 +208,77 @@ export default function SessionEditor() {
     else downloadText(filename, text);
   };
 
-  // ------- Import from XLSX/ODS -------
+  // ------- JSON Export / Import of full session -------
+  const exportSessionJSON = () => {
+    const byId = new Map(stars.map((s) => [s.id, s]));
+    const observations = Object.values(obsByStar)
+      .map((o) => {
+        const s = byId.get(o.star_id);
+        if (!s) return null;
+        return {
+          star_name: s.name,
+          constellation: s.constellation,
+          a: o.a, pasos_a: o.pasos_a, pasos_b: o.pasos_b, b: o.b,
+          limit_value: o.limit_value, ut_time: o.ut_time, note: o.note,
+        };
+      })
+      .filter(Boolean);
+    const payload = {
+      version: 1,
+      observed_at_utc: observedAt.toISOString(),
+      jd,
+      obs_code: obsCode,
+      observations,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `session_${filenameDate(observedAt)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handleImportFile = async (file: File) => {
     try {
-      const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf, { type: "array" });
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      // Pick the first non-template sheet that has actual observation data
-      let chosen = wb.SheetNames[0];
-      for (const n of wb.SheetNames) {
-        if (n.toLowerCase() === "template" || n.toLowerCase() === "prom" || n.toLowerCase() === "katalog") continue;
-        chosen = n; break;
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const obsArr: any[] = Array.isArray(data) ? data : (data.observations ?? []);
+      if (!Array.isArray(obsArr)) throw new Error("Neplatný JSON: chýba pole 'observations'");
+
+      // Apply header (date / obs_code) if provided
+      if (data && typeof data === "object" && data.observed_at_utc) {
+        const d = new Date(data.observed_at_utc);
+        if (!isNaN(d.getTime())) setObservedAt(d);
       }
-      const rows = XLSX.utils.sheet_to_json<any>(wb.Sheets[chosen], { header: 1, defval: null }) as any[][];
-      // Try detect header row containing "Hviezda" or "Star"
-      let headerIdx = rows.findIndex((r) =>
-        r?.some((c) => typeof c === "string" && /hviezda|star|estrella/i.test(c)),
-      );
-      if (headerIdx < 0) {
-        // ODS template has header "A | Pasos A | Pasos B | B | < / = | UT | : | Nota"
-        headerIdx = rows.findIndex((r) =>
-          r?.some((c) => typeof c === "string" && /pasos\s*a/i.test(c)),
-        );
-      }
-      if (headerIdx < 0) headerIdx = 0;
-      const header = rows[headerIdx].map((c) => (c == null ? "" : String(c).trim().toLowerCase()));
-      const findCol = (...keys: string[]) =>
-        header.findIndex((h) => keys.some((k) => h === k || h.includes(k)));
-      // The "name" column in the ODS template is the very first column (index 0) with no header.
-      let cName = findCol("hviezda", "star", "estrella");
-      if (cName < 0) cName = 0;
-      const cA = header.findIndex((h) => h === "a");
-      const cPA = findCol("paso a", "pa");
-      const cPB = findCol("paso b", "pb");
-      const cB = header.findIndex((h) => h === "b");
-      const cLim = findCol("</=", "<=", "limit");
-      const cUT = header.findIndex((h) => h === "ut" || h === "čas" || h === "cas" || h === "time");
-      const cNote = findCol("nota", "note", "poznám");
-      // Try to detect observation date from anywhere above header (e.g. "17/04/2026")
-      let importedDate: Date | null = null;
-      for (let i = 0; i < headerIdx; i++) {
-        const r = rows[i] || [];
-        for (const cell of r) {
-          if (typeof cell === "string") {
-            const m = cell.match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/);
-            if (m) {
-              const d = parseInt(m[1]), mo = parseInt(m[2]);
-              let y = parseInt(m[3]); if (y < 100) y += 2000;
-              importedDate = new Date(Date.UTC(y, mo - 1, d, 0, 0, 0));
-              break;
-            }
-          } else if (cell instanceof Date) {
-            importedDate = cell; break;
-          }
-        }
-        if (importedDate) break;
-      }
+
       const norm = (x: string) => x.toLowerCase().replace(/\s+/g, " ").trim();
       const byName = new Map<string, Star>();
       for (const s of stars) {
         byName.set(norm(s.name), s);
         byName.set(norm(s.name).replace(/\s+/g, ""), s);
       }
-      let matched = 0;
-      let skipped = 0;
+
+      let matched = 0, skipped = 0;
       const upserts: any[] = [];
-      for (let i = headerIdx + 1; i < rows.length; i++) {
-        const r = rows[i];
-        if (!r) continue;
-        const nameRaw = r[cName];
+      for (const o of obsArr) {
+        const nameRaw = o?.star_name ?? o?.name ?? o?.estrella;
         if (!nameRaw) continue;
-        const name = norm(String(nameRaw));
-        const star = byName.get(name) ?? byName.get(name.replace(/\s+/g, ""));
+        const n = norm(String(nameRaw));
+        const star = byName.get(n) ?? byName.get(n.replace(/\s+/g, ""));
         if (!star) { skipped++; continue; }
-        const get = (idx: number) => (idx >= 0 && r[idx] != null && r[idx] !== "" ? r[idx] : null);
-        const num = (v: any) => (v == null ? null : Number.isFinite(+v) ? parseInt(String(v)) : null);
-        const utRaw = get(cUT);
-        let ut: string | null = null;
-        if (utRaw != null) {
-          if (typeof utRaw === "number") {
-            // Excel time fraction of a day
-            const totalMin = Math.round(utRaw * 24 * 60);
-            const hh = Math.floor(totalMin / 60) % 24;
-            const mm = totalMin % 60;
-            ut = `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
-          } else {
-            const s = String(utRaw).trim().replace(/\s+/g, ":");
-            ut = s || null;
-          }
-        }
+        const num = (v: any) => (v == null || v === "" ? null : Number.isFinite(+v) ? parseInt(String(v)) : null);
         const patch: Partial<Obs> = {
-          a: get(cA) != null ? String(get(cA)) : null,
-          pasos_a: num(get(cPA)),
-          pasos_b: num(get(cPB)),
-          b: get(cB) != null ? String(get(cB)) : null,
-          limit_value: get(cLim) != null ? String(get(cLim)) : null,
-          ut_time: ut,
-          note: get(cNote) != null ? String(get(cNote)) : null,
+          a: o.a != null && o.a !== "" ? String(o.a) : null,
+          pasos_a: num(o.pasos_a),
+          pasos_b: num(o.pasos_b),
+          b: o.b != null && o.b !== "" ? String(o.b) : null,
+          limit_value: o.limit_value != null && o.limit_value !== "" ? String(o.limit_value) : null,
+          ut_time: o.ut_time != null && o.ut_time !== "" ? String(o.ut_time) : null,
+          note: o.note != null && o.note !== "" ? String(o.note) : null,
         };
-        // Update local state immediately
         setObsByStar((prev) => {
           const cur = prev[star.id] ?? {
             star_id: star.id, a: null, pasos_a: null, pasos_b: null, b: null,
@@ -320,7 +291,6 @@ export default function SessionEditor() {
         });
         matched++;
       }
-      // Bulk save to DB
       for (let i = 0; i < upserts.length; i += 200) {
         const chunk = upserts.slice(i, i + 200);
         const { error } = await supabase
@@ -328,12 +298,8 @@ export default function SessionEditor() {
           .upsert(chunk, { onConflict: "session_id,star_id" });
         if (error) { toast.error(error.message); return; }
       }
-      // If we extracted a date, update session date too
-      if (importedDate) {
-        setObservedAt(importedDate);
-      }
       toast.success(
-        `Importovaných ${matched} pozorovaní${skipped ? `, ${skipped} preskočených (chýbajú v katalógu)` : ""}${importedDate ? " + dátum" : ""}`,
+        `Importovaných ${matched} pozorovaní${skipped ? `, ${skipped} preskočených (chýbajú v katalógu)` : ""}`,
       );
     } catch (e: any) {
       toast.error("Chyba pri importe: " + e.message);
@@ -417,11 +383,11 @@ export default function SessionEditor() {
                 </Button>
               </div>
             ))}
-            <div className="ml-auto">
+            <div className="ml-auto flex gap-1">
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".xlsx,.xls,.ods,.csv"
+                accept="application/json,.json"
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
@@ -429,8 +395,11 @@ export default function SessionEditor() {
                   e.target.value = "";
                 }}
               />
+              <Button size="sm" variant="secondary" onClick={exportSessionJSON}>
+                <FileJson className="h-3.5 w-3.5 mr-1" /> Export JSON
+              </Button>
               <Button size="sm" variant="secondary" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="h-3.5 w-3.5 mr-1" /> Import (.xlsx/.ods)
+                <Upload className="h-3.5 w-3.5 mr-1" /> Import JSON
               </Button>
             </div>
           </div>
