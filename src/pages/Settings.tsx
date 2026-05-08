@@ -292,9 +292,15 @@ export default function Settings() {
                   Aktivovať Plus
                 </Button>
               )}
-              {sub?.cancel_at_period_end && sub.current_period_end && (
+              {isPlusActive && sub?.current_period_end && (
                 <p className="text-xs text-muted-foreground mt-2">
-                  Predplatné končí {new Date(sub.current_period_end).toLocaleDateString("sk-SK")}.
+                  {sub.cancel_at_period_end ? "Predplatné končí " : "Ďalšia fakturácia "}
+                  <strong>
+                    {new Date(sub.current_period_end).toLocaleDateString("sk-SK", {
+                      day: "numeric", month: "long", year: "numeric",
+                    })}
+                  </strong>
+                  .
                 </p>
               )}
             </Card>
