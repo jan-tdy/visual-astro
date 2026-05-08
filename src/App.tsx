@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { I18nProvider } from "@/hooks/useI18n";
 import Auth from "./pages/Auth.tsx";
 import Sessions from "./pages/Sessions.tsx";
 import SessionEditor from "./pages/SessionEditor.tsx";
@@ -19,6 +20,7 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
+    <I18nProvider>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -36,6 +38,7 @@ const App = () => (
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
+    </I18nProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

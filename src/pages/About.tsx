@@ -2,15 +2,17 @@ import { Link } from "react-router-dom";
 import { AppHeader } from "@/components/app/AppHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Telescope, Star, Clock, Download, BookOpen, Settings as SettingsIcon, Layers, Sparkles, ScanLine, HelpCircle, Cpu } from "lucide-react";
+import { Telescope, Star, Clock, Download, BookOpen, Settings as SettingsIcon, Layers, Sparkles, ScanLine, HelpCircle, Cpu, Languages, Heart } from "lucide-react";
 
 const features = [
-  { icon: Telescope, title: "Pozorovacie session", desc: "Vytvor novú session jedným klikom — buď prázdnu, alebo ako kópiu z poslednej s automaticky vynulovanými časmi." },
+  { icon: Telescope, title: "Pozorovacie session", desc: "Vytvor novú session jedným klikom — prázdnu, ako kópiu z poslednej alebo z obľúbenej (s vynulovanými časmi)." },
   { icon: Star, title: "Katalóg hviezd", desc: "Plne editovateľný katalóg s konštantami VSNET / AAVSO, kartami porovnávacích hviezd a typmi (VISUAL, BINAR, ECL)." },
   { icon: Layers, title: "Navigácia podľa súhvezdí", desc: "Rýchle skoky medzi súhvezdiami a filter podľa typu — presne ako v pôvodnej tabuľke." },
   { icon: Clock, title: "Argelander metóda", desc: "Magnitúda sa počíta automaticky: mag = A + (Pasos A / (Pasos A + Pasos B)) · (B − A). Limity (<14.9) sú podporované." },
   { icon: Download, title: "Exporty VSNET / AAVSO / MEDUZA", desc: "Tri samostatné .txt súbory v správnych formátoch. Exportujú sa iba záznamy s vyplneným UT časom." },
   { icon: Sparkles, title: "Auto-save & JD", desc: "Všetko sa ukladá priebežne. Juliánsky dátum sa prepočítava v reálnom čase z UT." },
+  { icon: Heart, title: "Obľúbená session", desc: "Označ si jednu session ako šablónu — chráni sa pred vymazaním a dá sa z nej kedykoľvek vytvoriť nová." },
+  { icon: Languages, title: "Slovenčina / Angličtina", desc: "Prepínač jazyka v hlavičke (SK / EN) — voľba sa pamätá medzi reláciami." },
 ];
 
 export default function About() {
@@ -23,7 +25,7 @@ export default function About() {
             <Sparkles className="h-3.5 w-3.5" /> Visual Astro
           </div>
           <h1 className="text-4xl md:text-5xl font-semibold tracking-tight mb-3">
-            Digitálny denník vizuálneho pozorovania
+            Visual Astro — denník vizuálneho pozorovania
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Moderná náhrada tabuľky <span className="font-mono text-sm">Reducciones.ods</span> — odhady magnitúd
@@ -54,12 +56,23 @@ export default function About() {
         <Card className="p-6 mb-6">
           <h2 className="text-xl font-semibold mb-3">Ako to funguje</h2>
           <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
-            <li>V <strong>Sessions</strong> vytvor novú session — najlepšie ako kópiu z poslednej (predvyplní hodnoty A/Paso/B, časy ostanú prázdne).</li>
+            <li>V <strong>Sessions</strong> vytvor novú session — prázdnu, ako kópiu z <em>poslednej</em>, alebo z <em>obľúbenej</em> (predvyplní hodnoty A/Paso/B, časy ostanú prázdne).</li>
             <li>V editore klikaj na súhvezdia v hornej navigácii alebo filtrovanie podľa typu (VISUAL, BINAR…).</li>
             <li>Pre každú pozorovanú hviezdu zadaj <strong>UT čas</strong> a hodnoty A, Paso A/B, B (alebo limit <code>&lt;14.9</code>).</li>
             <li>Magnitúda sa dopočíta sama. Vpravo hore vidíš počet vyplnených (s časom) záznamov.</li>
             <li>Stiahni si <strong>VSNET</strong>, <strong>AAVSO</strong> a <strong>MEDUZA</strong> súbory — pripravené na nahranie do databáz.</li>
           </ol>
+        </Card>
+
+        <Card className="p-6 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Languages className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">Jazyk rozhrania</h2>
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            V hlavičke vpravo klikni na tlačidlo <code className="font-mono">SK / EN</code> a prepneš medzi
+            slovenčinou a angličtinou. Tvoja voľba sa uloží lokálne do prehliadača.
+          </p>
         </Card>
 
         <Card className="p-6">
