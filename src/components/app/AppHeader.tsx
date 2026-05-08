@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { Button } from "@/components/ui/button";
-import { LogOut, BookOpen, Settings as SettingsIcon, ListChecks, Info, Sun, Moon, Menu } from "lucide-react";
+import { LogOut, BookOpen, Settings as SettingsIcon, ListChecks, Info, Sun, Moon, Menu, Sparkles } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 
@@ -39,6 +39,7 @@ export function AppHeader() {
         <nav className="hidden sm:flex items-center gap-1">
           {link("/", t("nav.sessions"), ListChecks)}
           {link("/catalog", t("nav.catalog"), BookOpen)}
+          {link("/prom", t("nav.prom"), Sparkles)}
           {link("/settings", t("nav.settings"), SettingsIcon)}
           {link("/about", t("nav.info"), Info)}
         </nav>
@@ -68,6 +69,7 @@ export function AppHeader() {
               <div className="flex flex-col gap-1 mt-6">
                 {link("/", t("nav.sessions"), ListChecks)}
                 {link("/catalog", t("nav.catalog"), BookOpen)}
+                {link("/prom", t("nav.prom"), Sparkles)}
                 {link("/settings", t("nav.settings"), SettingsIcon)}
                 {link("/about", t("nav.info"), Info)}
                 <button

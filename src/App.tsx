@@ -10,6 +10,7 @@ import Auth from "./pages/Auth.tsx";
 import Sessions from "./pages/Sessions.tsx";
 import SessionEditor from "./pages/SessionEditor.tsx";
 import Catalog from "./pages/Catalog.tsx";
+import Prom from "./pages/Prom.tsx";
 import Settings from "./pages/Settings.tsx";
 import About from "./pages/About.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
             <Route path="/session/:id" element={<ProtectedRoute><SessionEditor /></ProtectedRoute>} />
             <Route path="/catalog" element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
+            <Route path="/prom" element={<ProtectedRoute><Prom /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/about" element={<About />} />
             <Route path="*" element={<NotFound />} />

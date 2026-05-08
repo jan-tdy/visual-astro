@@ -6,6 +6,7 @@ const dict = {
   sk: {
     "nav.sessions": "Sessions",
     "nav.catalog": "Katalóg",
+    "nav.prom": "Prom",
     "nav.settings": "Nastavenia",
     "nav.info": "Info",
     "nav.logout": "Odhlásiť",
@@ -31,6 +32,7 @@ const dict = {
   en: {
     "nav.sessions": "Sessions",
     "nav.catalog": "Catalog",
+    "nav.prom": "Prom",
     "nav.settings": "Settings",
     "nav.info": "Info",
     "nav.logout": "Sign out",
