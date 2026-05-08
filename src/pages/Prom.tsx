@@ -21,7 +21,7 @@ type Row = { name: string; letters: Record<string, number> };
 
 export default function Prom() {
   const { lang } = useI18n();
-  const [, setTick] = useState(0);
+  const [tick, setTick] = useState(0);
   const [filter, setFilter] = useState("");
   const [editing, setEditing] = useState<Row | null>(null);
   const [creating, setCreating] = useState(false);
@@ -35,7 +35,7 @@ export default function Prom() {
     return Object.entries(tbl)
       .map(([name, letters]) => ({ name, letters }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, []);
+  }, [tick]);
 
   const filtered = rows.filter((r) => r.name.toLowerCase().includes(filter.toLowerCase()));
 

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Check, Sparkles, Database, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
@@ -172,13 +173,22 @@ export default function Settings() {
                 </Button>
               </div>
 
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-semibold">{fmtBytes(usage.bytes)}</span>
-                <span className="text-sm text-muted-foreground">/ limit zatiaľ <strong>nedefinovaný</strong></span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Veľkosť tvojich dát (hviezdy, session, pozorovania, prom katalóg). Limit zatiaľ nie je nastavený — počas bety môžeš používať bez obmedzenia.
-              </p>
+              {(() => {
+                const LIMIT = 1.8 * 1024 * 1024 * 1024; // 1.8 GB
+                const pct = Math.min(100, (usage.bytes / LIMIT) * 100);
+                return (
+                  <>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-semibold">{fmtBytes(usage.bytes)}</span>
+                      <span className="text-sm text-muted-foreground">/ 1.8 GB</span>
+                    </div>
+                    <Progress value={pct} className="mt-2 h-2" />
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Využitých {pct.toFixed(2)} % z limitu plánu Beta testing. Veľkosť tvojich dát (hviezdy, session, pozorovania, prom katalóg).
+                    </p>
+                  </>
+                );
+              })()}
 
               <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
                 {[
