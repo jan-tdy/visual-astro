@@ -301,11 +301,11 @@ export default function Settings() {
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-semibold">Beta testing</h2>
+                    <h2 className="text-lg font-semibold">Free</h2>
                     {!isPlusActive && <Badge variant="secondary" className="rounded-full">Aktívny</Badge>}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Základný plán pre testerov.
+                    Pre amatérskych pozorovateľov.
                   </p>
                 </div>
                 <div className="text-right">
@@ -317,7 +317,7 @@ export default function Settings() {
               <ul className="mt-4 space-y-2 text-sm">
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span>Všetky aktuálne funkcie aplikácie</span>
+                  <span>Takmer všetky aktuálne funkcie aplikácie</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
@@ -353,15 +353,19 @@ export default function Settings() {
               <ul className="mt-4 space-y-2 text-sm">
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span>Všetko z plánu Beta testing</span>
+                  <span>Takmer všetky aktuálne funkcie aplikácie + <strong>auto-vyplnenie UT času</strong> a <strong>predvolené súhvezdie</strong></span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span><strong>15 AI skenov</strong> denne</span>
+                  <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <span>Exporty VSNET / AAVSO / MEDUZA, import .xlsx/.ods, JSON katalógov</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Database className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                   <span>Limit úložiska <strong>2.8 GB</strong></span>
+                </li>
+                <li className="flex items-start gap-2 text-muted-foreground">
+                  <Sparkles className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>V budúcnosti: <strong className="text-foreground">15 AI skenov</strong> denne</span>
                 </li>
               </ul>
               {isPlusActive ? (
@@ -408,7 +412,7 @@ export default function Settings() {
                     </div>
                     <Progress value={pct} className="mt-2 h-2" />
                     <p className="text-xs text-muted-foreground mt-2">
-                      Využitých {pct.toFixed(2)} % z limitu plánu {isPlusActive ? "Plus" : "Beta testing"}. Veľkosť tvojich dát (hviezdy, session, pozorovania, prom katalóg).
+                      Využitých {pct.toFixed(2)} % z limitu plánu {isPlusActive ? "Plus" : "Free"}. Veľkosť tvojich dát (hviezdy, session, pozorovania, prom katalóg).
                     </p>
                   </>
                 );
