@@ -10,6 +10,10 @@ import { Loader2, Plus, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type Star = {
   id: string;
@@ -32,6 +36,7 @@ export default function Catalog() {
   const [filter, setFilter] = useState("");
   const [editing, setEditing] = useState<Star | null>(null);
   const [creating, setCreating] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<Star | null>(null);
 
   const reload = async () => {
     setLoading(true);
@@ -55,10 +60,9 @@ export default function Catalog() {
   );
 
   const remove = async (id: string) => {
-    if (!confirm("Zmazať túto hviezdu z katalógu?")) return;
     const { error } = await supabase.from("stars").delete().eq("id", id);
     if (error) toast.error(error.message);
-    else reload();
+    else { toast.success("Vymazané"); reload(); }
   };
 
   const saveEdit = async (s: Star) => {
@@ -140,7 +144,7 @@ export default function Catalog() {
                     <td className="px-3 py-2 font-mono text-xs">{s.aavso_code}</td>
                     <td className="px-3 py-2 font-mono text-xs">{s.chart_id}</td>
                     <td className="px-3 py-2 text-right">
-                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); remove(s.id); }}>
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setConfirmDelete(s); }}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </td>
@@ -161,6 +165,29 @@ export default function Catalog() {
           else createStar(s);
         }}
       />
+
+      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Vymazať hviezdu?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Naozaj chceš odstrániť „{confirmDelete?.name}" z katalógu? Táto akcia sa nedá vrátiť späť.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušiť</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const id = confirmDelete?.id;
+                setConfirmDelete(null);
+                if (id) remove(id);
+              }}
+            >
+              Vymazať
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
