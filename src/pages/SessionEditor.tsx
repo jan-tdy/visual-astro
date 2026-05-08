@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
 import { buildAAVSO, buildMEDUZA, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
 import { getPrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
+import { useSubscription } from "@/hooks/useSubscription";
 
 type StarType = "VISUAL" | "BINAR" | "ECL faint" | "ECL bright";
 type Star = {
@@ -63,6 +64,7 @@ export default function SessionEditor() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const nav = useNavigate();
+  const { isPlusActive } = useSubscription();
   const [loading, setLoading] = useState(true);
   const [stars, setStars] = useState<Star[]>([]);
   const [obsByStar, setObsByStar] = useState<Record<string, Obs>>({});
@@ -167,6 +169,20 @@ export default function SessionEditor() {
     sectionRefs.current[constellation]?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  // Predvolené súhvezdie (len Plus): po načítaní zoskroluj na zvolené súhvezdie
+  useEffect(() => {
+    if (loading) return;
+    if (!isPlusActive) return;
+    const pref = getPrefs().defaultConstellation;
+    if (!pref) return;
+    const target = grouped.order.find((c) => constAbbrev(c) === pref);
+    if (!target) return;
+    // počkaj na render sekcií
+    const t = setTimeout(() => scrollTo(target), 60);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, isPlusActive, grouped.order.join("|")]);
+
   // ------- Exports -------
   const buildExportRows = (): ExportRow[] => {
     const byId = new Map(stars.map((s) => [s.id, s]));
@@ -209,7 +225,7 @@ export default function SessionEditor() {
     else {
       downloadText(filename, text);
       const prefs = getPrefs();
-      if (prefs.openPortalAfterExport[kind]) {
+      if (isPlusActive && prefs.openPortalAfterExport[kind]) {
         const url = prefs.portalUrls?.[kind] || SUBMISSION_PORTALS[kind].url;
         setTimeout(() => window.open(url, "_blank", "noopener,noreferrer"), 250);
       }

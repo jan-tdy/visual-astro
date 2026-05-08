@@ -250,10 +250,20 @@ export default function Settings() {
               <div className="flex items-center gap-2">
                 <Upload className="h-4 w-4 text-muted-foreground" />
                 <h2 className="text-lg font-semibold">Po stiahnutí exportu</h2>
+                {!isPlusActive && (
+                  <Badge variant="outline" className="rounded-full text-[10px] gap-1 px-2 py-0">
+                    <Lock className="h-2.5 w-2.5" /> Plus
+                  </Badge>
+                )}
               </div>
               <p className="text-xs text-muted-foreground -mt-2">
                 Po stiahnutí súboru sa automaticky otvorí príslušná stránka v novom okne — pre rýchlejšie odoslanie pozorovaní.
               </p>
+              {!isPlusActive && (
+                <p className="text-xs text-muted-foreground -mt-2">
+                  Táto funkcia je dostupná v pláne <strong>Plus</strong>.
+                </p>
+              )}
 
               {(["aavso", "vsnet", "meduza"] as const).map((k) => (
                 <div key={k} className="space-y-2 rounded-lg border border-border p-3">
@@ -266,7 +276,8 @@ export default function Settings() {
                     </div>
                     <Switch
                       id={`portal-${k}`}
-                      checked={prefs.openPortalAfterExport[k]}
+                      checked={isPlusActive && prefs.openPortalAfterExport[k]}
+                      disabled={!isPlusActive}
                       onCheckedChange={(v) =>
                         setPrefs({
                           openPortalAfterExport: { ...prefs.openPortalAfterExport, [k]: v },
@@ -285,7 +296,7 @@ export default function Settings() {
                           portalUrls: { ...prefs.portalUrls, [k]: e.target.value },
                         })
                       }
-                      disabled={!prefs.openPortalAfterExport[k]}
+                      disabled={!isPlusActive || !prefs.openPortalAfterExport[k]}
                       className="font-mono text-xs"
                     />
                     <Button
