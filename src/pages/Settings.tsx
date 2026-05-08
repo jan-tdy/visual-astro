@@ -9,6 +9,9 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Check, Sparkles, Database, RefreshCw, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -16,10 +19,12 @@ import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { getStripeEnvironment, PLUS_PRICE_ID } from "@/lib/stripe";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { usePrefs } from "@/hooks/usePrefs";
 
 export default function Settings() {
   const { user } = useAuth();
   const { isPlusActive, sub } = useSubscription();
+  const { prefs, update: setPrefs } = usePrefs();
   const [obsCode, setObsCode] = useState("DPV");
   const [refDate, setRefDate] = useState("1980-01-01");
   const [busy, setBusy] = useState(false);
@@ -131,7 +136,7 @@ export default function Settings() {
           </TabsList>
 
           <TabsContent value="general">
-            <Card className="p-6 space-y-4">
+            <Card className="p-6 space-y-5">
           <div>
             <Label htmlFor="obs">Kód pozorovateľa (Obs)</Label>
             <Input id="obs" value={obsCode} onChange={(e) => setObsCode(e.target.value)} />
@@ -142,6 +147,70 @@ export default function Settings() {
             <Input id="ref" type="date" value={refDate} onChange={(e) => setRefDate(e.target.value)} />
           </div>
           <Button onClick={save} disabled={busy}>Uložiť</Button>
+            </Card>
+
+            <Card className="p-6 space-y-5 mt-4">
+              <h2 className="text-lg font-semibold">Pozorovanie & komfort</h2>
+
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="autofill">Auto-vyplniť aktuálny UT čas</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Pri vstupe do prázdneho riadku sa do UT predvyplní aktuálny čas (hh:mm).
+                  </p>
+                </div>
+                <Switch
+                  id="autofill"
+                  checked={prefs.autofillUtNow}
+                  onCheckedChange={(v) => setPrefs({ autofillUtNow: v })}
+                />
+              </div>
+
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="confirm">Potvrdenie pred mazaním</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Pýtať potvrdenie pri mazaní hviezd v katalógu a Prom katalógu.
+                  </p>
+                </div>
+                <Switch
+                  id="confirm"
+                  checked={prefs.confirmDelete}
+                  onCheckedChange={(v) => setPrefs({ confirmDelete: v })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Oneskorenie auto-save</Label>
+                  <span className="text-xs font-mono text-muted-foreground">{prefs.autosaveDelayMs} ms</span>
+                </div>
+                <Slider
+                  min={300}
+                  max={2000}
+                  step={100}
+                  value={[prefs.autosaveDelayMs]}
+                  onValueChange={([v]) => setPrefs({ autosaveDelayMs: v })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Kratšie = okamžité ukladanie, dlhšie = menej zápisov pri rýchlom písaní.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="defcon">Predvolené súhvezdie po otvorení session</Label>
+                <Select
+                  value={prefs.defaultConstellation}
+                  onValueChange={(v) => setPrefs({ defaultConstellation: v })}
+                >
+                  <SelectTrigger id="defcon"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {["AND","CAS","CAM","UMA","HER","DRA","CYG","ORI","GEM","LEO","AQL","SGE","PEG"].map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </Card>
           </TabsContent>
 
@@ -223,9 +292,15 @@ export default function Settings() {
                   Aktivovať Plus
                 </Button>
               )}
-              {sub?.cancel_at_period_end && sub.current_period_end && (
+              {isPlusActive && sub?.current_period_end && (
                 <p className="text-xs text-muted-foreground mt-2">
-                  Predplatné končí {new Date(sub.current_period_end).toLocaleDateString("sk-SK")}.
+                  {sub.cancel_at_period_end ? "Predplatné končí " : "Ďalšia fakturácia "}
+                  <strong>
+                    {new Date(sub.current_period_end).toLocaleDateString("sk-SK", {
+                      day: "numeric", month: "long", year: "numeric",
+                    })}
+                  </strong>
+                  .
                 </p>
               )}
             </Card>
