@@ -13,6 +13,7 @@ import Catalog from "./pages/Catalog.tsx";
 import Prom from "./pages/Prom.tsx";
 import Settings from "./pages/Settings.tsx";
 import About from "./pages/About.tsx";
+import CheckoutReturn from "./pages/CheckoutReturn.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { ProtectedRoute } from "./components/app/ProtectedRoute.tsx";
 
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/catalog" element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
             <Route path="/prom" element={<ProtectedRoute><Prom /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/checkout/return" element={<ProtectedRoute><CheckoutReturn /></ProtectedRoute>} />
             <Route path="/about" element={<About />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
