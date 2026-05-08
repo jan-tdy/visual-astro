@@ -9,6 +9,7 @@ import { Loader2, Plus, Trash2, Copy, Star, StarOff } from "lucide-react";
 import { toast } from "sonner";
 import { dateToJD } from "@/lib/astro";
 import { seedCatalogIfNeeded } from "@/lib/seed";
+import { useI18n } from "@/hooks/useI18n";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -27,6 +28,7 @@ interface SessionRow {
 export default function Sessions() {
   const { user } = useAuth();
   const nav = useNavigate();
+  const { t, lang } = useI18n();
   const [loading, setLoading] = useState(true);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
 
@@ -65,8 +67,18 @@ export default function Sessions() {
     setLoading(false);
   };
 
-  const newSession = async (fromTemplate: boolean) => {
+  const newSession = async (source: "empty" | "last" | "favorite") => {
     if (!user) return;
+    let templateId: string | null = null;
+    if (source === "last" && sessions.length > 0) templateId = sessions[0].id;
+    if (source === "favorite") {
+      const fav = sessions.find((s) => s.is_favorite);
+      if (!fav) {
+        toast.error(t("sessions.noFavorite"));
+        return;
+      }
+      templateId = fav.id;
+    }
     const now = new Date();
     const { data: created, error } = await supabase
       .from("sessions")
@@ -75,12 +87,11 @@ export default function Sessions() {
       .single();
     if (error) return toast.error(error.message);
 
-    if (fromTemplate && sessions.length > 0) {
-      const last = sessions[0];
+    if (templateId) {
       const { data: lastObs } = await supabase
         .from("observations")
         .select("star_id, a, pasos_a, pasos_b, b, limit_value, ut_time, note")
-        .eq("session_id", last.id);
+        .eq("session_id", templateId);
       if (lastObs && lastObs.length > 0) {
         const rows = lastObs.map((o) => ({
           ...o,
@@ -99,7 +110,7 @@ export default function Sessions() {
   const remove = async (id: string) => {
     const s = sessions.find((x) => x.id === id);
     if (s?.is_favorite) {
-      toast.error("Obľúbenú session nie je možné vymazať");
+      toast.error(t("sessions.favProtected"));
       return;
     }
     const { error } = await supabase.from("sessions").delete().eq("id", id);
@@ -114,9 +125,11 @@ export default function Sessions() {
     }
     const { error } = await supabase.from("sessions").update({ is_favorite: !current }).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success(current ? "Odobraté z obľúbených" : "Pridané do obľúbených");
+    toast.success(current ? t("sessions.favRemoved") : t("sessions.favAdded"));
     reload();
   };
+
+  const hasFavorite = sessions.some((s) => s.is_favorite);
 
   return (
     <div className="min-h-screen">
@@ -124,15 +137,20 @@ export default function Sessions() {
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <div>
-            <h1 className="text-2xl font-semibold">Pozorovacie session</h1>
-            <p className="text-sm text-muted-foreground">Záznamy odhadov magnitúd premenných hviezd</p>
+            <h1 className="text-2xl font-semibold">{t("sessions.title")}</h1>
+            <p className="text-sm text-muted-foreground">{t("sessions.subtitle")}</p>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={() => newSession(true)}>
-              <Copy className="h-4 w-4 mr-1.5" /> Nová z poslednej
+          <div className="flex gap-2 flex-wrap">
+            <Button onClick={() => newSession("last")}>
+              <Copy className="h-4 w-4 mr-1.5" /> {t("sessions.newFromLast")}
             </Button>
-            <Button variant="outline" onClick={() => newSession(false)}>
-              <Plus className="h-4 w-4 mr-1.5" /> Prázdna
+            {hasFavorite && (
+              <Button variant="secondary" onClick={() => newSession("favorite")}>
+                <Star className="h-4 w-4 mr-1.5 fill-current" /> {t("sessions.newFromFavorite")}
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => newSession("empty")}>
+              <Plus className="h-4 w-4 mr-1.5" /> {t("sessions.empty")}
             </Button>
           </div>
         </div>
@@ -143,7 +161,7 @@ export default function Sessions() {
           </div>
         ) : sessions.length === 0 ? (
           <Card className="p-8 text-center text-muted-foreground">
-            Zatiaľ žiadne session.
+            {t("sessions.none")}
           </Card>
         ) : (
           <div className="space-y-2">
@@ -152,10 +170,10 @@ export default function Sessions() {
                 <Link to={`/session/${s.id}`} className="flex-1">
                   <div className="font-medium">
                     {s.is_favorite && <Star className="inline h-3.5 w-3.5 mr-1 text-primary fill-current" />}
-                    {new Date(s.observed_at_utc).toLocaleString("sk-SK", { dateStyle: "medium", timeStyle: "short" })}
+                    {new Date(s.observed_at_utc).toLocaleString(lang === "sk" ? "sk-SK" : "en-GB", { dateStyle: "medium", timeStyle: "short" })}
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
-                    JD {s.jd?.toFixed(4) ?? "—"} · {s.obs_count} pozorovaní
+                    JD {s.jd?.toFixed(4) ?? "—"} · {s.obs_count} {t("sessions.observations")}
                     {s.notes ? ` · ${s.notes}` : ""}
                   </div>
                 </Link>
@@ -163,7 +181,7 @@ export default function Sessions() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    title={s.is_favorite ? "Odobrať z obľúbených" : "Pridať do obľúbených"}
+                    title={s.is_favorite ? t("sessions.favoriteRemove") : t("sessions.favoriteAdd")}
                     onClick={() => toggleFavorite(s.id, !!s.is_favorite)}
                   >
                     {s.is_favorite ? (
@@ -175,26 +193,24 @@ export default function Sessions() {
                   {!s.is_favorite && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" title="Vymazať">
+                        <Button variant="ghost" size="icon" title={t("sessions.delete")}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Vymazať session?</AlertDialogTitle>
+                          <AlertDialogTitle>{t("sessions.deleteTitle")}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Táto akcia natrvalo odstráni session zo dňa{" "}
-                            {new Date(s.observed_at_utc).toLocaleString("sk-SK", { dateStyle: "medium", timeStyle: "short" })}{" "}
-                            vrátane všetkých pozorovaní. Tento krok sa nedá vrátiť späť.
+                            {t("sessions.deleteDesc")}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Zrušiť</AlertDialogCancel>
+                          <AlertDialogCancel>{t("sessions.cancel")}</AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => remove(s.id)}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                           >
-                            Vymazať
+                            {t("sessions.delete")}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
