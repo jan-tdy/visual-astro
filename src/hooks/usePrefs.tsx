@@ -10,6 +10,11 @@ export interface UserPrefs {
     vsnet: boolean;
     meduza: boolean;
   };
+  portalUrls: {
+    aavso: string;
+    vsnet: string;
+    meduza: string;
+  };
 }
 
 const KEY = "user_prefs_v1";
@@ -26,6 +31,19 @@ export const SUBMISSION_PORTALS: Record<"aavso" | "vsnet" | "meduza", { url: str
   vsnet: { url: "https://vsnet.kusastro.kyoto-u.ac.jp/vsnet/", label: "VSNET (info o zaslaní pozorovaní)" },
   meduza: { url: "http://var.astro.cz/en/", label: "MEDUZA / var.astro.cz" },
 };
+
+const DEFAULTS_BASE = {
+  autofillUtNow: false,
+  confirmDelete: true,
+  autosaveDelayMs: 600,
+  defaultConstellation: "AND",
+  openPortalAfterExport: { aavso: false, vsnet: false, meduza: false },
+  portalUrls: {
+    aavso: SUBMISSION_PORTALS.aavso.url,
+    vsnet: SUBMISSION_PORTALS.vsnet.url,
+    meduza: SUBMISSION_PORTALS.meduza.url,
+  },
+} satisfies UserPrefs;
 
 function read(): UserPrefs {
   try {
