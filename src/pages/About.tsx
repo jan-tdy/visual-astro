@@ -15,7 +15,7 @@ const features = [
   { icon: Languages, title: "Slovenčina / Angličtina", desc: "Prepínač jazyka v hlavičke (SK / EN) — voľba sa pamätá medzi reláciami." },
   { icon: Sparkles, title: "Prom katalóg", desc: "Samostatný editovateľný katalóg premenných hviezd — pridávanie, úpravy aj mazanie s potvrdením." },
   { icon: Download, title: "JSON export & import", desc: "Zálohuj si katalóg aj jednotlivé sessions ako JSON a kedykoľvek ich obnov či prenes inde." },
-  { icon: CreditCard, title: "Plán Plus", desc: "Beta testing zadarmo (1.8 GB), alebo Plus za 2 €/mesačne — 15 AI skenov denne a 2.8 GB úložiska." },
+  { icon: CreditCard, title: "Plán Plus", desc: "Free plán (1.8 GB), alebo Plus za 2 €/mesačne — auto-vyplnenie UT, predvolené súhvezdie, 2.8 GB úložiska a 15 AI skenov denne." },
 ];
 
 export default function About() {
@@ -104,7 +104,7 @@ export default function About() {
               <p className="text-sm text-muted-foreground leading-relaxed">
                 V budúcnosti pribudne automatické rozpoznávanie ručne písaných tabuliek pomocou AI — odfotíš svoj papierový
                 záznam a aplikácia sama vyplní hviezdy, hodnoty A/Paso/B aj UT časy. V pláne <strong>Plus</strong> bude k dispozícii
-                15 skenov denne, v Beta testing pláne 5 skenov denne. Cieľom je úplne odstrániť manuálne prepisovanie.
+                15 skenov denne, vo Free pláne 5 skenov denne. Cieľom je úplne odstrániť manuálne prepisovanie.
               </p>
             </div>
           </div>
@@ -118,17 +118,17 @@ export default function About() {
           <div className="grid sm:grid-cols-2 gap-3 text-sm">
             <div className="rounded-lg border border-border p-4">
               <div className="flex items-center justify-between mb-1">
-                <strong>Beta testing</strong>
+                <strong>Free</strong>
                 <span className="text-primary font-semibold">0 €</span>
               </div>
-              <p className="text-muted-foreground text-xs">Všetky funkcie · 1.8 GB úložiska · 5 AI skenov / deň (čoskoro).</p>
+              <p className="text-muted-foreground text-xs">Takmer všetky funkcie · 1.8 GB úložiska · 5 AI skenov / deň (čoskoro).</p>
             </div>
             <div className="rounded-lg border border-primary/40 p-4">
               <div className="flex items-center justify-between mb-1">
                 <strong>Plus</strong>
                 <span className="text-primary font-semibold">2 € / mes.</span>
               </div>
-              <p className="text-muted-foreground text-xs">2.8 GB úložiska · 15 AI skenov / deň · prioritná podpora.</p>
+              <p className="text-muted-foreground text-xs">Auto-vyplnenie UT a predvolené súhvezdie · 2.8 GB úložiska · 15 AI skenov / deň.</p>
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-3">
