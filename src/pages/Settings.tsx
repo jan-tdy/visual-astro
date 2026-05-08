@@ -20,10 +20,12 @@ import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { getStripeEnvironment, PLUS_PRICE_ID } from "@/lib/stripe";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
+import { DEV_PLUS_KEY } from "@/hooks/useSubscription";
+import { Zap } from "lucide-react";
 
 export default function Settings() {
   const { user } = useAuth();
-  const { isPlusActive, sub } = useSubscription();
+  const { isPlusActive, sub, isDevUser, devOverride } = useSubscription();
   const { prefs, update: setPrefs } = usePrefs();
   const [obsCode, setObsCode] = useState("DPV");
   const [refDate, setRefDate] = useState("1980-01-01");
@@ -120,8 +122,18 @@ export default function Settings() {
     window.open(data.url, "_blank");
   };
 
-  const PLAN_LIMIT_GB = isPlusActive ? 2.8 : 1.8;
-  const LIMIT_BYTES = PLAN_LIMIT_GB * 1024 * 1024 * 1024;
+  const PLAN_LIMIT_MB = isPlusActive ? 800 : 200;
+  const LIMIT_BYTES = PLAN_LIMIT_MB * 1024 * 1024;
+
+  const toggleDevPlus = () => {
+    const next = !devOverride;
+    try {
+      if (next) localStorage.setItem(DEV_PLUS_KEY, "1");
+      else localStorage.removeItem(DEV_PLUS_KEY);
+    } catch {}
+    window.dispatchEvent(new Event("dev-plus-override-changed"));
+    toast.success(next ? "Plus aktivovaný (dev)" : "Plus deaktivovaný (dev)");
+  };
 
   return (
     <div className="min-h-screen">
@@ -325,7 +337,7 @@ export default function Settings() {
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span>Limit úložiska <strong>1.8 GB</strong></span>
+                  <span>Limit úložiska <strong>200 MB</strong></span>
                 </li>
                 <li className="flex items-start gap-2 text-muted-foreground">
                   <Sparkles className="h-4 w-4 mt-0.5 shrink-0" />
@@ -361,7 +373,7 @@ export default function Settings() {
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span>Limit úložiska <strong>2.8 GB</strong></span>
+                  <span>Limit úložiska <strong>800 MB</strong></span>
                 </li>
                 <li className="flex items-start gap-2 text-muted-foreground">
                   <Sparkles className="h-4 w-4 mt-0.5 shrink-0" />
@@ -391,6 +403,23 @@ export default function Settings() {
             </Card>
             </div>
 
+            {isDevUser && (
+              <Card className="p-6 border-accent/40 bg-accent/5">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-accent" />
+                      <h3 className="font-semibold">Dev override — Plus zadarmo</h3>
+                    </div>
+                    <p className="text-xs text-muted-foreground max-w-md">
+                      Si prihlásený ako vývojár ({user?.email}). Jedným klikom si môžeš zapnúť alebo vypnúť plán Plus bez platby.
+                    </p>
+                  </div>
+                  <Switch checked={devOverride} onCheckedChange={toggleDevPlus} />
+                </div>
+              </Card>
+            )}
+
             <Card className="p-6">
               <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
                 <div className="flex items-center gap-2">
@@ -408,7 +437,7 @@ export default function Settings() {
                   <>
                     <div className="flex items-baseline gap-2">
                       <span className="text-2xl font-semibold">{fmtBytes(usage.bytes)}</span>
-                      <span className="text-sm text-muted-foreground">/ {PLAN_LIMIT_GB} GB</span>
+                      <span className="text-sm text-muted-foreground">/ {PLAN_LIMIT_MB} MB</span>
                     </div>
                     <Progress value={pct} className="mt-2 h-2" />
                     <p className="text-xs text-muted-foreground mt-2">

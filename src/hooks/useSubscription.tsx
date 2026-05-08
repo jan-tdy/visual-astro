@@ -11,10 +11,28 @@ export interface SubscriptionRow {
   stripe_customer_id: string;
 }
 
+export const DEV_PLUS_EMAIL = "var@kozmos.sk";
+export const DEV_PLUS_KEY = "dev_plus_override_v1";
+
+function readDevPlusOverride(): boolean {
+  try { return localStorage.getItem(DEV_PLUS_KEY) === "1"; } catch { return false; }
+}
+
 export function useSubscription() {
   const { user } = useAuth();
   const [sub, setSub] = useState<SubscriptionRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [devOverride, setDevOverride] = useState<boolean>(readDevPlusOverride);
+
+  useEffect(() => {
+    const onChange = () => setDevOverride(readDevPlusOverride());
+    window.addEventListener("storage", onChange);
+    window.addEventListener("dev-plus-override-changed", onChange as EventListener);
+    return () => {
+      window.removeEventListener("storage", onChange);
+      window.removeEventListener("dev-plus-override-changed", onChange as EventListener);
+    };
+  }, []);
 
   const refetch = async () => {
     if (!user) {
@@ -51,11 +69,14 @@ export function useSubscription() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  const isPlusActive = !!sub && (
+  const realPlusActive = !!sub && (
     (["active", "trialing", "past_due"].includes(sub.status) &&
       (!sub.current_period_end || new Date(sub.current_period_end) > new Date())) ||
     (sub.status === "canceled" && sub.current_period_end && new Date(sub.current_period_end) > new Date())
   );
 
-  return { sub, loading, isPlusActive, refetch };
+  const isDevUser = user?.email?.toLowerCase() === DEV_PLUS_EMAIL;
+  const isPlusActive = realPlusActive || (isDevUser && devOverride);
+
+  return { sub, loading, isPlusActive, refetch, isDevUser, devOverride };
 }
