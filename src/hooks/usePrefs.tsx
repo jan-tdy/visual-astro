@@ -5,6 +5,11 @@ export interface UserPrefs {
   confirmDelete: boolean;        // pýtať potvrdenie pri mazaní v katalógoch
   autosaveDelayMs: number;       // oneskorenie auto-save (300–2000)
   defaultConstellation: string;  // predvolené súhvezdie po otvorení session
+  openPortalAfterExport: {
+    aavso: boolean;
+    vsnet: boolean;
+    meduza: boolean;
+  };
 }
 
 const KEY = "user_prefs_v1";
@@ -13,6 +18,13 @@ const DEFAULTS: UserPrefs = {
   confirmDelete: true,
   autosaveDelayMs: 600,
   defaultConstellation: "AND",
+  openPortalAfterExport: { aavso: false, vsnet: false, meduza: false },
+};
+
+export const SUBMISSION_PORTALS: Record<"aavso" | "vsnet" | "meduza", { url: string; label: string }> = {
+  aavso: { url: "https://www.aavso.org/webobs/file/", label: "AAVSO WebObs (upload súboru)" },
+  vsnet: { url: "https://vsnet.kusastro.kyoto-u.ac.jp/vsnet/", label: "VSNET (info o zaslaní pozorovaní)" },
+  meduza: { url: "http://var.astro.cz/en/", label: "MEDUZA / var.astro.cz" },
 };
 
 function read(): UserPrefs {
