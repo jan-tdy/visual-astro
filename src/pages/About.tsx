@@ -15,7 +15,7 @@ const features = [
   { icon: Languages, title: "Slovenčina / Angličtina", desc: "Prepínač jazyka v hlavičke (SK / EN) — voľba sa pamätá medzi reláciami." },
   { icon: Sparkles, title: "Prom katalóg", desc: "Samostatný editovateľný katalóg premenných hviezd — pridávanie, úpravy aj mazanie s potvrdením." },
   { icon: Download, title: "JSON export & import", desc: "Zálohuj si katalóg aj jednotlivé sessions ako JSON a kedykoľvek ich obnov či prenes inde." },
-  { icon: CreditCard, title: "Plán Plus", desc: "Free plán (200 MB), alebo Plus za 2 €/mesačne — auto-vyplnenie UT, predvolené súhvezdie, 800 MB úložiska a 15 AI skenov denne." },
+  { icon: CreditCard, title: "Plán Plus", desc: "Free plán (200 MB), alebo Plus za 2 €/mesačne — predvolené súhvezdie, 800 MB úložiska a 15 AI skenov denne." },
 ];
 
 export default function About() {
@@ -128,7 +128,7 @@ export default function About() {
                 <strong>Plus</strong>
                 <span className="text-primary font-semibold">2 € / mes.</span>
               </div>
-              <p className="text-muted-foreground text-xs">Auto-vyplnenie UT a predvolené súhvezdie · 800 MB úložiska · 15 AI skenov / deň.</p>
+              <p className="text-muted-foreground text-xs">Predvolené súhvezdie · 800 MB úložiska · 15 AI skenov / deň.</p>
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-3">
