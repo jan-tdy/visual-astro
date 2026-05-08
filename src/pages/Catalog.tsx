@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Trash2, Save } from "lucide-react";
+import { Loader2, Plus, Trash2, Save, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -37,6 +37,7 @@ export default function Catalog() {
   const [editing, setEditing] = useState<Star | null>(null);
   const [creating, setCreating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<Star | null>(null);
+  const [confirmImport, setConfirmImport] = useState<{ data: any[]; replace: boolean } | null>(null);
 
   const reload = async () => {
     setLoading(true);
@@ -102,14 +103,88 @@ export default function Catalog() {
     }
   };
 
+  const exportJSON = () => {
+    const payload = stars.map(({ id, ...rest }) => rest);
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `katalog_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result));
+        if (!Array.isArray(parsed)) throw new Error("JSON musí obsahovať pole hviezd");
+        setConfirmImport({ data: parsed, replace: false });
+      } catch (e: any) {
+        toast.error("Neplatný JSON: " + e.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const runImport = async (replace: boolean) => {
+    if (!user || !confirmImport) return;
+    const { data } = confirmImport;
+    if (replace) {
+      const { error: delErr } = await supabase.from("stars").delete().eq("user_id", user.id);
+      if (delErr) { toast.error(delErr.message); return; }
+    }
+    const baseSort = replace ? 0 : Math.max(0, ...stars.map((x) => x.sort_order));
+    const rows = data.map((s: any, i: number) => ({
+      user_id: user.id,
+      name: String(s.name ?? "").trim(),
+      constellation: String(s.constellation ?? "").trim(),
+      type: (TYPES as readonly string[]).includes(s.type) ? s.type : "VISUAL",
+      vsnet_code: s.vsnet_code ?? null,
+      aavso_code: s.aavso_code ?? null,
+      chart_id: s.chart_id ?? null,
+      notes: s.notes ?? null,
+      sort_order: typeof s.sort_order === "number" ? s.sort_order : baseSort + i + 1,
+    })).filter((r) => r.name && r.constellation);
+    if (rows.length === 0) { toast.error("Žiadne platné riadky"); setConfirmImport(null); return; }
+    for (let i = 0; i < rows.length; i += 200) {
+      const { error } = await supabase.from("stars").insert(rows.slice(i, i + 200));
+      if (error) { toast.error(error.message); return; }
+    }
+    toast.success(`Importovaných ${rows.length} hviezd`);
+    setConfirmImport(null);
+    reload();
+  };
+
   return (
     <div className="min-h-screen">
       <AppHeader />
       <main className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <h1 className="text-2xl font-semibold">Katalóg hviezd</h1>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Input placeholder="Hľadať…" value={filter} onChange={(e) => setFilter(e.target.value)} className="w-48" />
+            <Button variant="outline" size="sm" onClick={exportJSON}>
+              <Download className="h-4 w-4 mr-1.5" /> JSON
+            </Button>
+            <label className="inline-flex">
+              <Button variant="outline" size="sm" asChild>
+                <span className="cursor-pointer">
+                  <Upload className="h-4 w-4 mr-1.5" /> Import
+                </span>
+              </Button>
+              <input
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleImportFile(f);
+                  e.target.value = "";
+                }}
+              />
+            </label>
             <Button onClick={() => setCreating(true)}>
               <Plus className="h-4 w-4 mr-1.5" /> Pridať
             </Button>
@@ -185,6 +260,22 @@ export default function Catalog() {
             >
               Vymazať
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!confirmImport} onOpenChange={(o) => !o && setConfirmImport(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Importovať katalóg?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Súbor obsahuje {confirmImport?.data.length ?? 0} hviezd. Vyber, či ich chceš pridať k existujúcim, alebo nahradiť celý katalóg.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-wrap gap-2">
+            <AlertDialogCancel>Zrušiť</AlertDialogCancel>
+            <Button variant="outline" onClick={() => runImport(false)}>Pridať</Button>
+            <AlertDialogAction onClick={() => runImport(true)}>Nahradiť všetko</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
