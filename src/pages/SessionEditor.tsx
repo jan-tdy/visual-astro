@@ -265,17 +265,23 @@ export default function SessionEditor() {
         }
         if (importedDate) break;
       }
-      const byName = new Map(stars.map((s) => [s.name.toLowerCase().trim(), s]));
+      const norm = (x: string) => x.toLowerCase().replace(/\s+/g, " ").trim();
+      const byName = new Map<string, Star>();
+      for (const s of stars) {
+        byName.set(norm(s.name), s);
+        byName.set(norm(s.name).replace(/\s+/g, ""), s);
+      }
       let matched = 0;
+      let skipped = 0;
       const upserts: any[] = [];
       for (let i = headerIdx + 1; i < rows.length; i++) {
         const r = rows[i];
         if (!r) continue;
         const nameRaw = r[cName];
         if (!nameRaw) continue;
-        const name = String(nameRaw).toLowerCase().trim();
-        const star = byName.get(name);
-        if (!star) continue;
+        const name = norm(String(nameRaw));
+        const star = byName.get(name) ?? byName.get(name.replace(/\s+/g, ""));
+        if (!star) { skipped++; continue; }
         const get = (idx: number) => (idx >= 0 && r[idx] != null && r[idx] !== "" ? r[idx] : null);
         const num = (v: any) => (v == null ? null : Number.isFinite(+v) ? parseInt(String(v)) : null);
         const utRaw = get(cUT);
@@ -326,7 +332,9 @@ export default function SessionEditor() {
       if (importedDate) {
         setObservedAt(importedDate);
       }
-      toast.success(`Importovaných ${matched} hviezd${importedDate ? " + dátum" : ""}`);
+      toast.success(
+        `Importovaných ${matched} pozorovaní${skipped ? `, ${skipped} preskočených (chýbajú v katalógu)` : ""}${importedDate ? " + dátum" : ""}`,
+      );
     } catch (e: any) {
       toast.error("Chyba pri importe: " + e.message);
     }
