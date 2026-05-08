@@ -383,11 +383,11 @@ export default function SessionEditor() {
                 </Button>
               </div>
             ))}
-            <div className="ml-auto">
+            <div className="ml-auto flex gap-1">
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".xlsx,.xls,.ods,.csv"
+                accept="application/json,.json"
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
@@ -395,8 +395,11 @@ export default function SessionEditor() {
                   e.target.value = "";
                 }}
               />
+              <Button size="sm" variant="secondary" onClick={exportSessionJSON}>
+                <FileJson className="h-3.5 w-3.5 mr-1" /> Export JSON
+              </Button>
               <Button size="sm" variant="secondary" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="h-3.5 w-3.5 mr-1" /> Import (.xlsx/.ods)
+                <Upload className="h-3.5 w-3.5 mr-1" /> Import JSON
               </Button>
             </div>
           </div>
