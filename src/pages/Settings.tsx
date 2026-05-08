@@ -353,14 +353,14 @@ export default function Settings() {
               <ul className="mt-4 space-y-2 text-sm">
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span>Takmer všetky aktuálne funkcie aplikácie + <strong>auto-vyplnenie UT času</strong> a <strong>predvolené súhvezdie</strong></span>
+                  <span>Všetky aktuálne funkcie aplikácie + <strong>auto-vyplnenie UT času</strong> a <strong>predvolené súhvezdie</strong></span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                   <span>Exporty VSNET / AAVSO / MEDUZA, import .xlsx/.ods, JSON katalógov</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Database className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                   <span>Limit úložiska <strong>2.8 GB</strong></span>
                 </li>
                 <li className="flex items-start gap-2 text-muted-foreground">
