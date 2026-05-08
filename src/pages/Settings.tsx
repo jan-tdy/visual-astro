@@ -244,22 +244,52 @@ export default function Settings() {
               </p>
 
               {(["aavso", "vsnet", "meduza"] as const).map((k) => (
-                <div key={k} className="flex items-start justify-between gap-4">
-                  <div className="space-y-0.5 min-w-0">
-                    <Label htmlFor={`portal-${k}`} className="uppercase">{k}</Label>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {SUBMISSION_PORTALS[k].label}
-                    </p>
+                <div key={k} className="space-y-2 rounded-lg border border-border p-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-0.5 min-w-0">
+                      <Label htmlFor={`portal-${k}`} className="uppercase">{k}</Label>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {SUBMISSION_PORTALS[k].label}
+                      </p>
+                    </div>
+                    <Switch
+                      id={`portal-${k}`}
+                      checked={prefs.openPortalAfterExport[k]}
+                      onCheckedChange={(v) =>
+                        setPrefs({
+                          openPortalAfterExport: { ...prefs.openPortalAfterExport, [k]: v },
+                        })
+                      }
+                    />
                   </div>
-                  <Switch
-                    id={`portal-${k}`}
-                    checked={prefs.openPortalAfterExport[k]}
-                    onCheckedChange={(v) =>
-                      setPrefs({
-                        openPortalAfterExport: { ...prefs.openPortalAfterExport, [k]: v },
-                      })
-                    }
-                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id={`portal-url-${k}`}
+                      type="url"
+                      placeholder={SUBMISSION_PORTALS[k].url}
+                      value={prefs.portalUrls[k]}
+                      onChange={(e) =>
+                        setPrefs({
+                          portalUrls: { ...prefs.portalUrls, [k]: e.target.value },
+                        })
+                      }
+                      disabled={!prefs.openPortalAfterExport[k]}
+                      className="font-mono text-xs"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setPrefs({
+                          portalUrls: { ...prefs.portalUrls, [k]: SUBMISSION_PORTALS[k].url },
+                        })
+                      }
+                      title="Obnoviť predvolenú URL"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </Card>
