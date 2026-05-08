@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
+import { useI18n } from "@/hooks/useI18n";
 import { Button } from "@/components/ui/button";
 import { LogOut, BookOpen, Settings as SettingsIcon, ListChecks, Info, Sun, Moon, Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -9,6 +10,7 @@ import { useState } from "react";
 export function AppHeader() {
   const { signOut, user } = useAuth();
   const { theme, toggle } = useTheme();
+  const { lang, setLang, t } = useI18n();
   const loc = useLocation();
   const [open, setOpen] = useState(false);
   const link = (to: string, label: string, Icon: any) => {
@@ -29,19 +31,27 @@ export function AppHeader() {
     <header className="border-b border-border bg-card/60 backdrop-blur sticky top-0 z-30">
       <div className="container mx-auto px-4 py-1.5 flex items-center justify-between gap-4">
         <Link to="/" className="text-lg font-semibold tracking-wide text-primary inline-flex items-center gap-2">
-          ✦ Reducciones
+          ✦ Visual Astro
           <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/30">
             beta
           </span>
         </Link>
         <nav className="hidden sm:flex items-center gap-1">
-          {link("/", "Sessions", ListChecks)}
-          {link("/catalog", "Katalóg", BookOpen)}
-          {link("/settings", "Nastavenia", SettingsIcon)}
-          {link("/about", "Info", Info)}
+          {link("/", t("nav.sessions"), ListChecks)}
+          {link("/catalog", t("nav.catalog"), BookOpen)}
+          {link("/settings", t("nav.settings"), SettingsIcon)}
+          {link("/about", t("nav.info"), Info)}
         </nav>
         <div className="flex items-center gap-2">
           <span className="hidden md:inline text-xs text-muted-foreground">{user?.email}</span>
+          <button
+            onClick={() => setLang(lang === "sk" ? "en" : "sk")}
+            className="text-[11px] font-semibold uppercase tracking-wider px-2 py-1 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            aria-label={t("lang.label")}
+            title={t("lang.label")}
+          >
+            {lang === "sk" ? "SK" : "EN"}
+          </button>
           <Button variant="ghost" size="icon" onClick={toggle} aria-label="Prepnúť režim">
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
@@ -56,15 +66,15 @@ export function AppHeader() {
             </SheetTrigger>
             <SheetContent side="right" className="w-64">
               <div className="flex flex-col gap-1 mt-6">
-                {link("/", "Sessions", ListChecks)}
-                {link("/catalog", "Katalóg", BookOpen)}
-                {link("/settings", "Nastavenia", SettingsIcon)}
-                {link("/about", "Info", Info)}
+                {link("/", t("nav.sessions"), ListChecks)}
+                {link("/catalog", t("nav.catalog"), BookOpen)}
+                {link("/settings", t("nav.settings"), SettingsIcon)}
+                {link("/about", t("nav.info"), Info)}
                 <button
                   onClick={() => { setOpen(false); signOut(); }}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-muted-foreground hover:text-foreground text-left mt-4"
                 >
-                  <LogOut className="h-4 w-4" /> Odhlásiť
+                  <LogOut className="h-4 w-4" /> {t("nav.logout")}
                 </button>
               </div>
             </SheetContent>
