@@ -239,6 +239,8 @@ export type Database = {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean
       }
+      user_storage_bytes: { Args: { _user_id: string }; Returns: number }
+      user_storage_limit_bytes: { Args: { _user_id: string }; Returns: number }
     }
     Enums: {
       star_type: "VISUAL" | "BINAR" | "ECL faint" | "ECL bright"

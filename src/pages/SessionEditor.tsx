@@ -160,7 +160,13 @@ export default function SessionEditor() {
       const { error } = await supabase
         .from("observations")
         .upsert(payload, { onConflict: "session_id,star_id" });
-      if (error) toast.error(error.message);
+      if (error) {
+        if (error.message.includes("Storage limit exceeded")) {
+          toast.error("Prekročený limit úložiska. Upgraduj na Plus pre viac miesta.");
+        } else {
+          toast.error(error.message);
+        }
+      }
     }, 600);
   };
 
@@ -320,7 +326,14 @@ export default function SessionEditor() {
         const { error } = await supabase
           .from("observations")
           .upsert(chunk, { onConflict: "session_id,star_id" });
-        if (error) { toast.error(error.message); return; }
+        if (error) {
+          if (error.message.includes("Storage limit exceeded")) {
+            toast.error("Prekročený limit úložiska. Upgraduj na Plus pre viac miesta.");
+          } else {
+            toast.error(error.message);
+          }
+          return;
+        }
       }
       toast.success(
         `Importovaných ${matched} pozorovaní${skipped ? `, ${skipped} preskočených (chýbajú v katalógu)` : ""}`,
