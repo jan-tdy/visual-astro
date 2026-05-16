@@ -316,11 +316,25 @@ function StarDialog({
         <div className="space-y-3">
           <div>
             <Label>Názov</Label>
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <Input
+              placeholder="napr. SS Cyg"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Označenie hviezdy (Bayer/Flamsteed alebo GCVS, napr. „SS Cyg", „V404 Cyg").
+            </p>
           </div>
           <div>
             <Label>Súhvezdie</Label>
-            <Input value={form.constellation} onChange={(e) => setForm({ ...form, constellation: e.target.value })} />
+            <Input
+              placeholder="napr. CYGNUS"
+              value={form.constellation}
+              onChange={(e) => setForm({ ...form, constellation: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Latinský názov súhvezdia VEĽKÝMI písmenami (napr. „CYGNUS", „ANDROMEDA").
+            </p>
           </div>
           <div>
             <Label>Typ</Label>
@@ -330,11 +344,26 @@ function StarDialog({
                 {TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              VISUAL = bežné premenné, BINAR = zákrytové dvojhviezdy, ECL faint/bright = zákrytové slabé/jasné.
+            </p>
           </div>
-          {(["vsnet_code", "aavso_code", "chart_id", "notes"] as const).map((k) => (
+          {(
+            [
+              { k: "vsnet_code", label: "VSNET kód", ph: "napr. SS Cyg", hint: "Označenie hviezdy v databáze VSNET (vsnet-obs)." },
+              { k: "aavso_code", label: "AAVSO kód", ph: "napr. 000-BCT-905", hint: "AUID identifikátor hviezdy v AAVSO (VSX)." },
+              { k: "chart_id", label: "Karta (chart ID)", ph: "napr. X28469DM", hint: "Identifikátor porovnávacej karty (AAVSO VSP)." },
+              { k: "notes", label: "Poznámky", ph: "napr. perióda ~50 dní, výrazné maximá", hint: "Voliteľné. Krátka poznámka k hviezde alebo pozorovaniam." },
+            ] as const
+          ).map(({ k, label, ph, hint }) => (
             <div key={k}>
-              <Label>{k}</Label>
-              <Input value={(form as any)[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} />
+              <Label>{label}</Label>
+              <Input
+                placeholder={ph}
+                value={(form as any)[k]}
+                onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground mt-1">{hint}</p>
             </div>
           ))}
           <Button className="w-full" onClick={() => onSave({ ...form, vsnet_code: form.vsnet_code || null, aavso_code: form.aavso_code || null, chart_id: form.chart_id || null, notes: form.notes || null })}>
