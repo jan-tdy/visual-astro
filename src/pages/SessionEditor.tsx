@@ -118,6 +118,30 @@ export default function SessionEditor() {
     return { order, map: m };
   }, [stars, typeFilter]);
 
+  // Flat ordering of stars across constellations for keyboard navigation
+  const flatIndex = useMemo(() => {
+    const idx: Record<string, number> = {};
+    let i = 0;
+    for (const c of grouped.order) for (const s of grouped.map[c]) idx[s.id] = i++;
+    return idx;
+  }, [grouped]);
+
+  const handleCellKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    const el = e.currentTarget;
+    const cell = el.getAttribute("data-cell");
+    if (!cell) return;
+    const [rStr, cStr] = cell.split("-");
+    const r = parseInt(rStr), c = parseInt(cStr);
+    const next = e.key === "ArrowDown" ? r + 1 : r - 1;
+    const target = document.querySelector<HTMLInputElement>(`input[data-cell="${next}-${c}"]`);
+    if (target) {
+      e.preventDefault();
+      target.focus();
+      target.select?.();
+    }
+  };
+
   const jd = useMemo(() => dateToJD(observedAt), [observedAt]);
 
   // Save header (date/jd) on change with debounce
