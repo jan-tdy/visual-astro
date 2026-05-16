@@ -118,6 +118,30 @@ export default function SessionEditor() {
     return { order, map: m };
   }, [stars, typeFilter]);
 
+  // Flat ordering of stars across constellations for keyboard navigation
+  const flatIndex = useMemo(() => {
+    const idx: Record<string, number> = {};
+    let i = 0;
+    for (const c of grouped.order) for (const s of grouped.map[c]) idx[s.id] = i++;
+    return idx;
+  }, [grouped]);
+
+  const handleCellKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    const el = e.currentTarget;
+    const cell = el.getAttribute("data-cell");
+    if (!cell) return;
+    const [rStr, cStr] = cell.split("-");
+    const r = parseInt(rStr), c = parseInt(cStr);
+    const next = e.key === "ArrowDown" ? r + 1 : r - 1;
+    const target = document.querySelector<HTMLInputElement>(`input[data-cell="${next}-${c}"]`);
+    if (target) {
+      e.preventDefault();
+      target.focus();
+      target.select?.();
+    }
+  };
+
   const jd = useMemo(() => dateToJD(observedAt), [observedAt]);
 
   // Save header (date/jd) on change with debounce
@@ -498,26 +522,29 @@ export default function SessionEditor() {
                     {grouped.map[c].map((s) => {
                       const o = obsByStar[s.id];
                       const mag = computeMagnitude(o ?? { a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null }, s.name);
+                      const r = flatIndex[s.id];
                       return (
                         <tr key={s.id} className="border-b border-border/40 hover:bg-secondary/20">
                           <td className="px-2 py-1 font-medium sticky left-0 bg-card">{s.name}</td>
                           <td className="px-1 py-1">
-                            <Input value={o?.a ?? ""} onChange={(e) => updateObs(s.id, { a: e.target.value || null })} className="h-7 text-xs rounded-sm" />
+                            <Input data-cell={`${r}-0`} onKeyDown={handleCellKey} value={o?.a ?? ""} onChange={(e) => updateObs(s.id, { a: e.target.value || null })} className="h-7 text-xs rounded-sm" />
                           </td>
                           <td className="px-1 py-1">
-                            <Input type="number" value={o?.pasos_a ?? ""} onChange={(e) => updateObs(s.id, { pasos_a: e.target.value === "" ? null : parseInt(e.target.value) })} className="h-7 text-xs rounded-sm" />
+                            <Input data-cell={`${r}-1`} onKeyDown={handleCellKey} type="number" value={o?.pasos_a ?? ""} onChange={(e) => updateObs(s.id, { pasos_a: e.target.value === "" ? null : parseInt(e.target.value) })} className="h-7 text-xs rounded-sm" />
                           </td>
                           <td className="px-1 py-1">
-                            <Input type="number" value={o?.pasos_b ?? ""} onChange={(e) => updateObs(s.id, { pasos_b: e.target.value === "" ? null : parseInt(e.target.value) })} className="h-7 text-xs rounded-sm" />
+                            <Input data-cell={`${r}-2`} onKeyDown={handleCellKey} type="number" value={o?.pasos_b ?? ""} onChange={(e) => updateObs(s.id, { pasos_b: e.target.value === "" ? null : parseInt(e.target.value) })} className="h-7 text-xs rounded-sm" />
                           </td>
                           <td className="px-1 py-1">
-                            <Input value={o?.b ?? ""} onChange={(e) => updateObs(s.id, { b: e.target.value || null })} className="h-7 text-xs rounded-sm" />
+                            <Input data-cell={`${r}-3`} onKeyDown={handleCellKey} value={o?.b ?? ""} onChange={(e) => updateObs(s.id, { b: e.target.value || null })} className="h-7 text-xs rounded-sm" />
                           </td>
                           <td className="px-1 py-1">
-                            <Input value={o?.limit_value ?? ""} onChange={(e) => updateObs(s.id, { limit_value: e.target.value || null })} className="h-7 text-xs rounded-sm" placeholder="<14.9" />
+                            <Input data-cell={`${r}-4`} onKeyDown={handleCellKey} value={o?.limit_value ?? ""} onChange={(e) => updateObs(s.id, { limit_value: e.target.value || null })} className="h-7 text-xs rounded-sm" placeholder="<14.9" />
                           </td>
                           <td className="px-1 py-1">
                             <Input
+                              data-cell={`${r}-5`}
+                              onKeyDown={handleCellKey}
                               value={o?.ut_time ?? ""}
                               onChange={(e) => {
                                 const v = e.target.value.replace(/\s+/g, ":");
@@ -528,7 +555,7 @@ export default function SessionEditor() {
                             />
                           </td>
                           <td className="px-1 py-1">
-                            <Input value={o?.note ?? ""} onChange={(e) => updateObs(s.id, { note: e.target.value || null })} className="h-7 text-xs rounded-sm" />
+                            <Input data-cell={`${r}-6`} onKeyDown={handleCellKey} value={o?.note ?? ""} onChange={(e) => updateObs(s.id, { note: e.target.value || null })} className="h-7 text-xs rounded-sm" />
                           </td>
                           <td className="px-2 py-1 text-right font-mono text-xs">
                             {mag.value ?? <span className="text-muted-foreground">—</span>}
