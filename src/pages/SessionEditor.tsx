@@ -127,14 +127,28 @@ export default function SessionEditor() {
   }, [grouped]);
 
   const handleCellKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
     const el = e.currentTarget;
     const cell = el.getAttribute("data-cell");
     if (!cell) return;
     const [rStr, cStr] = cell.split("-");
     const r = parseInt(rStr), c = parseInt(cStr);
-    const next = e.key === "ArrowDown" ? r + 1 : r - 1;
-    const target = document.querySelector<HTMLInputElement>(`input[data-cell="${next}-${c}"]`);
+    let nextR = r, nextC = c;
+    if (e.key === "ArrowDown") nextR = r + 1;
+    else if (e.key === "ArrowUp") nextR = r - 1;
+    else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      // Skoč na susedný stĺpec iba ak je kurzor na okraji textu
+      const len = el.value.length;
+      const start = el.selectionStart ?? 0;
+      const end = el.selectionEnd ?? 0;
+      if (e.key === "ArrowRight") {
+        if (start !== end || end < len) return;
+        nextC = c + 1;
+      } else {
+        if (start !== end || start > 0) return;
+        nextC = c - 1;
+      }
+    } else return;
+    const target = document.querySelector<HTMLInputElement>(`input[data-cell="${nextR}-${nextC}"]`);
     if (target) {
       e.preventDefault();
       target.focus();

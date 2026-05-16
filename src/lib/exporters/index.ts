@@ -27,6 +27,11 @@ function rowDate(row: ExportRow, ctx: ExportContext): Date {
   const h = parseInt(m[1]), mm = parseInt(m[2]);
   const d = new Date(ctx.observedAt);
   d.setUTCHours(h, mm, 0, 0);
+  // Časy 00:00–11:59 UT patria do nasledujúceho kalendárneho dňa
+  // (pozorovanie cez polnoc), keďže session má dátum večera.
+  if (h < 12) {
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
   return d;
 }
 
@@ -47,7 +52,7 @@ export function buildAAVSO(rows: ExportRow[], ctx: ExportContext): string {
   const header = [
     "#TYPE=Visual",
     `#OBSCODE=${ctx.obsCode}`,
-    "#SOFTWARE=Reducciones (Lovable)",
+    "#SOFTWARE=Visual-Astro (japysoft)",
     "#DELIM=,",
     "#DATE=JD",
     "#OBSTYPE=Visual",
