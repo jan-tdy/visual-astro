@@ -44,8 +44,7 @@ export function buildVSNET(rows: ExportRow[], ctx: ExportContext): string {
     const code = r.vsnet_code.trim().padEnd(8, " ");
     const dateStr = vsnetDate(rowDate(r, ctx));
     const rawNote = (r.note ?? "").trim();
-    const noteOut = rawNote.toUpperCase() === "ACTIVE" ? "Y" : rawNote;
-    const suffix = noteOut ? ` ${noteOut}` : "";
+    const suffix = rawNote ? ` ${rawNote}` : "";
     lines.push(`${code} ${dateStr} ${mag.padStart(5, " ")} ${ctx.obsCode}${suffix}`);
   }
   return lines.join("\n") + "\n";
@@ -74,6 +73,8 @@ export function buildAAVSO(rows: ExportRow[], ctx: ExportContext): string {
       : (Number.isFinite(aVal) ? aVal.toFixed(2) : (r.a ?? ""));
     const comp2 = isLimit ? "na" : (Number.isFinite(bVal) ? bVal.toFixed(2) : (r.b ?? ""));
     const jd = ctx.jd + (rowDate(r, ctx).getTime() - ctx.observedAt.getTime()) / 86400000;
+    const rawNote = (r.note ?? "").trim();
+    const noteOut = rawNote.toUpperCase() === "OUTBURST" ? "Y" : (rawNote || "na");
     body.push(
       [
         r.aavso_code,
@@ -83,7 +84,7 @@ export function buildAAVSO(rows: ExportRow[], ctx: ExportContext): string {
         comp1 || "na",
         comp2 || "na",
         r.chart_id || "na",
-        r.note || "na",
+        noteOut,
       ].join(","),
     );
   }
