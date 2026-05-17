@@ -69,6 +69,7 @@ export default function SessionEditor() {
   const [stars, setStars] = useState<Star[]>([]);
   const [obsByStar, setObsByStar] = useState<Record<string, Obs>>({});
   const [observedAt, setObservedAt] = useState<Date>(new Date());
+  const [sessionName, setSessionName] = useState<string>("");
   const [obsCode, setObsCode] = useState("DPV");
   const [typeFilter, setTypeFilter] = useState<(typeof TYPE_FILTERS)[number]>("ALL");
   const [activeConst, setActiveConst] = useState<string | null>(null);
@@ -94,6 +95,7 @@ export default function SessionEditor() {
         return;
       }
       setObservedAt(new Date(session.observed_at_utc));
+      setSessionName(session.name ?? "");
       setStars((starList ?? []) as Star[]);
       const map: Record<string, Obs> = {};
       (obsList ?? []).forEach((o: any) => { map[o.star_id] = o; });
@@ -136,17 +138,19 @@ export default function SessionEditor() {
     if (e.key === "ArrowDown") nextR = r + 1;
     else if (e.key === "ArrowUp") nextR = r - 1;
     else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-      // Skoč na susedný stĺpec iba ak je kurzor na okraji textu
-      const len = el.value.length;
-      const start = el.selectionStart ?? 0;
-      const end = el.selectionEnd ?? 0;
-      if (e.key === "ArrowRight") {
-        if (start !== end || end < len) return;
-        nextC = c + 1;
-      } else {
-        if (start !== end || start > 0) return;
-        nextC = c - 1;
+      // number inputy nevracajú selectionStart — vždy skoč na susedný stĺpec
+      const isNumeric = el.type === "number";
+      const start = el.selectionStart;
+      const end = el.selectionEnd;
+      if (!isNumeric && start !== null && end !== null) {
+        const len = el.value.length;
+        if (e.key === "ArrowRight") {
+          if (start !== end || end < len) return;
+        } else {
+          if (start !== end || start > 0) return;
+        }
       }
+      nextC = e.key === "ArrowRight" ? c + 1 : c - 1;
     } else return;
     const target = document.querySelector<HTMLInputElement>(`input[data-cell="${nextR}-${nextC}"]`);
     if (target) {
@@ -164,11 +168,11 @@ export default function SessionEditor() {
     const t = setTimeout(() => {
       supabase
         .from("sessions")
-        .update({ observed_at_utc: observedAt.toISOString(), jd })
+        .update({ observed_at_utc: observedAt.toISOString(), jd, name: sessionName || null })
         .eq("id", id);
     }, 500);
     return () => clearTimeout(t);
-  }, [observedAt, jd, id, loading]);
+  }, [observedAt, jd, id, loading, sessionName]);
 
   const updateObs = (starId: string, patch: Partial<Obs>) => {
     setObsByStar((prev) => {
@@ -392,11 +396,11 @@ export default function SessionEditor() {
     );
   }
 
-  // Format input value for datetime-local (UTC)
-  const isoLocal = (() => {
+  // Format input value for date (UTC)
+  const isoDate = (() => {
     const d = observedAt;
     const pad = (n: number) => String(n).padStart(2, "0");
-    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
   })();
 
   const filledCount = Object.values(obsByStar).filter(
@@ -418,18 +422,25 @@ export default function SessionEditor() {
         <Card className="p-4 mb-4">
           <div className="grid md:grid-cols-4 gap-3 items-end">
             <div>
-              <label className="text-xs text-muted-foreground">Dátum & čas (UT)</label>
+              <label className="text-xs text-muted-foreground">Názov session</label>
               <Input
-                type="datetime-local"
-                value={isoLocal}
+                value={sessionName}
+                onChange={(e) => setSessionName(e.target.value)}
+                placeholder="napr. Jasná obloha v Modre"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Dátum (UT, večer)</label>
+              <Input
+                type="date"
+                value={isoDate}
                 onChange={(e) => {
                   const v = e.target.value;
                   if (!v) return;
-                  // Parse as UTC
-                  const [date, time] = v.split("T");
-                  const [Y, M, D] = date.split("-").map(Number);
-                  const [h, m] = time.split(":").map(Number);
-                  setObservedAt(new Date(Date.UTC(Y, M - 1, D, h, m, 0)));
+                  const [Y, M, D] = v.split("-").map(Number);
+                  // Anchor at 18:00 UT – pozorovacia noc; časy UT v riadkoch
+                  // sa rátajú samostatne (00–11:59 → ďalší deň).
+                  setObservedAt(new Date(Date.UTC(Y, M - 1, D, 18, 0, 0)));
                 }}
               />
             </div>
