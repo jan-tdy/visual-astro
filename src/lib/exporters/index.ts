@@ -74,7 +74,8 @@ export function buildAAVSO(rows: ExportRow[], ctx: ExportContext): string {
     const comp2 = isLimit ? "na" : (Number.isFinite(bVal) ? bVal.toFixed(2) : (r.b ?? ""));
     const jd = ctx.jd + (rowDate(r, ctx).getTime() - ctx.observedAt.getTime()) / 86400000;
     const rawNote = (r.note ?? "").trim();
-    const noteOut = rawNote.toUpperCase() === "OUTBURST" ? "Y" : (rawNote || "na");
+    const upper = rawNote.toUpperCase();
+    const noteOut = upper === "OUTBURST" || upper === "ACTIVE" ? "Y" : (rawNote || "na");
     body.push(
       [
         r.aavso_code,
