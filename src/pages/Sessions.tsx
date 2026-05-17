@@ -21,6 +21,7 @@ interface SessionRow {
   observed_at_utc: string;
   jd: number | null;
   notes: string | null;
+  name?: string | null;
   is_favorite?: boolean;
   obs_count?: number;
 }
@@ -50,7 +51,7 @@ export default function Sessions() {
     setLoading(true);
     const { data, error } = await supabase
       .from("sessions")
-      .select("id, observed_at_utc, jd, notes, is_favorite, observations(ut_time)")
+      .select("id, observed_at_utc, jd, notes, name, is_favorite, observations(ut_time)")
       .order("observed_at_utc", { ascending: false });
     if (error) {
       toast.error(error.message);
@@ -170,7 +171,14 @@ export default function Sessions() {
                 <Link to={`/session/${s.id}`} className="flex-1">
                   <div className="font-medium">
                     {s.is_favorite && <Star className="inline h-3.5 w-3.5 mr-1 text-primary fill-current" />}
-                    {new Date(s.observed_at_utc).toLocaleString(lang === "sk" ? "sk-SK" : "en-GB", { dateStyle: "medium", timeStyle: "short" })}
+                    {s.name ? (
+                      <>
+                        {s.name}
+                        <span className="text-muted-foreground font-normal"> · {new Date(s.observed_at_utc).toLocaleDateString(lang === "sk" ? "sk-SK" : "en-GB", { dateStyle: "medium" })}</span>
+                      </>
+                    ) : (
+                      new Date(s.observed_at_utc).toLocaleDateString(lang === "sk" ? "sk-SK" : "en-GB", { dateStyle: "medium" })
+                    )}
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
                     JD {s.jd?.toFixed(4) ?? "—"} · {s.obs_count} {t("sessions.observations")}
