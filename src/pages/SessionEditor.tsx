@@ -168,11 +168,11 @@ export default function SessionEditor() {
     const t = setTimeout(() => {
       supabase
         .from("sessions")
-        .update({ observed_at_utc: observedAt.toISOString(), jd, name: sessionName || null })
+        .update({ name: sessionName || null })
         .eq("id", id);
     }, 500);
     return () => clearTimeout(t);
-  }, [observedAt, jd, id, loading, sessionName]);
+  }, [id, loading, sessionName]);
 
   const updateObs = (starId: string, patch: Partial<Obs>) => {
     setObsByStar((prev) => {
@@ -440,7 +440,16 @@ export default function SessionEditor() {
                   const [Y, M, D] = v.split("-").map(Number);
                   // Anchor at 18:00 UT – pozorovacia noc; časy UT v riadkoch
                   // sa rátajú samostatne (00–11:59 → ďalší deň).
-                  setObservedAt(new Date(Date.UTC(Y, M - 1, D, 18, 0, 0)));
+                  const d = new Date(Date.UTC(Y, M - 1, D, 18, 0, 0));
+                  setObservedAt(d);
+                  // Ulož okamžite (bez debounce) aby sa zmena nestratila pri rýchlej navigácii
+                  if (id) {
+                    supabase
+                      .from("sessions")
+                      .update({ observed_at_utc: d.toISOString(), jd: dateToJD(d) })
+                      .eq("id", id)
+                      .then(({ error }) => { if (error) toast.error(error.message); });
+                  }
                 }}
               />
             </div>
