@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface UserPrefs {
   autofillUtNow: boolean;       // pri otvorení nového riadku predvyplniť aktuálny UT čas
@@ -66,12 +67,53 @@ export function usePrefs() {
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
+  // Sync portal prefs from Supabase profile on mount (overrides localStorage cache)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u?.user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("open_portal_after_export, portal_urls")
+        .eq("user_id", u.user.id)
+        .maybeSingle();
+      if (cancelled || !data) return;
+      setPrefsState((cur) => {
+        const next = {
+          ...cur,
+          openPortalAfterExport: {
+            ...DEFAULTS.openPortalAfterExport,
+            ...((data as any).open_portal_after_export ?? {}),
+          },
+          portalUrls: {
+            ...DEFAULTS.portalUrls,
+            ...((data as any).portal_urls ?? {}),
+          },
+        };
+        try { localStorage.setItem(KEY, JSON.stringify(next)); } catch {}
+        return next;
+      });
+    })();
+    return () => { cancelled = true; };
+  }, []);
   const update = (patch: Partial<UserPrefs>) => {
     const next = { ...prefs, ...patch };
     setPrefsState(next);
     try {
       localStorage.setItem(KEY, JSON.stringify(next));
     } catch {}
+    // Persist portal-related prefs to Supabase profile
+    if (patch.openPortalAfterExport || patch.portalUrls) {
+      (async () => {
+        const { data: u } = await supabase.auth.getUser();
+        if (!u?.user) return;
+        const dbPatch: { open_portal_after_export?: any; portal_urls?: any } = {};
+        if (patch.openPortalAfterExport) dbPatch.open_portal_after_export = next.openPortalAfterExport;
+        if (patch.portalUrls) dbPatch.portal_urls = next.portalUrls;
+        await supabase.from("profiles").update(dbPatch as any).eq("user_id", u.user.id);
+      })();
+    }
   };
   return { prefs, update };
 }

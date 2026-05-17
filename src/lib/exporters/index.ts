@@ -43,7 +43,10 @@ export function buildVSNET(rows: ExportRow[], ctx: ExportContext): string {
     if (!r.vsnet_code) continue;
     const code = r.vsnet_code.trim().padEnd(8, " ");
     const dateStr = vsnetDate(rowDate(r, ctx));
-    lines.push(`${code} ${dateStr} ${mag.padStart(5, " ")} ${ctx.obsCode}`);
+    const rawNote = (r.note ?? "").trim();
+    const noteOut = rawNote.toUpperCase() === "ACTIVE" ? "Y" : rawNote;
+    const suffix = noteOut ? ` ${noteOut}` : "";
+    lines.push(`${code} ${dateStr} ${mag.padStart(5, " ")} ${ctx.obsCode}${suffix}`);
   }
   return lines.join("\n") + "\n";
 }

@@ -83,6 +83,8 @@ export type Database = {
           created_at: string
           fecha_referencia: string
           obs_code: string
+          open_portal_after_export: Json
+          portal_urls: Json
           updated_at: string
           user_id: string
         }
@@ -91,6 +93,8 @@ export type Database = {
           created_at?: string
           fecha_referencia?: string
           obs_code?: string
+          open_portal_after_export?: Json
+          portal_urls?: Json
           updated_at?: string
           user_id: string
         }
@@ -99,6 +103,8 @@ export type Database = {
           created_at?: string
           fecha_referencia?: string
           obs_code?: string
+          open_portal_after_export?: Json
+          portal_urls?: Json
           updated_at?: string
           user_id?: string
         }
@@ -110,6 +116,7 @@ export type Database = {
           id: string
           is_favorite: boolean
           jd: number | null
+          name: string | null
           notes: string | null
           observed_at_utc: string
           updated_at: string
@@ -120,6 +127,7 @@ export type Database = {
           id?: string
           is_favorite?: boolean
           jd?: number | null
+          name?: string | null
           notes?: string | null
           observed_at_utc?: string
           updated_at?: string
@@ -130,6 +138,7 @@ export type Database = {
           id?: string
           is_favorite?: boolean
           jd?: number | null
+          name?: string | null
           notes?: string | null
           observed_at_utc?: string
           updated_at?: string
