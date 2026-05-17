@@ -108,10 +108,10 @@ export function usePrefs() {
       (async () => {
         const { data: u } = await supabase.auth.getUser();
         if (!u?.user) return;
-        const dbPatch: Record<string, any> = {};
+        const dbPatch: { open_portal_after_export?: any; portal_urls?: any } = {};
         if (patch.openPortalAfterExport) dbPatch.open_portal_after_export = next.openPortalAfterExport;
         if (patch.portalUrls) dbPatch.portal_urls = next.portalUrls;
-        await supabase.from("profiles").update(dbPatch).eq("user_id", u.user.id);
+        await supabase.from("profiles").update(dbPatch as any).eq("user_id", u.user.id);
       })();
     }
   };
