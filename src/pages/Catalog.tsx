@@ -333,7 +333,7 @@ function StarDialog({
               onChange={(e) => setForm({ ...form, constellation: e.target.value })}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Latinský názov súhvezdia VEĽKÝMI písmenami (napr. „CYGNUS", „ANDROMEDA").
+              Horný riadok.
             </p>
           </div>
           <div>
@@ -345,7 +345,7 @@ function StarDialog({
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground mt-1">
-              VISUAL = bežné premenné, BINAR = zákrytové dvojhviezdy, ECL faint/bright = zákrytové slabé/jasné.
+              Filter – dolný riadok.
             </p>
           </div>
           {(
