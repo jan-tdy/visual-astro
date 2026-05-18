@@ -612,8 +612,8 @@ export default function SessionEditor() {
                       const r = flatIndex[s.id];
                       const extras = extraByStar[s.id] ?? [];
                       return (
-                        <>
-                        <tr key={s.id} className="border-b border-border/40 hover:bg-secondary/20">
+                        <React.Fragment key={s.id}>
+                        <tr className="border-b border-border/40 hover:bg-secondary/20">
                           <td className="px-2 py-1 font-medium sticky left-0 bg-card">{s.name}</td>
                           <td className="px-1 py-1">
                             <Input data-cell={`${r}-0`} onKeyDown={handleCellKey} value={o?.a ?? ""} onChange={(e) => updateObs(s.id, { a: e.target.value || null })} className="h-7 text-xs rounded-sm" />
@@ -704,7 +704,7 @@ export default function SessionEditor() {
                             </tr>
                           );
                         })}
-                        </>
+                        </React.Fragment>
                       );
                     })}
                   </tbody>
