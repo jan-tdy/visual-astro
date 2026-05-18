@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -612,7 +612,7 @@ export default function SessionEditor() {
                       const r = flatIndex[s.id];
                       const extras = extraByStar[s.id] ?? [];
                       return (
-                        <React.Fragment key={s.id}>
+                        <Fragment key={s.id}>
                         <tr className="border-b border-border/40 hover:bg-secondary/20">
                           <td className="px-2 py-1 font-medium sticky left-0 bg-card">{s.name}</td>
                           <td className="px-1 py-1">
@@ -704,7 +704,7 @@ export default function SessionEditor() {
                             </tr>
                           );
                         })}
-                        </React.Fragment>
+                        </Fragment>
                       );
                     })}
                   </tbody>
