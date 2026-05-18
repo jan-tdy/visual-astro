@@ -24,6 +24,7 @@ export type Database = {
           note: string | null
           pasos_a: number | null
           pasos_b: number | null
+          row_index: number
           session_id: string
           star_id: string
           updated_at: string
@@ -39,6 +40,7 @@ export type Database = {
           note?: string | null
           pasos_a?: number | null
           pasos_b?: number | null
+          row_index?: number
           session_id: string
           star_id: string
           updated_at?: string
@@ -54,6 +56,7 @@ export type Database = {
           note?: string | null
           pasos_a?: number | null
           pasos_b?: number | null
+          row_index?: number
           session_id?: string
           star_id?: string
           updated_at?: string
