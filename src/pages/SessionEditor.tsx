@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,7 +6,7 @@ import { AppHeader } from "@/components/app/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson } from "lucide-react";
+import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
 import { buildAAVSO, buildMEDUZA, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
@@ -68,6 +68,9 @@ export default function SessionEditor() {
   const [loading, setLoading] = useState(true);
   const [stars, setStars] = useState<Star[]>([]);
   const [obsByStar, setObsByStar] = useState<Record<string, Obs>>({});
+  // Lokálne dodatočné riadky tej istej hviezdy (max 5). Nepretrvávajú v DB,
+  // ale zahŕňajú sa do exportov.
+  const [extraByStar, setExtraByStar] = useState<Record<string, Obs[]>>({});
   const [observedAt, setObservedAt] = useState<Date>(new Date());
   const [sessionName, setSessionName] = useState<string>("");
   const [obsCode, setObsCode] = useState("DPV");
@@ -217,6 +220,40 @@ export default function SessionEditor() {
     sectionRefs.current[constellation]?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const addExtraRow = (starId: string) => {
+    setExtraByStar((prev) => {
+      const cur = prev[starId] ?? [];
+      if (cur.length >= 5) {
+        toast.error("Maximálne 5 ďalších riadkov pre jednu hviezdu");
+        return prev;
+      }
+      return {
+        ...prev,
+        [starId]: [
+          ...cur,
+          { star_id: starId, a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null, ut_time: null, note: null },
+        ],
+      };
+    });
+  };
+
+  const updateExtra = (starId: string, idx: number, patch: Partial<Obs>) => {
+    setExtraByStar((prev) => {
+      const cur = prev[starId] ?? [];
+      const next = cur.slice();
+      next[idx] = { ...next[idx], ...patch };
+      return { ...prev, [starId]: next };
+    });
+  };
+
+  const removeExtra = (starId: string, idx: number) => {
+    setExtraByStar((prev) => {
+      const cur = prev[starId] ?? [];
+      const next = cur.filter((_, i) => i !== idx);
+      return { ...prev, [starId]: next };
+    });
+  };
+
   // Predvolené súhvezdie (len Plus): po načítaní zoskroluj na zvolené súhvezdie
   useEffect(() => {
     if (loading) return;
@@ -248,6 +285,21 @@ export default function SessionEditor() {
         a: o.a, pasos_a: o.pasos_a, pasos_b: o.pasos_b, b: o.b,
         limit_value: o.limit_value, note: o.note, ut_time: o.ut_time,
       });
+    }
+    for (const [starId, arr] of Object.entries(extraByStar)) {
+      const s = byId.get(starId);
+      if (!s) continue;
+      for (const o of arr) {
+        if (!o.ut_time || !o.ut_time.trim()) continue;
+        rows.push({
+          star_name: s.name,
+          vsnet_code: s.vsnet_code,
+          aavso_code: s.aavso_code,
+          chart_id: s.chart_id,
+          a: o.a, pasos_a: o.pasos_a, pasos_b: o.pasos_b, b: o.b,
+          limit_value: o.limit_value, note: o.note, ut_time: o.ut_time,
+        });
+      }
     }
     return rows;
   };
@@ -550,6 +602,7 @@ export default function SessionEditor() {
                       <th className="px-2 py-1.5 w-20">UT</th>
                       <th className="px-2 py-1.5">Nota</th>
                       <th className="px-2 py-1.5 w-20 text-right">Mag</th>
+                      <th className="px-2 py-1.5 w-10"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -557,8 +610,10 @@ export default function SessionEditor() {
                       const o = obsByStar[s.id];
                       const mag = computeMagnitude(o ?? { a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null }, s.name);
                       const r = flatIndex[s.id];
+                      const extras = extraByStar[s.id] ?? [];
                       return (
-                        <tr key={s.id} className="border-b border-border/40 hover:bg-secondary/20">
+                        <Fragment key={s.id}>
+                        <tr className="border-b border-border/40 hover:bg-secondary/20">
                           <td className="px-2 py-1 font-medium sticky left-0 bg-card">{s.name}</td>
                           <td className="px-1 py-1">
                             <Input data-cell={`${r}-0`} onKeyDown={handleCellKey} value={o?.a ?? ""} onChange={(e) => updateObs(s.id, { a: e.target.value || null })} className="h-7 text-xs rounded-sm" />
@@ -594,7 +649,62 @@ export default function SessionEditor() {
                           <td className="px-2 py-1 text-right font-mono text-xs">
                             {mag.value ?? <span className="text-muted-foreground">—</span>}
                           </td>
+                          <td className="px-1 py-1 text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              title="Pridať ďalší riadok rovnakej hviezdy"
+                              onClick={() => addExtraRow(s.id)}
+                              disabled={extras.length >= 5}
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </Button>
+                          </td>
                         </tr>
+                        {extras.map((eo, ei) => {
+                          const emag = computeMagnitude(eo, s.name);
+                          return (
+                            <tr key={`${s.id}-extra-${ei}`} className="border-b border-border/40 bg-secondary/10">
+                              <td className="px-2 py-1 text-muted-foreground sticky left-0 bg-card pl-6">↳ {s.name}</td>
+                              <td className="px-1 py-1">
+                                <Input value={eo.a ?? ""} onChange={(e) => updateExtra(s.id, ei, { a: e.target.value || null })} className="h-7 text-xs rounded-sm" />
+                              </td>
+                              <td className="px-1 py-1">
+                                <Input type="number" value={eo.pasos_a ?? ""} onChange={(e) => updateExtra(s.id, ei, { pasos_a: e.target.value === "" ? null : parseInt(e.target.value) })} className="h-7 text-xs rounded-sm" />
+                              </td>
+                              <td className="px-1 py-1">
+                                <Input type="number" value={eo.pasos_b ?? ""} onChange={(e) => updateExtra(s.id, ei, { pasos_b: e.target.value === "" ? null : parseInt(e.target.value) })} className="h-7 text-xs rounded-sm" />
+                              </td>
+                              <td className="px-1 py-1">
+                                <Input value={eo.b ?? ""} onChange={(e) => updateExtra(s.id, ei, { b: e.target.value || null })} className="h-7 text-xs rounded-sm" />
+                              </td>
+                              <td className="px-1 py-1">
+                                <Input value={eo.limit_value ?? ""} onChange={(e) => updateExtra(s.id, ei, { limit_value: e.target.value || null })} className="h-7 text-xs rounded-sm" placeholder="<14.9" />
+                              </td>
+                              <td className="px-1 py-1">
+                                <Input
+                                  value={eo.ut_time ?? ""}
+                                  onChange={(e) => updateExtra(s.id, ei, { ut_time: e.target.value.replace(/\s+/g, ":") || null })}
+                                  className="h-7 text-xs rounded-sm"
+                                  placeholder="hh:mm"
+                                />
+                              </td>
+                              <td className="px-1 py-1">
+                                <Input value={eo.note ?? ""} onChange={(e) => updateExtra(s.id, ei, { note: e.target.value || null })} className="h-7 text-xs rounded-sm" />
+                              </td>
+                              <td className="px-2 py-1 text-right font-mono text-xs">
+                                {emag.value ?? <span className="text-muted-foreground">—</span>}
+                              </td>
+                              <td className="px-1 py-1 text-right">
+                                <Button variant="ghost" size="icon" className="h-6 w-6" title="Odstrániť riadok" onClick={() => removeExtra(s.id, ei)}>
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        </Fragment>
                       );
                     })}
                   </tbody>
