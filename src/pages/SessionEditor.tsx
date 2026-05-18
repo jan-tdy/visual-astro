@@ -101,8 +101,19 @@ export default function SessionEditor() {
       setSessionName(session.name ?? "");
       setStars((starList ?? []) as Star[]);
       const map: Record<string, Obs> = {};
-      (obsList ?? []).forEach((o: any) => { map[o.star_id] = o; });
+      const extras: Record<string, Obs[]> = {};
+      const sorted = (obsList ?? []).slice().sort(
+        (a: any, b: any) => (a.row_index ?? 0) - (b.row_index ?? 0),
+      );
+      for (const o of sorted) {
+        if ((o.row_index ?? 0) === 0) map[o.star_id] = o;
+        else {
+          if (!extras[o.star_id]) extras[o.star_id] = [];
+          extras[o.star_id].push(o);
+        }
+      }
       setObsByStar(map);
+      setExtraByStar(extras);
       if (profile) setObsCode(profile.obs_code);
       setLoading(false);
     })();
