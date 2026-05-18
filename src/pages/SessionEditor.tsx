@@ -6,7 +6,7 @@ import { AppHeader } from "@/components/app/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson } from "lucide-react";
+import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
 import { buildAAVSO, buildMEDUZA, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
@@ -68,6 +68,9 @@ export default function SessionEditor() {
   const [loading, setLoading] = useState(true);
   const [stars, setStars] = useState<Star[]>([]);
   const [obsByStar, setObsByStar] = useState<Record<string, Obs>>({});
+  // Lokálne dodatočné riadky tej istej hviezdy (max 5). Nepretrvávajú v DB,
+  // ale zahŕňajú sa do exportov.
+  const [extraByStar, setExtraByStar] = useState<Record<string, Obs[]>>({});
   const [observedAt, setObservedAt] = useState<Date>(new Date());
   const [sessionName, setSessionName] = useState<string>("");
   const [obsCode, setObsCode] = useState("DPV");
@@ -248,6 +251,21 @@ export default function SessionEditor() {
         a: o.a, pasos_a: o.pasos_a, pasos_b: o.pasos_b, b: o.b,
         limit_value: o.limit_value, note: o.note, ut_time: o.ut_time,
       });
+    }
+    for (const [starId, arr] of Object.entries(extraByStar)) {
+      const s = byId.get(starId);
+      if (!s) continue;
+      for (const o of arr) {
+        if (!o.ut_time || !o.ut_time.trim()) continue;
+        rows.push({
+          star_name: s.name,
+          vsnet_code: s.vsnet_code,
+          aavso_code: s.aavso_code,
+          chart_id: s.chart_id,
+          a: o.a, pasos_a: o.pasos_a, pasos_b: o.pasos_b, b: o.b,
+          limit_value: o.limit_value, note: o.note, ut_time: o.ut_time,
+        });
+      }
     }
     return rows;
   };
