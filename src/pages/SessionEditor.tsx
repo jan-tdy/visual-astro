@@ -212,10 +212,64 @@ export default function SessionEditor() {
         star_id: starId,
         a: o.a, pasos_a: o.pasos_a, pasos_b: o.pasos_b, b: o.b,
         limit_value: o.limit_value, ut_time: o.ut_time, note: o.note,
+        row_index: 0,
       };
-      const { error } = await supabase
-        .from("observations")
-        .upsert(payload, { onConflict: "session_id,star_id" });
+      let error: any = null;
+      if (o.id) {
+        const r = await supabase.from("observations").update(payload).eq("id", o.id);
+        error = r.error;
+      } else {
+        const r = await supabase.from("observations").insert(payload).select("id").maybeSingle();
+        error = r.error;
+        if (r.data?.id) {
+          setObsByStar((prev) => {
+            const cur = prev[starId];
+            if (!cur || cur.id) return prev;
+            return { ...prev, [starId]: { ...cur, id: r.data!.id } };
+          });
+        }
+      }
+      if (error) {
+        if (error.message.includes("Storage limit exceeded")) {
+          toast.error("Prekročený limit úložiska. Upgraduj na Plus pre viac miesta.");
+        } else {
+          toast.error(error.message);
+        }
+      }
+    }, 600);
+  };
+
+  const extraTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const saveExtra = (starId: string, idx: number, o: Obs) => {
+    if (!user || !id) return;
+    const key = `${starId}::${idx}`;
+    clearTimeout(extraTimers.current[key]);
+    extraTimers.current[key] = setTimeout(async () => {
+      const payload = {
+        session_id: id,
+        user_id: user.id,
+        star_id: starId,
+        a: o.a, pasos_a: o.pasos_a, pasos_b: o.pasos_b, b: o.b,
+        limit_value: o.limit_value, ut_time: o.ut_time, note: o.note,
+        row_index: idx + 1,
+      };
+      let error: any = null;
+      if (o.id) {
+        const r = await supabase.from("observations").update(payload).eq("id", o.id);
+        error = r.error;
+      } else {
+        const r = await supabase.from("observations").insert(payload).select("id").maybeSingle();
+        error = r.error;
+        if (r.data?.id) {
+          setExtraByStar((prev) => {
+            const arr = prev[starId] ?? [];
+            if (!arr[idx] || arr[idx].id) return prev;
+            const next = arr.slice();
+            next[idx] = { ...next[idx], id: r.data!.id };
+            return { ...prev, [starId]: next };
+          });
+        }
+      }
       if (error) {
         if (error.message.includes("Storage limit exceeded")) {
           toast.error("Prekročený limit úložiska. Upgraduj na Plus pre viac miesta.");
@@ -253,14 +307,27 @@ export default function SessionEditor() {
       const cur = prev[starId] ?? [];
       const next = cur.slice();
       next[idx] = { ...next[idx], ...patch };
+      saveExtra(starId, idx, next[idx]);
       return { ...prev, [starId]: next };
     });
   };
 
   const removeExtra = (starId: string, idx: number) => {
+    const target = (extraByStar[starId] ?? [])[idx];
+    if (target?.id) {
+      supabase.from("observations").delete().eq("id", target.id).then(({ error }) => {
+        if (error) toast.error(error.message);
+      });
+    }
     setExtraByStar((prev) => {
       const cur = prev[starId] ?? [];
       const next = cur.filter((_, i) => i !== idx);
+      // Preindexovať zvyšné riadky v DB (row_index = i+1)
+      next.forEach((row, i) => {
+        if (row.id) {
+          supabase.from("observations").update({ row_index: i + 1 }).eq("id", row.id);
+        }
+      });
       return { ...prev, [starId]: next };
     });
   };
