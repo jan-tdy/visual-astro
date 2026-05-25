@@ -84,6 +84,7 @@ export type Database = {
         Row: {
           catalog_seeded: boolean
           created_at: string
+          dev_plus_override: boolean
           fecha_referencia: string
           obs_code: string
           open_portal_after_export: Json
@@ -94,6 +95,7 @@ export type Database = {
         Insert: {
           catalog_seeded?: boolean
           created_at?: string
+          dev_plus_override?: boolean
           fecha_referencia?: string
           obs_code?: string
           open_portal_after_export?: Json
@@ -104,6 +106,7 @@ export type Database = {
         Update: {
           catalog_seeded?: boolean
           created_at?: string
+          dev_plus_override?: boolean
           fecha_referencia?: string
           obs_code?: string
           open_portal_after_export?: Json

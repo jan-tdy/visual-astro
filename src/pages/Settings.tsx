@@ -25,7 +25,7 @@ import { Zap } from "lucide-react";
 
 export default function Settings() {
   const { user } = useAuth();
-  const { isPlusActive, sub, isDevUser, devOverride } = useSubscription();
+  const { isPlusActive, sub, isDevUser, devOverride, setDevOverride } = useSubscription();
   const { prefs, update: setPrefs } = usePrefs();
   const [obsCode, setObsCode] = useState("DPV");
   const [refDate, setRefDate] = useState("1980-01-01");
@@ -125,13 +125,9 @@ export default function Settings() {
   const PLAN_LIMIT_MB = isPlusActive ? 800 : 200;
   const LIMIT_BYTES = PLAN_LIMIT_MB * 1024 * 1024;
 
-  const toggleDevPlus = () => {
+  const toggleDevPlus = async () => {
     const next = !devOverride;
-    try {
-      if (next) localStorage.setItem(DEV_PLUS_KEY, "1");
-      else localStorage.removeItem(DEV_PLUS_KEY);
-    } catch {}
-    window.dispatchEvent(new Event("dev-plus-override-changed"));
+    await setDevOverride(next);
     toast.success(next ? "Plus aktivovaný (dev)" : "Plus deaktivovaný (dev)");
   };
 
