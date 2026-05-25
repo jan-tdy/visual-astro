@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS dev_plus_override boolean NOT NULL DEFAULT false;
