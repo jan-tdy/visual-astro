@@ -12,27 +12,35 @@ export interface SubscriptionRow {
 }
 
 export const DEV_PLUS_EMAIL = "var@kozmos.sk";
+/** @deprecated kept for backwards compatibility with old localStorage flag */
 export const DEV_PLUS_KEY = "dev_plus_override_v1";
-
-function readDevPlusOverride(): boolean {
-  try { return localStorage.getItem(DEV_PLUS_KEY) === "1"; } catch { return false; }
-}
 
 export function useSubscription() {
   const { user } = useAuth();
   const [sub, setSub] = useState<SubscriptionRow | null>(null);
   const [loading, setLoading] = useState(true);
-  const [devOverride, setDevOverride] = useState<boolean>(readDevPlusOverride);
+  const [devOverride, setDevOverrideState] = useState<boolean>(false);
 
   useEffect(() => {
-    const onChange = () => setDevOverride(readDevPlusOverride());
-    window.addEventListener("storage", onChange);
-    window.addEventListener("dev-plus-override-changed", onChange as EventListener);
-    return () => {
-      window.removeEventListener("storage", onChange);
-      window.removeEventListener("dev-plus-override-changed", onChange as EventListener);
-    };
-  }, []);
+    if (!user) { setDevOverrideState(false); return; }
+    supabase
+      .from("profiles")
+      .select("dev_plus_override")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        setDevOverrideState(!!(data as any)?.dev_plus_override);
+      });
+  }, [user?.id]);
+
+  const setDevOverride = async (next: boolean) => {
+    setDevOverrideState(next);
+    if (!user) return;
+    await supabase
+      .from("profiles")
+      .update({ dev_plus_override: next })
+      .eq("user_id", user.id);
+  };
 
   const refetch = async () => {
     if (!user) {
@@ -78,5 +86,5 @@ export function useSubscription() {
   const isDevUser = user?.email?.toLowerCase() === DEV_PLUS_EMAIL;
   const isPlusActive = realPlusActive || (isDevUser && devOverride);
 
-  return { sub, loading, isPlusActive, refetch, isDevUser, devOverride };
+  return { sub, loading, isPlusActive, refetch, isDevUser, devOverride, setDevOverride };
 }
