@@ -6,7 +6,7 @@ import { AppHeader } from "@/components/app/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus } from "lucide-react";
+import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus, ScanLine, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
 import { buildAAVSO, buildMEDUZA, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
@@ -79,6 +79,8 @@ export default function SessionEditor() {
   const [previewing, setPreviewing] = useState<{ name: string; text: string; filename: string } | null>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const paperInputRef = useRef<HTMLInputElement>(null);
+  const [ocrBusy, setOcrBusy] = useState(false);
 
   // Load session, stars, observations, profile
   useEffect(() => {
