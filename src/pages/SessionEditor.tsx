@@ -6,7 +6,7 @@ import { AppHeader } from "@/components/app/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus } from "lucide-react";
+import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus, ScanLine, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
 import { buildAAVSO, buildMEDUZA, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
@@ -79,6 +79,8 @@ export default function SessionEditor() {
   const [previewing, setPreviewing] = useState<{ name: string; text: string; filename: string } | null>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const paperInputRef = useRef<HTMLInputElement>(null);
+  const [ocrBusy, setOcrBusy] = useState(false);
 
   // Load session, stars, observations, profile
   useEffect(() => {
@@ -526,6 +528,70 @@ export default function SessionEditor() {
     );
   }
 
+  const handleOcrFile = async (file: File) => {
+    try {
+      setOcrBusy(true);
+      toast.info("Skenujem papier… (môže to chvíľu trvať)");
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(String(fr.result));
+        fr.onerror = () => reject(fr.error);
+        fr.readAsDataURL(file);
+      });
+      const { data, error } = await supabase.functions.invoke("paper-ocr", { body: { image: dataUrl } });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const obsArr = (data as any)?.observations ?? [];
+      const blob = new Blob([JSON.stringify({ observations: obsArr })], { type: "application/json" });
+      await handleImportFile(new File([blob], "ocr.json", { type: "application/json" }));
+    } catch (e: any) {
+      toast.error("OCR zlyhalo: " + (e?.message ?? "neznáma chyba"));
+    } finally {
+      setOcrBusy(false);
+    }
+  };
+
+  const downloadPaperTemplate = () => {
+    const headers = ["#", "Hviezda", "A", "Paso A", "Paso B", "B", "Limit", "UT", "Nota"];
+    const ROWS = 25;
+    const renderTable = () => `
+      <table>
+        <thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
+        <tbody>${Array.from({ length: ROWS }).map((_, i) => `<tr><td class="num">${i + 1}</td>${Array.from({ length: headers.length - 1 }).map(() => `<td></td>`).join("")}</tr>`).join("")}</tbody>
+      </table>`;
+    const html = `<!doctype html><html lang="sk"><head><meta charset="utf-8"><title>Pozorovací papier – Visual Astro</title>
+<style>
+  @page { size: A4 landscape; margin: 10mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #000; margin: 0; padding: 8mm; font-size: 10pt; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 6mm; border-bottom: 1px solid #000; padding-bottom: 3mm; }
+  header h1 { margin: 0; font-size: 14pt; letter-spacing: 1px; }
+  header .meta { font-size: 9pt; }
+  header .meta span { display: inline-block; min-width: 35mm; border-bottom: 1px solid #000; margin-left: 4px; padding: 0 6px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  th, td { border: 1px solid #000; padding: 2.4mm 1mm; font-size: 9pt; text-align: left; height: 8mm; }
+  th { background: #eee; font-weight: 600; text-align: center; }
+  td.num { text-align: center; width: 7mm; background: #fafafa; color: #555; }
+  th:nth-child(1), td:nth-child(1) { width: 7mm; }
+  th:nth-child(2), td:nth-child(2) { width: 22%; }
+  th:nth-child(9), td:nth-child(9) { width: 18%; }
+  .print { position: fixed; top: 8px; right: 8px; }
+  @media print { .print { display: none; } }
+</style></head><body>
+  <button class="print" onclick="window.print()">Tlačiť</button>
+  <header>
+    <h1>VISUAL ASTRO · Pozorovací papier</h1>
+    <div class="meta">Dátum (UT):<span></span> Pozorovateľ:<span></span> Obs kód:<span></span></div>
+  </header>
+  <div class="grid">${renderTable()}${renderTable()}</div>
+</body></html>`;
+    const w = window.open("", "_blank");
+    if (!w) { toast.error("Prehliadač blokuje nové okno"); return; }
+    w.document.write(html);
+    w.document.close();
+  };
+
   // Format input value for date (UTC)
   const isoDate = (() => {
     const d = observedAt;
@@ -620,6 +686,25 @@ export default function SessionEditor() {
                   e.target.value = "";
                 }}
               />
+              <input
+                ref={paperInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleOcrFile(f);
+                  e.target.value = "";
+                }}
+              />
+              <Button size="sm" variant="secondary" onClick={downloadPaperTemplate}>
+                <Printer className="h-3.5 w-3.5 mr-1" /> Vzor papiera
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => paperInputRef.current?.click()} disabled={ocrBusy}>
+                {ocrBusy ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <ScanLine className="h-3.5 w-3.5 mr-1" />}
+                Import z papiera
+              </Button>
               <Button size="sm" variant="secondary" onClick={exportSessionJSON}>
                 <FileJson className="h-3.5 w-3.5 mr-1" /> Export JSON
               </Button>
