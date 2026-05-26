@@ -554,6 +554,7 @@ export default function SessionEditor() {
   const downloadPaperTemplate = () => {
     const headers = ["#", "Hviezda", "A", "Paso A", "Paso B", "B", "Limit", "UT", "Nota"];
     const ROWS = 25;
+    const dateStr = observedAt.toLocaleDateString("sk-SK", { year: "numeric", month: "2-digit", day: "2-digit" });
     const renderTable = () => `
       <table>
         <thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
@@ -566,8 +567,9 @@ export default function SessionEditor() {
   body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #000; margin: 0; padding: 8mm; font-size: 10pt; }
   header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 6mm; border-bottom: 1px solid #000; padding-bottom: 3mm; }
   header h1 { margin: 0; font-size: 14pt; letter-spacing: 1px; }
-  header .meta { font-size: 9pt; }
-  header .meta span { display: inline-block; min-width: 35mm; border-bottom: 1px solid #000; margin-left: 4px; padding: 0 6px; }
+  header .meta { font-size: 9pt; display: flex; gap: 8mm; align-items: center; }
+  header .meta span { display: inline-block; min-width: 30mm; border-bottom: 1px solid #000; margin-left: 4px; padding: 0 6px; }
+  header .meta .filled { border-bottom: 1px solid #000; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   th, td { border: 1px solid #000; padding: 2.4mm 1mm; font-size: 9pt; text-align: left; height: 8mm; }
@@ -582,7 +584,7 @@ export default function SessionEditor() {
   <button class="print" onclick="window.print()">Tlačiť</button>
   <header>
     <h1>VISUAL ASTRO · Pozorovací papier</h1>
-    <div class="meta">Dátum (UT):<span></span> Pozorovateľ:<span></span> Obs kód:<span></span></div>
+    <div class="meta">Dátum (UT):<span class="filled">${dateStr}</span> Pozorovateľ:<span></span> Obs kód:<span>${obsCode}</span></div>
   </header>
   <div class="grid">${renderTable()}${renderTable()}</div>
 </body></html>`;
