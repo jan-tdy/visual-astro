@@ -686,6 +686,25 @@ export default function SessionEditor() {
                   e.target.value = "";
                 }}
               />
+              <input
+                ref={paperInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleOcrFile(f);
+                  e.target.value = "";
+                }}
+              />
+              <Button size="sm" variant="secondary" onClick={downloadPaperTemplate}>
+                <Printer className="h-3.5 w-3.5 mr-1" /> Vzor papiera
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => paperInputRef.current?.click()} disabled={ocrBusy}>
+                {ocrBusy ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <ScanLine className="h-3.5 w-3.5 mr-1" />}
+                Import z papiera
+              </Button>
               <Button size="sm" variant="secondary" onClick={exportSessionJSON}>
                 <FileJson className="h-3.5 w-3.5 mr-1" /> Export JSON
               </Button>
