@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { AppHeader } from "@/components/app/AppHeader";
 import { Card } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Button } from "@/components/ui/button";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { computeMagnitude, dateToJD } from "@/lib/astro";
@@ -33,6 +37,7 @@ export default function Graphs() {
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStar, setSelectedStar] = useState<string>("");
+  const [starPickerOpen, setStarPickerOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -191,18 +196,37 @@ export default function Graphs() {
                 <Card className="p-4">
                   <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
                     <h3 className="font-semibold">Svetelná krivka hviezdy</h3>
-                    <Select value={selectedStar} onValueChange={setSelectedStar}>
-                      <SelectTrigger className="w-64">
-                        <SelectValue placeholder="Vyber hviezdu" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {perStar.map(s => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.name} {s.constellation} · {s.count}×
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Popover open={starPickerOpen} onOpenChange={setStarPickerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" role="combobox" className="w-64 justify-between">
+                          {(() => {
+                            const s = perStar.find(x => x.id === selectedStar);
+                            return s ? `${s.name} ${s.constellation} · ${s.count}×` : "Vyber hviezdu";
+                          })()}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 p-0" align="end">
+                        <Command>
+                          <CommandInput placeholder="Hľadať hviezdu…" />
+                          <CommandList>
+                            <CommandEmpty>Žiadna hviezda.</CommandEmpty>
+                            <CommandGroup>
+                              {perStar.map(s => (
+                                <CommandItem
+                                  key={s.id}
+                                  value={`${s.name} ${s.constellation}`}
+                                  onSelect={() => { setSelectedStar(s.id); setStarPickerOpen(false); }}
+                                >
+                                  <Check className={cn("mr-2 h-4 w-4", selectedStar === s.id ? "opacity-100" : "opacity-0")} />
+                                  {s.name} {s.constellation} · {s.count}×
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   {lightCurve.length === 0 ? (
                     <p className="text-sm text-muted-foreground p-6 text-center">
