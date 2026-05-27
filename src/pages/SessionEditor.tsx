@@ -76,7 +76,7 @@ export default function SessionEditor() {
   const [obsCode, setObsCode] = useState("DPV");
   const [typeFilter, setTypeFilter] = useState<(typeof TYPE_FILTERS)[number]>("ALL");
   const [activeConst, setActiveConst] = useState<string | null>(null);
-  const [previewing, setPreviewing] = useState<{ name: string; text: string; filename: string } | null>(null);
+  const [previewing, setPreviewing] = useState<{ name: string; text: string; filename: string; kind: "vsnet" | "aavso" | "meduza" } | null>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const paperInputRef = useRef<HTMLInputElement>(null);
@@ -401,7 +401,7 @@ export default function SessionEditor() {
       filename = `meduza_${filenameDate(observedAt)}.txt`;
       name = "MEDUZA";
     }
-    if (preview) setPreviewing({ name, text, filename });
+    if (preview) setPreviewing({ name, text, filename, kind });
     else {
       downloadText(filename, text);
       const prefs = getPrefs();
@@ -906,7 +906,14 @@ export default function SessionEditor() {
                 <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(previewing.text); toast.success("Skopírované"); }}>
                   Kopírovať
                 </Button>
-                <Button size="sm" onClick={() => downloadText(previewing.filename, previewing.text)}>
+                <Button size="sm" onClick={() => {
+                  downloadText(previewing.filename, previewing.text);
+                  const prefs = getPrefs();
+                  if (isPlusActive && prefs.openPortalAfterExport[previewing.kind]) {
+                    const url = prefs.portalUrls?.[previewing.kind] || SUBMISSION_PORTALS[previewing.kind].url;
+                    setTimeout(() => window.open(url, "_blank", "noopener,noreferrer"), 250);
+                  }
+                }}>
                   <Download className="h-4 w-4 mr-1" /> Stiahnuť
                 </Button>
               </div>
