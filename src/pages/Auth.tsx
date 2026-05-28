@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useI18n } from "@/hooks/useI18n";
 
 export default function Auth() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t, lang, setLang } = useI18n();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,13 +33,13 @@ export default function Auth() {
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-        toast.success("Účet vytvorený. Skontroluj e-mail.");
+        toast.success(t("auth.created"));
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
     } catch (err: any) {
-      toast.error(err.message ?? "Chyba pri prihlásení");
+      toast.error(err.message ?? t("auth.error"));
     } finally {
       setBusy(false);
     }
@@ -46,22 +48,30 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <Card className="w-full max-w-sm p-6 space-y-5">
+        <div className="flex justify-end">
+          <button
+            onClick={() => setLang(lang === "sk" ? "en" : "sk")}
+            className="text-[11px] font-semibold uppercase tracking-wider px-2 py-1 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          >
+            {lang === "sk" ? "SK" : "EN"}
+          </button>
+        </div>
         <div className="text-center">
           <div className="text-3xl mb-1 text-primary">✦</div>
-          <h1 className="text-xl font-semibold">Visual Astro</h1>
-          <p className="text-sm text-muted-foreground">Pozorovateľský denník premenných hviezd</p>
+          <h1 className="text-xl font-semibold">{t("auth.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("auth.subtitle")}</p>
         </div>
         <form onSubmit={submit} className="space-y-3">
           <div>
-            <Label htmlFor="email">E-mail</Label>
+            <Label htmlFor="email">{t("auth.email")}</Label>
             <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
           </div>
           <div>
-            <Label htmlFor="pw">Heslo</Label>
+            <Label htmlFor="pw">{t("auth.password")}</Label>
             <Input id="pw" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === "signin" ? "current-password" : "new-password"} />
           </div>
           <Button type="submit" className="w-full" disabled={busy}>
-            {mode === "signin" ? "Prihlásiť" : "Registrovať"}
+            {mode === "signin" ? t("auth.signin") : t("auth.signup")}
           </Button>
         </form>
         <button
@@ -69,7 +79,7 @@ export default function Auth() {
           onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
           className="w-full text-sm text-muted-foreground hover:text-foreground"
         >
-          {mode === "signin" ? "Vytvoriť nový účet" : "Mám už účet, prihlásiť"}
+          {mode === "signin" ? t("auth.toSignup") : t("auth.toSignin")}
         </button>
       </Card>
     </div>
