@@ -12,6 +12,7 @@ import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
 import { buildAAVSO, buildMEDUZA, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
 import { getPrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useI18n } from "@/hooks/useI18n";
 
 type StarType = "VISUAL" | "BINAR" | "ECL faint" | "ECL bright";
 type Star = {
@@ -65,6 +66,7 @@ export default function SessionEditor() {
   const { user } = useAuth();
   const nav = useNavigate();
   const { isPlusActive } = useSubscription();
+  const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [stars, setStars] = useState<Star[]>([]);
   const [obsByStar, setObsByStar] = useState<Record<string, Obs>>({});
@@ -189,6 +191,11 @@ export default function SessionEditor() {
     }, 500);
     return () => clearTimeout(t);
   }, [id, loading, sessionName]);
+
+  const saveNameNow = () => {
+    if (!id) return;
+    supabase.from("sessions").update({ name: sessionName || null }).eq("id", id);
+  };
 
   const updateObs = (starId: string, patch: Partial<Obs>) => {
     setObsByStar((prev) => {
@@ -539,11 +546,22 @@ export default function SessionEditor() {
         fr.readAsDataURL(file);
       });
       const { data, error } = await supabase.functions.invoke("paper-ocr", { body: { image: dataUrl } });
-      if (error) throw error;
+      if (error) {
+        const ctx: any = (error as any).context;
+        let msg = error.message;
+        try {
+          const body = ctx?.body ? await new Response(ctx.body).json() : null;
+          if (body?.error) msg = body.error;
+        } catch {}
+        throw new Error(msg);
+      }
       if ((data as any)?.error) throw new Error((data as any).error);
       const obsArr = (data as any)?.observations ?? [];
       const blob = new Blob([JSON.stringify({ observations: obsArr })], { type: "application/json" });
       await handleImportFile(new File([blob], "ocr.json", { type: "application/json" }));
+      const used = (data as any)?.used;
+      const lim = (data as any)?.dailyLimit;
+      if (used && lim) toast.info(`AI skeny dnes: ${used}/${lim}`);
     } catch (e: any) {
       toast.error("OCR zlyhalo: " + (e?.message ?? "neznáma chyba"));
     } finally {
@@ -554,7 +572,6 @@ export default function SessionEditor() {
   const downloadPaperTemplate = () => {
     const headers = ["#", "Hviezda", "A", "Paso A", "Paso B", "B", "Limit", "UT", "Nota"];
     const ROWS = 25;
-    const dateStr = observedAt.toLocaleDateString("sk-SK", { year: "numeric", month: "2-digit", day: "2-digit" });
     const renderTable = () => `
       <table>
         <thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
@@ -568,8 +585,7 @@ export default function SessionEditor() {
   header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 6mm; border-bottom: 1px solid #000; padding-bottom: 3mm; }
   header h1 { margin: 0; font-size: 14pt; letter-spacing: 1px; }
   header .meta { font-size: 9pt; display: flex; gap: 8mm; align-items: center; }
-  header .meta span { display: inline-block; min-width: 30mm; border-bottom: 1px solid #000; margin-left: 4px; padding: 0 6px; }
-  header .meta .filled { border-bottom: 1px solid #000; }
+  header .meta span { display: inline-block; min-width: 40mm; border-bottom: 1px solid #000; margin-left: 4px; padding: 0 6px; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   th, td { border: 1px solid #000; padding: 2.4mm 1mm; font-size: 9pt; text-align: left; height: 8mm; }
@@ -584,7 +600,7 @@ export default function SessionEditor() {
   <button class="print" onclick="window.print()">Tlačiť</button>
   <header>
     <h1>VISUAL ASTRO · Pozorovací papier</h1>
-    <div class="meta">Dátum (UT):<span class="filled">${dateStr}</span> Pozorovateľ:<span></span> Obs kód:<span>${obsCode}</span></div>
+    <div class="meta">Dátum (UT):<span></span> Pozorovateľ:<span></span></div>
   </header>
   <div class="grid">${renderTable()}${renderTable()}</div>
 </body></html>`;
@@ -613,22 +629,23 @@ export default function SessionEditor() {
       <AppHeader />
       <main className="container mx-auto px-4 py-6 max-w-6xl">
         <Button variant="ghost" size="sm" onClick={() => nav("/")} className="mb-3">
-          <ChevronLeft className="h-4 w-4 mr-1" /> Sessions
+          <ChevronLeft className="h-4 w-4 mr-1" /> {t("editor.back")}
         </Button>
 
         {/* Header card: datetime + JD + counters + exports */}
         <Card className="p-4 mb-4">
           <div className="grid md:grid-cols-4 gap-3 items-end">
             <div>
-              <label className="text-xs text-muted-foreground">Názov session</label>
+              <label className="text-xs text-muted-foreground">{t("editor.name")}</label>
               <Input
                 value={sessionName}
                 onChange={(e) => setSessionName(e.target.value)}
-                placeholder="napr. Jasná obloha v Modre"
+                onBlur={saveNameNow}
+                placeholder={t("editor.namePlaceholder")}
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground">Dátum (UT, večer)</label>
+              <label className="text-xs text-muted-foreground">{t("editor.date")}</label>
               <Input
                 type="date"
                 value={isoDate}
@@ -652,15 +669,15 @@ export default function SessionEditor() {
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground">JD (kompletný)</label>
+              <label className="text-xs text-muted-foreground">{t("editor.jd")}</label>
               <div className="font-mono text-sm py-2">{jd.toFixed(5)}</div>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground">Obs</label>
+              <label className="text-xs text-muted-foreground">{t("editor.obs")}</label>
               <div className="font-mono text-sm py-2">{obsCode}</div>
             </div>
             <div className="text-right">
-              <div className="text-xs text-muted-foreground">Vyplnené</div>
+              <div className="text-xs text-muted-foreground">{t("editor.filled")}</div>
               <div className="text-2xl font-semibold text-primary">{filledCount}</div>
             </div>
           </div>
@@ -701,17 +718,17 @@ export default function SessionEditor() {
                 }}
               />
               <Button size="sm" variant="secondary" onClick={downloadPaperTemplate}>
-                <Printer className="h-3.5 w-3.5 mr-1" /> Vzor papiera
+                <Printer className="h-3.5 w-3.5 mr-1" /> {t("editor.paperTemplate")}
               </Button>
               <Button size="sm" variant="secondary" onClick={() => paperInputRef.current?.click()} disabled={ocrBusy}>
                 {ocrBusy ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <ScanLine className="h-3.5 w-3.5 mr-1" />}
-                Import z papiera
+                {t("editor.paperImport")}
               </Button>
               <Button size="sm" variant="secondary" onClick={exportSessionJSON}>
-                <FileJson className="h-3.5 w-3.5 mr-1" /> Export JSON
+                <FileJson className="h-3.5 w-3.5 mr-1" /> {t("editor.exportJson")}
               </Button>
               <Button size="sm" variant="secondary" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="h-3.5 w-3.5 mr-1" /> Import JSON
+                <Upload className="h-3.5 w-3.5 mr-1" /> {t("editor.importJson")}
               </Button>
             </div>
           </div>
