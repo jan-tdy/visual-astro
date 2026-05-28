@@ -12,6 +12,7 @@ import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
 import { buildAAVSO, buildMEDUZA, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
 import { getPrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useI18n } from "@/hooks/useI18n";
 
 type StarType = "VISUAL" | "BINAR" | "ECL faint" | "ECL bright";
 type Star = {
@@ -65,6 +66,7 @@ export default function SessionEditor() {
   const { user } = useAuth();
   const nav = useNavigate();
   const { isPlusActive } = useSubscription();
+  const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [stars, setStars] = useState<Star[]>([]);
   const [obsByStar, setObsByStar] = useState<Record<string, Obs>>({});
@@ -189,6 +191,11 @@ export default function SessionEditor() {
     }, 500);
     return () => clearTimeout(t);
   }, [id, loading, sessionName]);
+
+  const saveNameNow = () => {
+    if (!id) return;
+    supabase.from("sessions").update({ name: sessionName || null }).eq("id", id);
+  };
 
   const updateObs = (starId: string, patch: Partial<Obs>) => {
     setObsByStar((prev) => {
@@ -622,22 +629,23 @@ export default function SessionEditor() {
       <AppHeader />
       <main className="container mx-auto px-4 py-6 max-w-6xl">
         <Button variant="ghost" size="sm" onClick={() => nav("/")} className="mb-3">
-          <ChevronLeft className="h-4 w-4 mr-1" /> Sessions
+          <ChevronLeft className="h-4 w-4 mr-1" /> {t("editor.back")}
         </Button>
 
         {/* Header card: datetime + JD + counters + exports */}
         <Card className="p-4 mb-4">
           <div className="grid md:grid-cols-4 gap-3 items-end">
             <div>
-              <label className="text-xs text-muted-foreground">Názov session</label>
+              <label className="text-xs text-muted-foreground">{t("editor.name")}</label>
               <Input
                 value={sessionName}
                 onChange={(e) => setSessionName(e.target.value)}
-                placeholder="napr. Jasná obloha v Modre"
+                onBlur={saveNameNow}
+                placeholder={t("editor.namePlaceholder")}
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground">Dátum (UT, večer)</label>
+              <label className="text-xs text-muted-foreground">{t("editor.date")}</label>
               <Input
                 type="date"
                 value={isoDate}
@@ -661,15 +669,15 @@ export default function SessionEditor() {
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground">JD (kompletný)</label>
+              <label className="text-xs text-muted-foreground">{t("editor.jd")}</label>
               <div className="font-mono text-sm py-2">{jd.toFixed(5)}</div>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground">Obs</label>
+              <label className="text-xs text-muted-foreground">{t("editor.obs")}</label>
               <div className="font-mono text-sm py-2">{obsCode}</div>
             </div>
             <div className="text-right">
-              <div className="text-xs text-muted-foreground">Vyplnené</div>
+              <div className="text-xs text-muted-foreground">{t("editor.filled")}</div>
               <div className="text-2xl font-semibold text-primary">{filledCount}</div>
             </div>
           </div>
@@ -710,17 +718,17 @@ export default function SessionEditor() {
                 }}
               />
               <Button size="sm" variant="secondary" onClick={downloadPaperTemplate}>
-                <Printer className="h-3.5 w-3.5 mr-1" /> Vzor papiera
+                <Printer className="h-3.5 w-3.5 mr-1" /> {t("editor.paperTemplate")}
               </Button>
               <Button size="sm" variant="secondary" onClick={() => paperInputRef.current?.click()} disabled={ocrBusy}>
                 {ocrBusy ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <ScanLine className="h-3.5 w-3.5 mr-1" />}
-                Import z papiera
+                {t("editor.paperImport")}
               </Button>
               <Button size="sm" variant="secondary" onClick={exportSessionJSON}>
-                <FileJson className="h-3.5 w-3.5 mr-1" /> Export JSON
+                <FileJson className="h-3.5 w-3.5 mr-1" /> {t("editor.exportJson")}
               </Button>
               <Button size="sm" variant="secondary" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="h-3.5 w-3.5 mr-1" /> Import JSON
+                <Upload className="h-3.5 w-3.5 mr-1" /> {t("editor.importJson")}
               </Button>
             </div>
           </div>
