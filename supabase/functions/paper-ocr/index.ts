@@ -1,8 +1,63 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
+    const authHeader = req.headers.get('Authorization') ?? '';
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+    if (!token) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const userId = userData.user.id;
+    const email = (userData.user.email ?? '').toLowerCase();
+
+    // Determine plan limit
+    const { data: subRow } = await supabase
+      .from('subscriptions')
+      .select('status,current_period_end,environment')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const subActive = !!subRow && (
+      (['active','trialing','past_due'].includes((subRow as any).status) &&
+        (!(subRow as any).current_period_end || new Date((subRow as any).current_period_end) > new Date())) ||
+      ((subRow as any).status === 'canceled' && (subRow as any).current_period_end && new Date((subRow as any).current_period_end) > new Date())
+    );
+    const { data: prof } = await supabase
+      .from('profiles').select('dev_plus_override').eq('user_id', userId).maybeSingle();
+    const devOverride = !!(prof as any)?.dev_plus_override && email === 'var@kozmos.sk';
+    const isPlus = subActive || devOverride;
+    const dailyLimit = isPlus ? 15 : 5;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: usageRow } = await supabase
+      .from('ocr_usage')
+      .select('id,count')
+      .eq('user_id', userId)
+      .eq('used_on', today)
+      .maybeSingle();
+    const used = (usageRow as any)?.count ?? 0;
+    if (used >= dailyLimit) {
+      return new Response(JSON.stringify({
+        error: `Denný limit AI skenov vyčerpaný (${used}/${dailyLimit}). ${isPlus ? '' : 'Upgraduj na Plus pre 15 skenov denne.'}`,
+        limitReached: true, used, dailyLimit, isPlus,
+      }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     const { image } = await req.json();
     if (!image || typeof image !== 'string') {
       return new Response(JSON.stringify({ error: 'image (data URL) required' }), {
@@ -16,13 +71,22 @@ Deno.serve(async (req) => {
       });
     }
 
-    const systemPrompt = `Si OCR asistent pre pozorovateľský papier premenných hviezd.
-Papier obsahuje tabuľku s riadkami pozorovaní. Stĺpce (v poradí):
-poradie, hviezda, a, paso a, paso b, b, limit, ut, nota.
-Papier môže byť dvojstĺpcový (ľavá aj pravá polovica).
+    const systemPrompt = `Si expert OCR asistent pre RUČNE písané (ceruzkou) pozorovateľské papiere premenných hviezd.
+Text je takmer vždy písaný rukou ceruzkou, často nečitateľne — interpretuj ho najlepšie ako vieš.
+Papier obsahuje tabuľku s pevnými stĺpcami v poradí:
+poradie (#), hviezda, A, Paso A, Paso B, B, Limit, UT (čas hh:mm), Nota.
+Papier môže byť dvojstĺpcový (ľavá aj pravá polovica - prejdi obe).
+Pravidlá:
+- Stĺpce "A" a "B" sú porovnávacie hviezdy (zvyčajne 1–3 znaky, písmená a číslice, napr. "a", "B2", "12").
+- "Paso A" a "Paso B" sú celé čísla (typicky 1–20).
+- "Limit" má prefix "<" (napr. "<14.9").
+- "UT" je čas vo formáte hh:mm (24h).
+- "Hviezda" je názov premennej (napr. "RX And", "SS Cyg", "V404 Cyg").
+- Ignoruj úplne prázdne riadky.
+- Ak si pri ručnom písme neistý, urob najpravdepodobnejší odhad, nevynechávaj riadok.
 Vráť VÝHRADNE JSON objekt v tvare:
 { "observations": [ { "star_name": string, "a": string|null, "pasos_a": number|null, "pasos_b": number|null, "b": string|null, "limit_value": string|null, "ut_time": string|null, "note": string|null } ] }
-Prázdne polia vráť ako null. Čísla v paso ako celé čísla. Časy ako "hh:mm". Nepridávaj žiadny text mimo JSON.`;
+Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
 
     const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -35,7 +99,7 @@ Prázdne polia vráť ako null. Čísla v paso ako celé čísla. Časy ako "hh:
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: [
-            { type: 'text', text: 'Prečítaj tabuľku z tohto papiera a vráť JSON.' },
+            { type: 'text', text: 'Prečítaj túto ručne písanú tabuľku (ceruzkou) a vráť JSON. Snaž sa rozlúštiť aj nečitateľné políčka.' },
             { type: 'image_url', image_url: { url: image } },
           ]},
         ],
@@ -54,7 +118,15 @@ Prázdne polia vráť ako null. Čísla v paso ako celé čísla. Časy ako "hh:
     const content = data?.choices?.[0]?.message?.content ?? '{}';
     let parsed: any = {};
     try { parsed = JSON.parse(content); } catch { parsed = { observations: [] }; }
-    return new Response(JSON.stringify(parsed), {
+
+    // Increment usage counter (best effort)
+    if (usageRow) {
+      await supabase.from('ocr_usage').update({ count: used + 1 }).eq('id', (usageRow as any).id);
+    } else {
+      await supabase.from('ocr_usage').insert({ user_id: userId, used_on: today, count: 1 });
+    }
+
+    return new Response(JSON.stringify({ ...parsed, used: used + 1, dailyLimit, isPlus }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
