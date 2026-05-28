@@ -80,6 +80,33 @@ export type Database = {
           },
         ]
       }
+      ocr_usage: {
+        Row: {
+          count: number
+          created_at: string
+          id: string
+          updated_at: string
+          used_on: string
+          user_id: string
+        }
+        Insert: {
+          count?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          used_on?: string
+          user_id: string
+        }
+        Update: {
+          count?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          used_on?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           catalog_seeded: boolean
