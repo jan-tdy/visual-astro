@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, BookOpen, Settings as SettingsIcon, ListChecks, Info, Sun, Moon, Menu, Sparkles, BarChart3 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
+import { GlobalSearch } from "@/components/app/GlobalSearch";
 
 export function AppHeader() {
   const { signOut, user } = useAuth();
@@ -45,6 +46,7 @@ export function AppHeader() {
           {link("/about", t("nav.info"), Info)}
         </nav>
         <div className="flex items-center gap-2">
+          {user && <div className="hidden md:block"><GlobalSearch /></div>}
           <span className="hidden md:inline text-xs text-muted-foreground">{user?.email}</span>
           <button
             onClick={() => setLang(lang === "sk" ? "en" : "sk")}
