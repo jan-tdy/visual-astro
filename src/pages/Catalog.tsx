@@ -244,11 +244,18 @@ export default function Catalog() {
                   <th className="px-3 py-2">VSNET</th>
                   <th className="px-3 py-2">AAVSO</th>
                   <th className="px-3 py-2">Karta</th>
-                  <th className="px-3 py-2 w-20"></th>
+                  <th className="px-3 py-2 w-32"></th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((s) => (
+                {filtered.map((s) => {
+                  const siblings = stars
+                    .filter((x) => x.constellation === s.constellation)
+                    .sort((a, b) => a.sort_order - b.sort_order);
+                  const pos = siblings.findIndex((x) => x.id === s.id);
+                  const canUp = pos > 0;
+                  const canDown = pos >= 0 && pos < siblings.length - 1;
+                  return (
                   <tr key={s.id} className="border-b border-border/50 hover:bg-secondary/20 cursor-pointer" onClick={() => setEditing(s)}>
                     <td className="px-3 py-2 font-medium">{s.name}</td>
                     <td className="px-3 py-2 text-muted-foreground">{s.constellation}</td>
@@ -257,12 +264,19 @@ export default function Catalog() {
                     <td className="px-3 py-2 font-mono text-xs">{s.aavso_code}</td>
                     <td className="px-3 py-2 font-mono text-xs">{s.chart_id}</td>
                     <td className="px-3 py-2 text-right">
+                      <Button variant="ghost" size="icon" disabled={!canUp} title="Posunúť hore" onClick={(e) => { e.stopPropagation(); moveStar(s, -1); }}>
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" disabled={!canDown} title="Posunúť dole" onClick={(e) => { e.stopPropagation(); moveStar(s, 1); }}>
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setConfirmDelete(s); }}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </Card>
