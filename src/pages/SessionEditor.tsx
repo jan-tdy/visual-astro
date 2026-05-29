@@ -571,7 +571,7 @@ export default function SessionEditor() {
 
   const downloadPaperTemplate = () => {
     const headers = ["#", "Hviezda", "A", "Paso A", "Paso B", "B", "Limit", "UT", "Nota"];
-    const ROWS = 25;
+    const ROWS = 32;
     const renderTable = () => `
       <table>
         <thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
@@ -579,21 +579,20 @@ export default function SessionEditor() {
       </table>`;
     const html = `<!doctype html><html lang="sk"><head><meta charset="utf-8"><title>Pozorovací papier – Visual Astro</title>
 <style>
-  @page { size: A4 landscape; margin: 10mm; }
+  @page { size: A4 portrait; margin: 8mm; }
   * { box-sizing: border-box; }
-  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #000; margin: 0; padding: 8mm; font-size: 10pt; }
-  header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 6mm; border-bottom: 1px solid #000; padding-bottom: 3mm; }
-  header h1 { margin: 0; font-size: 14pt; letter-spacing: 1px; }
-  header .meta { font-size: 9pt; display: flex; gap: 8mm; align-items: center; }
-  header .meta span { display: inline-block; min-width: 40mm; border-bottom: 1px solid #000; margin-left: 4px; padding: 0 6px; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #000; margin: 0; padding: 6mm; font-size: 9pt; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 4mm; border-bottom: 1px solid #000; padding-bottom: 2mm; }
+  header h1 { margin: 0; font-size: 12pt; letter-spacing: 1px; }
+  header .meta { font-size: 8pt; display: flex; gap: 6mm; align-items: center; }
+  header .meta span { display: inline-block; min-width: 32mm; border-bottom: 1px solid #000; margin-left: 4px; padding: 0 4px; }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  th, td { border: 1px solid #000; padding: 2.4mm 1mm; font-size: 9pt; text-align: left; height: 8mm; }
+  th, td { border: 1px solid #000; padding: 1.4mm 1mm; font-size: 8pt; text-align: left; height: 6.8mm; }
   th { background: #eee; font-weight: 600; text-align: center; }
   td.num { text-align: center; width: 7mm; background: #fafafa; color: #555; }
   th:nth-child(1), td:nth-child(1) { width: 7mm; }
   th:nth-child(2), td:nth-child(2) { width: 22%; }
-  th:nth-child(9), td:nth-child(9) { width: 18%; }
+  th:nth-child(9), td:nth-child(9) { width: 22%; }
   .print { position: fixed; top: 8px; right: 8px; }
   @media print { .print { display: none; } }
 </style></head><body>
@@ -602,7 +601,7 @@ export default function SessionEditor() {
     <h1>VISUAL ASTRO · Pozorovací papier</h1>
     <div class="meta">Dátum (UT):<span></span> Pozorovateľ:<span></span></div>
   </header>
-  <div class="grid">${renderTable()}${renderTable()}</div>
+  ${renderTable()}
 </body></html>`;
     const w = window.open("", "_blank");
     if (!w) { toast.error("Prehliadač blokuje nové okno"); return; }

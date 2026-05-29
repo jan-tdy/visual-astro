@@ -346,9 +346,9 @@ export default function Settings() {
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                   <span>Limit úložiska <strong>200 MB</strong></span>
                 </li>
-                <li className="flex items-start gap-2 text-muted-foreground">
-                  <Sparkles className="h-4 w-4 mt-0.5 shrink-0" />
-                  <span>V budúcnosti: <strong className="text-foreground">5 AI skenov</strong> denne</span>
+                <li className="flex items-start gap-2">
+                  <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <span><strong>5 AI skenov</strong> papierových formulárov denne</span>
                 </li>
               </ul>
             </Card>
@@ -382,9 +382,9 @@ export default function Settings() {
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                   <span>Limit úložiska <strong>800 MB</strong></span>
                 </li>
-                <li className="flex items-start gap-2 text-muted-foreground">
-                  <Sparkles className="h-4 w-4 mt-0.5 shrink-0" />
-                  <span>V budúcnosti: <strong className="text-foreground">15 AI skenov</strong> denne</span>
+                <li className="flex items-start gap-2">
+                  <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <span><strong>15 AI skenov</strong> papierových formulárov denne</span>
                 </li>
               </ul>
               {isPlusActive ? (

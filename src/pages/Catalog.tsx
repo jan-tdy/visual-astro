@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Trash2, Save, Download, Upload } from "lucide-react";
+import { Loader2, Plus, Trash2, Save, Download, Upload, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,18 @@ type Star = {
 };
 
 const TYPES = ["VISUAL", "BINAR", "ECL faint", "ECL bright"] as const;
+
+const CONSTELLATIONS = [
+  "ANDROMEDA","AQUARIUS","AQUILA","ARIES","AURIGA","BOOTES","CAMELOPARDALIS",
+  "CANCER","CANES VENATICI","CANIS MAIOR","CANIS MINOR","CAPRICORNUS","CASSIOPEA",
+  "CEPHEUS","CETUS","COMA BERENICES","CORONA BOREALIS","CORVUS","CRATER","CYGNUS",
+  "DELPHINUS","DRACO","EQUULEUS","ERIDANUS","GEMINI","HERCULES","HYDRA",
+  "LACERTA","LEO","LEO MINOR","LEPUS","LIBRA","LYNX","LYRA","MONOCEROS",
+  "OPHIUCHUS","ORION","PEGASUS","PERSEUS","PISCES","PUPPIS","SAGITTA",
+  "SAGITTARIUS","SCORPIUS","SCUTUM","SERPENS","SEXTANS","TAURUS","TRIANGULUM",
+  "URSA MAIOR","URSA MINOR","VIRGO","VULPECULA",
+] as const;
+const OTHER_CONST = "__other__";
 
 export default function Catalog() {
   const { user } = useAuth();
@@ -59,6 +71,32 @@ export default function Catalog() {
       .toLowerCase()
       .includes(filter.toLowerCase()),
   );
+
+  const moveStar = async (s: Star, dir: -1 | 1) => {
+    // siblings within same constellation, ordered as displayed
+    const siblings = stars
+      .filter((x) => x.constellation === s.constellation)
+      .sort((a, b) => a.sort_order - b.sort_order);
+    const idx = siblings.findIndex((x) => x.id === s.id);
+    const swap = siblings[idx + dir];
+    if (!swap) return;
+    // optimistic
+    setStars((prev) =>
+      prev.map((x) => {
+        if (x.id === s.id) return { ...x, sort_order: swap.sort_order };
+        if (x.id === swap.id) return { ...x, sort_order: s.sort_order };
+        return x;
+      }),
+    );
+    const [e1, e2] = await Promise.all([
+      supabase.from("stars").update({ sort_order: swap.sort_order }).eq("id", s.id),
+      supabase.from("stars").update({ sort_order: s.sort_order }).eq("id", swap.id),
+    ]);
+    if (e1.error || e2.error) {
+      toast.error((e1.error ?? e2.error)!.message);
+      reload();
+    }
+  };
 
   const remove = async (id: string) => {
     const { error } = await supabase.from("stars").delete().eq("id", id);
@@ -206,11 +244,18 @@ export default function Catalog() {
                   <th className="px-3 py-2">VSNET</th>
                   <th className="px-3 py-2">AAVSO</th>
                   <th className="px-3 py-2">Karta</th>
-                  <th className="px-3 py-2 w-20"></th>
+                  <th className="px-3 py-2 w-32"></th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((s) => (
+                {filtered.map((s) => {
+                  const siblings = stars
+                    .filter((x) => x.constellation === s.constellation)
+                    .sort((a, b) => a.sort_order - b.sort_order);
+                  const pos = siblings.findIndex((x) => x.id === s.id);
+                  const canUp = pos > 0;
+                  const canDown = pos >= 0 && pos < siblings.length - 1;
+                  return (
                   <tr key={s.id} className="border-b border-border/50 hover:bg-secondary/20 cursor-pointer" onClick={() => setEditing(s)}>
                     <td className="px-3 py-2 font-medium">{s.name}</td>
                     <td className="px-3 py-2 text-muted-foreground">{s.constellation}</td>
@@ -219,12 +264,19 @@ export default function Catalog() {
                     <td className="px-3 py-2 font-mono text-xs">{s.aavso_code}</td>
                     <td className="px-3 py-2 font-mono text-xs">{s.chart_id}</td>
                     <td className="px-3 py-2 text-right">
+                      <Button variant="ghost" size="icon" disabled={!canUp} title="Posunúť hore" onClick={(e) => { e.stopPropagation(); moveStar(s, -1); }}>
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" disabled={!canDown} title="Posunúť dole" onClick={(e) => { e.stopPropagation(); moveStar(s, 1); }}>
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setConfirmDelete(s); }}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </Card>
@@ -295,6 +347,7 @@ function StarDialog({
     name: "", constellation: "", type: "VISUAL" as Star["type"],
     vsnet_code: "", aavso_code: "", chart_id: "", notes: "",
   });
+  const [constMode, setConstMode] = useState<"preset" | "other">("preset");
   useEffect(() => {
     if (star) {
       setForm({
@@ -302,8 +355,10 @@ function StarDialog({
         vsnet_code: star.vsnet_code ?? "", aavso_code: star.aavso_code ?? "",
         chart_id: star.chart_id ?? "", notes: star.notes ?? "",
       });
+      setConstMode((CONSTELLATIONS as readonly string[]).includes(star.constellation) ? "preset" : "other");
     } else if (open) {
       setForm({ name: "", constellation: "", type: "VISUAL", vsnet_code: "", aavso_code: "", chart_id: "", notes: "" });
+      setConstMode("preset");
     }
   }, [star, open]);
 
@@ -327,11 +382,35 @@ function StarDialog({
           </div>
           <div>
             <Label>Súhvezdie</Label>
-            <Input
-              placeholder="napr. CYGNUS"
-              value={form.constellation}
-              onChange={(e) => setForm({ ...form, constellation: e.target.value })}
-            />
+            <Select
+              value={constMode === "other" ? OTHER_CONST : (form.constellation || undefined)}
+              onValueChange={(v) => {
+                if (v === OTHER_CONST) {
+                  setConstMode("other");
+                  setForm({ ...form, constellation: "" });
+                } else {
+                  setConstMode("preset");
+                  setForm({ ...form, constellation: v });
+                }
+              }}
+            >
+              <SelectTrigger><SelectValue placeholder="Vyber súhvezdie…" /></SelectTrigger>
+              <SelectContent className="max-h-72">
+                {CONSTELLATIONS.map((c) => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+                <SelectItem value={OTHER_CONST}>Iné…</SelectItem>
+              </SelectContent>
+            </Select>
+            {constMode === "other" && (
+              <Input
+                className="mt-2"
+                placeholder="Zadaj názov súhvezdia (napr. CYGNUS)"
+                value={form.constellation}
+                onChange={(e) => setForm({ ...form, constellation: e.target.value.toUpperCase() })}
+                autoFocus
+              />
+            )}
             <p className="text-xs text-muted-foreground mt-1">
               Horný riadok.
             </p>
