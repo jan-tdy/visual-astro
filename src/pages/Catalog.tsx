@@ -72,6 +72,32 @@ export default function Catalog() {
       .includes(filter.toLowerCase()),
   );
 
+  const moveStar = async (s: Star, dir: -1 | 1) => {
+    // siblings within same constellation, ordered as displayed
+    const siblings = stars
+      .filter((x) => x.constellation === s.constellation)
+      .sort((a, b) => a.sort_order - b.sort_order);
+    const idx = siblings.findIndex((x) => x.id === s.id);
+    const swap = siblings[idx + dir];
+    if (!swap) return;
+    // optimistic
+    setStars((prev) =>
+      prev.map((x) => {
+        if (x.id === s.id) return { ...x, sort_order: swap.sort_order };
+        if (x.id === swap.id) return { ...x, sort_order: s.sort_order };
+        return x;
+      }),
+    );
+    const [e1, e2] = await Promise.all([
+      supabase.from("stars").update({ sort_order: swap.sort_order }).eq("id", s.id),
+      supabase.from("stars").update({ sort_order: s.sort_order }).eq("id", swap.id),
+    ]);
+    if (e1.error || e2.error) {
+      toast.error((e1.error ?? e2.error)!.message);
+      reload();
+    }
+  };
+
   const remove = async (id: string) => {
     const { error } = await supabase.from("stars").delete().eq("id", id);
     if (error) toast.error(error.message);
