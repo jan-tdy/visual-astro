@@ -7,6 +7,7 @@ import { LogOut, BookOpen, Settings as SettingsIcon, ListChecks, Info, Sun, Moon
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { GlobalSearch } from "@/components/app/GlobalSearch";
+import logoUrl from "@/assets/visual-astro-logo.png";
 
 export function AppHeader() {
   const { signOut, user } = useAuth();
@@ -32,7 +33,21 @@ export function AppHeader() {
     <header className="border-b border-border bg-card/60 backdrop-blur sticky top-0 z-30">
       <div className="container mx-auto px-4 py-1.5 flex items-center justify-between gap-4">
         <Link to="/" className="text-lg font-semibold tracking-wide text-primary inline-flex items-center gap-2">
-          ✦ Visual Astro
+          <span
+            aria-hidden
+            className="inline-block h-6 w-6 bg-primary shrink-0"
+            style={{
+              WebkitMaskImage: `url(${logoUrl})`,
+              maskImage: `url(${logoUrl})`,
+              WebkitMaskRepeat: "no-repeat",
+              maskRepeat: "no-repeat",
+              WebkitMaskPosition: "center",
+              maskPosition: "center",
+              WebkitMaskSize: "contain",
+              maskSize: "contain",
+            }}
+          />
+          Visual Astro
           <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/30">
             beta
           </span>
