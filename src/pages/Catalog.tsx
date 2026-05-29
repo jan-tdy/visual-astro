@@ -73,28 +73,33 @@ export default function Catalog() {
   );
 
   const moveStar = async (s: Star, dir: -1 | 1) => {
-    // siblings within same constellation, ordered as displayed
+    // siblings within same constellation, in displayed order (stable by name as tiebreaker)
     const siblings = stars
       .filter((x) => x.constellation === s.constellation)
-      .sort((a, b) => a.sort_order - b.sort_order);
+      .sort((a, b) => (a.sort_order - b.sort_order) || a.name.localeCompare(b.name));
     const idx = siblings.findIndex((x) => x.id === s.id);
-    const swap = siblings[idx + dir];
-    if (!swap) return;
-    // optimistic
+    if (idx < 0) return;
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= siblings.length) return;
+    // Reorder array
+    const reordered = siblings.slice();
+    const [moved] = reordered.splice(idx, 1);
+    reordered.splice(newIdx, 0, moved);
+    // Re-assign distinct sort_order values (10,20,30…) so future swaps always work
+    const updates = reordered.map((star, i) => ({ id: star.id, sort_order: (i + 1) * 10 }));
+    // optimistic UI
+    const updateMap = new Map(updates.map((u) => [u.id, u.sort_order]));
     setStars((prev) =>
-      prev.map((x) => {
-        if (x.id === s.id) return { ...x, sort_order: swap.sort_order };
-        if (x.id === swap.id) return { ...x, sort_order: s.sort_order };
-        return x;
-      }),
+      prev.map((x) => (updateMap.has(x.id) ? { ...x, sort_order: updateMap.get(x.id)! } : x)),
     );
-    const [e1, e2] = await Promise.all([
-      supabase.from("stars").update({ sort_order: swap.sort_order }).eq("id", s.id),
-      supabase.from("stars").update({ sort_order: s.sort_order }).eq("id", swap.id),
-    ]);
-    if (e1.error || e2.error) {
-      toast.error((e1.error ?? e2.error)!.message);
-      reload();
+    // Persist — run sequentially to avoid races, abort on first error
+    for (const u of updates) {
+      const { error } = await supabase.from("stars").update({ sort_order: u.sort_order }).eq("id", u.id);
+      if (error) {
+        toast.error(error.message);
+        reload();
+        return;
+      }
     }
   };
 
