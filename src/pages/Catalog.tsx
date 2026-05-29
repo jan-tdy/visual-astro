@@ -347,6 +347,7 @@ function StarDialog({
     name: "", constellation: "", type: "VISUAL" as Star["type"],
     vsnet_code: "", aavso_code: "", chart_id: "", notes: "",
   });
+  const [constMode, setConstMode] = useState<"preset" | "other">("preset");
   useEffect(() => {
     if (star) {
       setForm({
@@ -354,8 +355,10 @@ function StarDialog({
         vsnet_code: star.vsnet_code ?? "", aavso_code: star.aavso_code ?? "",
         chart_id: star.chart_id ?? "", notes: star.notes ?? "",
       });
+      setConstMode((CONSTELLATIONS as readonly string[]).includes(star.constellation) ? "preset" : "other");
     } else if (open) {
       setForm({ name: "", constellation: "", type: "VISUAL", vsnet_code: "", aavso_code: "", chart_id: "", notes: "" });
+      setConstMode("preset");
     }
   }, [star, open]);
 
@@ -379,11 +382,35 @@ function StarDialog({
           </div>
           <div>
             <Label>Súhvezdie</Label>
-            <Input
-              placeholder="napr. CYGNUS"
-              value={form.constellation}
-              onChange={(e) => setForm({ ...form, constellation: e.target.value })}
-            />
+            <Select
+              value={constMode === "other" ? OTHER_CONST : (form.constellation || undefined)}
+              onValueChange={(v) => {
+                if (v === OTHER_CONST) {
+                  setConstMode("other");
+                  setForm({ ...form, constellation: "" });
+                } else {
+                  setConstMode("preset");
+                  setForm({ ...form, constellation: v });
+                }
+              }}
+            >
+              <SelectTrigger><SelectValue placeholder="Vyber súhvezdie…" /></SelectTrigger>
+              <SelectContent className="max-h-72">
+                {CONSTELLATIONS.map((c) => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+                <SelectItem value={OTHER_CONST}>Iné…</SelectItem>
+              </SelectContent>
+            </Select>
+            {constMode === "other" && (
+              <Input
+                className="mt-2"
+                placeholder="Zadaj názov súhvezdia (napr. CYGNUS)"
+                value={form.constellation}
+                onChange={(e) => setForm({ ...form, constellation: e.target.value.toUpperCase() })}
+                autoFocus
+              />
+            )}
             <p className="text-xs text-muted-foreground mt-1">
               Horný riadok.
             </p>
