@@ -571,28 +571,31 @@ export default function SessionEditor() {
 
   const downloadPaperTemplate = () => {
     const headers = ["#", "Hviezda", "A", "Paso A", "Paso B", "B", "Limit", "UT", "Nota"];
-    const ROWS = 32;
-    const renderTable = () => `
+    const ROWS_PER_COL = 50;
+    const TOTAL = 100;
+    const renderTable = (startIdx: number) => `
       <table>
         <thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
-        <tbody>${Array.from({ length: ROWS }).map((_, i) => `<tr><td class="num">${i + 1}</td>${Array.from({ length: headers.length - 1 }).map(() => `<td></td>`).join("")}</tr>`).join("")}</tbody>
+        <tbody>${Array.from({ length: ROWS_PER_COL }).map((_, i) => `<tr><td class="num">${startIdx + i + 1}</td>${Array.from({ length: headers.length - 1 }).map(() => `<td></td>`).join("")}</tr>`).join("")}</tbody>
       </table>`;
+    void TOTAL;
     const html = `<!doctype html><html lang="sk"><head><meta charset="utf-8"><title>Pozorovací papier – Visual Astro</title>
 <style>
-  @page { size: A4 portrait; margin: 8mm; }
+  @page { size: A4 portrait; margin: 6mm; }
   * { box-sizing: border-box; }
-  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #000; margin: 0; padding: 6mm; font-size: 9pt; }
-  header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 4mm; border-bottom: 1px solid #000; padding-bottom: 2mm; }
-  header h1 { margin: 0; font-size: 12pt; letter-spacing: 1px; }
-  header .meta { font-size: 8pt; display: flex; gap: 6mm; align-items: center; }
-  header .meta span { display: inline-block; min-width: 32mm; border-bottom: 1px solid #000; margin-left: 4px; padding: 0 4px; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #000; margin: 0; padding: 4mm; font-size: 7pt; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2mm; border-bottom: 1px solid #000; padding-bottom: 1mm; }
+  header h1 { margin: 0; font-size: 10pt; letter-spacing: 0.5px; }
+  header .meta { font-size: 7pt; display: flex; gap: 4mm; align-items: center; }
+  header .meta span { display: inline-block; min-width: 24mm; border-bottom: 1px solid #000; margin-left: 3px; padding: 0 3px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  th, td { border: 1px solid #000; padding: 1.4mm 1mm; font-size: 8pt; text-align: left; height: 6.8mm; }
-  th { background: #eee; font-weight: 600; text-align: center; }
-  td.num { text-align: center; width: 7mm; background: #fafafa; color: #555; }
-  th:nth-child(1), td:nth-child(1) { width: 7mm; }
-  th:nth-child(2), td:nth-child(2) { width: 22%; }
-  th:nth-child(9), td:nth-child(9) { width: 22%; }
+  th, td { border: 1px solid #000; padding: 0.4mm 0.6mm; font-size: 6pt; text-align: left; height: 4.7mm; }
+  th { background: #eee; font-weight: 600; text-align: center; font-size: 6.5pt; padding: 0.6mm 0.4mm; }
+  td.num { text-align: center; width: 5mm; background: #fafafa; color: #555; }
+  th:nth-child(1), td:nth-child(1) { width: 5mm; }
+  th:nth-child(2), td:nth-child(2) { width: 18%; }
+  th:nth-child(9), td:nth-child(9) { width: 18%; }
   .print { position: fixed; top: 8px; right: 8px; }
   @media print { .print { display: none; } }
 </style></head><body>
@@ -601,7 +604,10 @@ export default function SessionEditor() {
     <h1>VISUAL ASTRO · Pozorovací papier</h1>
     <div class="meta">Dátum (UT):<span></span> Pozorovateľ:<span></span></div>
   </header>
-  ${renderTable()}
+  <div class="grid">
+    ${renderTable(0)}
+    ${renderTable(ROWS_PER_COL)}
+  </div>
 </body></html>`;
     const w = window.open("", "_blank");
     if (!w) { toast.error("Prehliadač blokuje nové okno"); return; }
