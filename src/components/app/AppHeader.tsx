@@ -32,7 +32,12 @@ export function AppHeader() {
   return (
     <header className="border-b border-border bg-card/60 backdrop-blur sticky top-0 z-30">
       <div className="container mx-auto px-4 py-1.5 flex items-center justify-between gap-4">
-        <Link to="/" className="text-lg font-semibold tracking-wide text-primary inline-flex items-center gap-2">
+        <a
+          href="https://j44soft.webnode.sk"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold tracking-wide text-primary inline-flex items-center gap-2"
+        >
           <span
             aria-hidden
             className="inline-block h-6 w-6 bg-primary shrink-0"
@@ -47,11 +52,18 @@ export function AppHeader() {
               maskSize: "contain",
             }}
           />
-          Visual Astro
-          <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/30">
-            beta
+          <span className="flex flex-col leading-tight">
+            <span className="inline-flex items-center gap-2 text-lg">
+              Visual Astro
+              <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/30">
+                beta
+              </span>
+            </span>
+            <span className="text-[10px] font-medium text-muted-foreground tracking-wide">
+              By J44Soft
+            </span>
           </span>
-        </Link>
+        </a>
         <nav className="hidden sm:flex items-center gap-1">
           {link("/", t("nav.sessions"), ListChecks)}
           {link("/catalog", t("nav.catalog"), BookOpen)}
