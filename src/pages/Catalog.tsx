@@ -41,6 +41,17 @@ const CONSTELLATIONS = [
 ] as const;
 const OTHER_CONST = "__other__";
 
+const sortStars = (items: Star[]) =>
+  [...items].sort(
+    (a, b) =>
+      a.constellation.localeCompare(b.constellation) ||
+      a.sort_order - b.sort_order ||
+      a.name.localeCompare(b.name),
+  );
+
+const sortConstellationStars = (items: Star[]) =>
+  [...items].sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
+
 export default function Catalog() {
   const { user } = useAuth();
   const [stars, setStars] = useState<Star[]>([]);
@@ -59,24 +70,24 @@ export default function Catalog() {
       .order("constellation")
       .order("sort_order");
     if (error) toast.error(error.message);
-    else setStars((data ?? []) as Star[]);
+    else setStars(sortStars((data ?? []) as Star[]));
     setLoading(false);
   };
   useEffect(() => {
     if (user) reload();
   }, [user]);
 
-  const filtered = stars.filter((s) =>
-    `${s.name} ${s.constellation} ${s.vsnet_code ?? ""} ${s.aavso_code ?? ""}`
-      .toLowerCase()
-      .includes(filter.toLowerCase()),
+  const filtered = sortStars(
+    stars.filter((s) =>
+      `${s.name} ${s.constellation} ${s.vsnet_code ?? ""} ${s.aavso_code ?? ""}`
+        .toLowerCase()
+        .includes(filter.toLowerCase()),
+    ),
   );
 
   const moveStar = async (s: Star, dir: -1 | 1) => {
     // siblings within same constellation, in displayed order (stable by name as tiebreaker)
-    const siblings = stars
-      .filter((x) => x.constellation === s.constellation)
-      .sort((a, b) => (a.sort_order - b.sort_order) || a.name.localeCompare(b.name));
+    const siblings = sortConstellationStars(stars.filter((x) => x.constellation === s.constellation));
     const idx = siblings.findIndex((x) => x.id === s.id);
     if (idx < 0) return;
     const newIdx = idx + dir;
@@ -90,7 +101,7 @@ export default function Catalog() {
     // optimistic UI
     const updateMap = new Map(updates.map((u) => [u.id, u.sort_order]));
     setStars((prev) =>
-      prev.map((x) => (updateMap.has(x.id) ? { ...x, sort_order: updateMap.get(x.id)! } : x)),
+      sortStars(prev.map((x) => (updateMap.has(x.id) ? { ...x, sort_order: updateMap.get(x.id)! } : x))),
     );
     // Persist — run sequentially to avoid races, abort on first error
     for (const u of updates) {
