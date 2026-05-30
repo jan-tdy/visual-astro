@@ -265,9 +265,7 @@ export default function Catalog() {
               </thead>
               <tbody>
                 {filtered.map((s) => {
-                  const siblings = stars
-                    .filter((x) => x.constellation === s.constellation)
-                    .sort((a, b) => a.sort_order - b.sort_order);
+                  const siblings = sortConstellationStars(stars.filter((x) => x.constellation === s.constellation));
                   const pos = siblings.findIndex((x) => x.id === s.id);
                   const canUp = pos > 0;
                   const canDown = pos >= 0 && pos < siblings.length - 1;
