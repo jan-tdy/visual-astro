@@ -60,7 +60,7 @@ export function AppHeader() {
               </span>
             </span>
             <span className="text-[10px] font-medium text-muted-foreground tracking-wide">
-              By J44Soft
+              By JapySoft
             </span>
           </span>
         </a>
