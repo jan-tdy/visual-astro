@@ -1,6 +1,30 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useMemo } from "react";
+import {
+  Tolgee,
+  DevTools,
+  TolgeeProvider,
+  FormatSimple,
+  useTolgee,
+  useTranslate,
+} from "@tolgee/react";
 
-type Lang = "sk" | "en";
+export const SUPPORTED_LANGS = [
+  { code: "sk", label: "Slovenčina" },
+  { code: "en", label: "English" },
+  { code: "cs", label: "Čeština" },
+  { code: "de", label: "Deutsch" },
+  { code: "es", label: "Español" },
+  { code: "fr", label: "Français" },
+  { code: "it", label: "Italiano" },
+  { code: "pl", label: "Polski" },
+  { code: "pt", label: "Português" },
+  { code: "nl", label: "Nederlands" },
+  { code: "hu", label: "Magyar" },
+  { code: "uk", label: "Українська" },
+  { code: "ru", label: "Русский" },
+] as const;
+
+type Lang = (typeof SUPPORTED_LANGS)[number]["code"];
 
 const dict = {
   sk: {
@@ -139,26 +163,78 @@ const dict = {
 
 type Key = keyof (typeof dict)["sk"];
 
+const TOLGEE_API_KEY = "tgpak_gmzdcnrql5yg6ndjobxtm5jxgyyg2ntomq4gczrqmjrwwobzojxa";
+const TOLGEE_API_URL = "https://app.tolgee.io";
+
+const storedLang = (): Lang => {
+  if (typeof window === "undefined") return "sk";
+  const s = localStorage.getItem("lang");
+  return (SUPPORTED_LANGS.some((l) => l.code === s) ? s : "sk") as Lang;
+};
+
+const tolgee = Tolgee()
+  .use(DevTools())
+  .use(FormatSimple())
+  .init({
+    language: storedLang(),
+    defaultLanguage: "sk",
+    fallbackLanguage: "sk",
+    availableLanguages: SUPPORTED_LANGS.map((l) => l.code),
+    apiKey: TOLGEE_API_KEY,
+    apiUrl: TOLGEE_API_URL,
+    staticData: {
+      sk: dict.sk as unknown as Record<string, string>,
+      en: dict.en as unknown as Record<string, string>,
+    },
+  });
+
 interface Ctx {
   lang: Lang;
   setLang: (l: Lang) => void;
-  t: (k: Key) => string;
+  t: (k: Key | string) => string;
 }
 
 const I18nCtx = createContext<Ctx | null>(null);
 
-export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(() => {
-    const stored = typeof window !== "undefined" ? localStorage.getItem("lang") : null;
-    return stored === "en" || stored === "sk" ? stored : "sk";
-  });
+function InnerProvider({ children }: { children: ReactNode }) {
+  const tg = useTolgee(["language"]);
+  const { t: tTrans } = useTranslate();
+  const lang = (tg.getLanguage() as Lang) || "sk";
+
   useEffect(() => {
     localStorage.setItem("lang", lang);
     document.documentElement.lang = lang;
   }, [lang]);
-  const setLang = (l: Lang) => setLangState(l);
-  const t = (k: Key) => (dict[lang] as Record<string, string>)[k] ?? k;
-  return <I18nCtx.Provider value={{ lang, setLang, t }}>{children}</I18nCtx.Provider>;
+
+  const value = useMemo<Ctx>(
+    () => ({
+      lang,
+      setLang: (l: Lang) => {
+        tg.changeLanguage(l);
+      },
+      t: (k) => {
+        const v = tTrans(k as string);
+        if (v && v !== k) return v;
+        // fallback to static dict
+        return (
+          (dict[lang] as Record<string, string> | undefined)?.[k as string] ??
+          (dict.sk as Record<string, string>)[k as string] ??
+          (k as string)
+        );
+      },
+    }),
+    [lang, tg, tTrans],
+  );
+
+  return <I18nCtx.Provider value={value}>{children}</I18nCtx.Provider>;
+}
+
+export function I18nProvider({ children }: { children: ReactNode }) {
+  return (
+    <TolgeeProvider tolgee={tolgee} fallback="Loading…">
+      <InnerProvider>{children}</InnerProvider>
+    </TolgeeProvider>
+  );
 }
 
 export function useI18n() {

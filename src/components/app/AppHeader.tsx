@@ -1,8 +1,15 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
-import { useI18n } from "@/hooks/useI18n";
+import { useI18n, SUPPORTED_LANGS } from "@/hooks/useI18n";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { LogOut, BookOpen, Settings as SettingsIcon, ListChecks, Info, Sun, Moon, Menu, Sparkles, BarChart3 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
@@ -75,14 +82,23 @@ export function AppHeader() {
         <div className="flex items-center gap-2">
           {user && <div className="hidden md:block"><GlobalSearch /></div>}
           <span className="hidden md:inline text-xs text-muted-foreground">{user?.email}</span>
-          <button
-            onClick={() => setLang(lang === "sk" ? "en" : "sk")}
-            className="text-[11px] font-semibold uppercase tracking-wider px-2 py-1 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-            aria-label={t("lang.label")}
-            title={t("lang.label")}
-          >
-            {lang === "sk" ? "SK" : "EN"}
-          </button>
+          <Select value={lang} onValueChange={(v) => setLang(v as any)}>
+            <SelectTrigger
+              className="h-8 w-[64px] text-[11px] font-semibold uppercase tracking-wider px-2"
+              aria-label={t("lang.label")}
+              title={t("lang.label")}
+            >
+              <SelectValue>{lang.toUpperCase()}</SelectValue>
+            </SelectTrigger>
+            <SelectContent align="end">
+              {SUPPORTED_LANGS.map((l) => (
+                <SelectItem key={l.code} value={l.code} className="text-sm">
+                  <span className="font-semibold uppercase tracking-wider mr-2">{l.code}</span>
+                  <span className="text-muted-foreground">{l.label}</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button variant="ghost" size="icon" onClick={toggle} aria-label="Prepnúť režim">
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
