@@ -227,7 +227,7 @@ function PromDialog({
   open: boolean;
   row: Row | null;
   onClose: () => void;
-  lang: "sk" | "en";
+  lang: string;
 }) {
   const tr = (sk: string, en: string) => (lang === "sk" ? sk : en);
   const [name, setName] = useState("");
