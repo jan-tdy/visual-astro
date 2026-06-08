@@ -629,6 +629,33 @@ export default function SessionEditor() {
     },
   ).length;
 
+  // Hviezdy ktoré majú zadaný čas, ale magnitúda sa nedá vypočítať
+  // (chýba A/B/Paso alebo limit). Tieto sa NEzapočítavajú do počtu
+  // pozorovaní ani do exportu — upozorni používateľa.
+  const incompleteWarnings = useMemo(() => {
+    const list: { name: string; row: string }[] = [];
+    const byId = new Map(stars.map((s) => [s.id, s]));
+    for (const o of Object.values(obsByStar)) {
+      if (!o.ut_time || !o.ut_time.trim()) continue;
+      const s = byId.get(o.star_id);
+      if (!s) continue;
+      if (computeMagnitude(o, s.name).value === null) {
+        list.push({ name: s.name, row: "" });
+      }
+    }
+    for (const [starId, arr] of Object.entries(extraByStar)) {
+      const s = byId.get(starId);
+      if (!s) continue;
+      arr.forEach((o, i) => {
+        if (!o.ut_time || !o.ut_time.trim()) return;
+        if (computeMagnitude(o, s.name).value === null) {
+          list.push({ name: s.name, row: ` (riadok ${i + 2})` });
+        }
+      });
+    }
+    return list;
+  }, [obsByStar, extraByStar, stars]);
+
   return (
     <div className="min-h-screen">
       <AppHeader />
@@ -686,6 +713,24 @@ export default function SessionEditor() {
               <div className="text-2xl font-semibold text-primary">{filledCount}</div>
             </div>
           </div>
+
+          {incompleteWarnings.length > 0 && (
+            <div className="mt-3 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-xs text-yellow-700 dark:text-yellow-300">
+              <div className="font-semibold mb-1">
+                Pozor — {incompleteWarnings.length} {incompleteWarnings.length === 1 ? "hviezda má" : "hviezd má"} zadaný čas, ale nedá sa vypočítať magnitúda:
+              </div>
+              <ul className="list-disc pl-5 space-y-0.5">
+                {incompleteWarnings.map((w, i) => (
+                  <li key={i}>
+                    <span className="font-medium">{w.name}</span>{w.row}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-1.5 opacity-80">
+                Ak chceš tieto pozorovania započítať do počtu a exportu, doplň A/B + Paso A/Paso B alebo limitnú hodnotu (&lt;/=).
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
             {(["vsnet", "aavso", "meduza"] as const).map((k) => (
