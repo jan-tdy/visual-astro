@@ -714,6 +714,24 @@ export default function SessionEditor() {
             </div>
           </div>
 
+          {incompleteWarnings.length > 0 && (
+            <div className="mt-3 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-xs text-yellow-700 dark:text-yellow-300">
+              <div className="font-semibold mb-1">
+                Pozor — {incompleteWarnings.length} {incompleteWarnings.length === 1 ? "hviezda má" : "hviezd má"} zadaný čas, ale nedá sa vypočítať magnitúda:
+              </div>
+              <ul className="list-disc pl-5 space-y-0.5">
+                {incompleteWarnings.map((w, i) => (
+                  <li key={i}>
+                    <span className="font-medium">{w.name}</span>{w.row}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-1.5 opacity-80">
+                Ak chceš tieto pozorovania započítať do počtu a exportu, doplň A/B + Paso A/Paso B alebo limitnú hodnotu (&lt;/=).
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
             {(["vsnet", "aavso", "meduza"] as const).map((k) => (
               <div key={k} className="flex gap-1">
