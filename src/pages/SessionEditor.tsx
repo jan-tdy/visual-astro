@@ -630,9 +630,8 @@ export default function SessionEditor() {
   ).length;
 
   // Hviezdy ktoré majú zadaný čas, ale magnitúda sa nedá vypočítať
-  // (chýba A/B/Paso alebo limit). Tieto sa NEzapočítavajú do počtu
-  // pozorovaní ani do exportu — upozorni používateľa.
-  const incompleteWarnings = useMemo(() => {
+  // (chýba A/B/Paso alebo limit). Nezapočítavajú sa do počtu/exportu.
+  const incompleteWarnings: { name: string; row: string }[] = (() => {
     const list: { name: string; row: string }[] = [];
     const byId = new Map(stars.map((s) => [s.id, s]));
     for (const o of Object.values(obsByStar)) {
@@ -654,7 +653,7 @@ export default function SessionEditor() {
       });
     }
     return list;
-  }, [obsByStar, extraByStar, stars]);
+  })();
 
   return (
     <div className="min-h-screen">
