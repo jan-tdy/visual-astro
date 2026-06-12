@@ -9,15 +9,14 @@ import {
 } from "@tolgee/react";
 
 export const SUPPORTED_LANGS = [
-  { code: "sk", label: "Slovenčina" },
+  { code: "sk-SK", label: "Slovenčina" },
   { code: "en", label: "English" },
-  { code: "cs", label: "Čeština" },
-  { code: "de", label: "Deutsch" },
-  { code: "es", label: "Español" },
+  { code: "cs-CZ", label: "Čeština" },
+  { code: "de-DE", label: "Deutsch" },
+  { code: "es-ES", label: "Español" },
   { code: "fr", label: "Français" },
   { code: "it", label: "Italiano" },
   { code: "pl", label: "Polski" },
-  { code: "pt", label: "Português" },
   { code: "nl", label: "Nederlands" },
   { code: "hu", label: "Magyar" },
   { code: "uk", label: "Українська" },
@@ -166,10 +165,19 @@ type Key = keyof (typeof dict)["sk"];
 const TOLGEE_API_KEY = "tgpak_gmzdcnrql5yg6ndjobxtm5jxgyyg2ntomq4gczrqmjrwwobzojxa";
 const TOLGEE_API_URL = "https://app.tolgee.io";
 
+const LEGACY_MAP: Record<string, string> = {
+  sk: "sk-SK",
+  cs: "cs-CZ",
+  de: "de-DE",
+  es: "es-ES",
+  pt: "en", // pt removed, fallback
+};
+
 const storedLang = (): Lang => {
-  if (typeof window === "undefined") return "sk";
-  const s = localStorage.getItem("lang");
-  return (SUPPORTED_LANGS.some((l) => l.code === s) ? s : "sk") as Lang;
+  if (typeof window === "undefined") return "sk-SK";
+  let s = localStorage.getItem("lang") || "sk-SK";
+  if (LEGACY_MAP[s]) s = LEGACY_MAP[s];
+  return (SUPPORTED_LANGS.some((l) => l.code === s) ? s : "sk-SK") as Lang;
 };
 
 const tolgee = Tolgee()
@@ -177,13 +185,13 @@ const tolgee = Tolgee()
   .use(FormatSimple())
   .init({
     language: storedLang(),
-    defaultLanguage: "sk",
-    fallbackLanguage: "sk",
+    defaultLanguage: "sk-SK",
+    fallbackLanguage: "en",
     availableLanguages: SUPPORTED_LANGS.map((l) => l.code),
     apiKey: TOLGEE_API_KEY,
     apiUrl: TOLGEE_API_URL,
     staticData: {
-      sk: dict.sk as unknown as Record<string, string>,
+      "sk-SK": dict.sk as unknown as Record<string, string>,
       en: dict.en as unknown as Record<string, string>,
     },
   });
@@ -199,7 +207,7 @@ const I18nCtx = createContext<Ctx | null>(null);
 function InnerProvider({ children }: { children: ReactNode }) {
   const tg = useTolgee(["language"]);
   const { t: tTrans } = useTranslate();
-  const lang = (tg.getLanguage() as Lang) || "sk";
+  const lang = (tg.getLanguage() as Lang) || "sk-SK";
 
   useEffect(() => {
     localStorage.setItem("lang", lang);
@@ -216,8 +224,9 @@ function InnerProvider({ children }: { children: ReactNode }) {
         const v = tTrans(k as string);
         if (v && v !== k) return v;
         // fallback to static dict
+        const base = lang.startsWith("en") ? dict.en : dict.sk;
         return (
-          (dict[lang] as Record<string, string> | undefined)?.[k as string] ??
+          (base as Record<string, string>)[k as string] ??
           (dict.sk as Record<string, string>)[k as string] ??
           (k as string)
         );
