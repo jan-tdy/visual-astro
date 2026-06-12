@@ -9,11 +9,11 @@ import {
 } from "@tolgee/react";
 
 export const SUPPORTED_LANGS = [
-  { code: "sk-SK", label: "Slovenčina" },
+  { code: "sk", label: "Slovenčina" },
   { code: "en", label: "English" },
-  { code: "cs-CZ", label: "Čeština" },
-  { code: "de-DE", label: "Deutsch" },
-  { code: "es-ES", label: "Español" },
+  { code: "cs", label: "Čeština" },
+  { code: "de", label: "Deutsch" },
+  { code: "es", label: "Español" },
   { code: "fr", label: "Français" },
   { code: "it", label: "Italiano" },
   { code: "pl", label: "Polski" },
@@ -165,29 +165,41 @@ type Key = keyof (typeof dict)["sk"];
 const TOLGEE_API_KEY = "tgpak_gmzdcnrql5yg6ndjobxtm5jxgyyg2ntomq4gczrqmjrwwobzojxa";
 const TOLGEE_API_URL = "https://app.tolgee.io";
 
-const LEGACY_MAP: Record<string, string> = {
+// Map our short app lang codes to Tolgee project language tags
+const TOLGEE_MAP: Record<Lang, string> = {
   sk: "sk-SK",
+  en: "en",
   cs: "cs-CZ",
   de: "de-DE",
   es: "es-ES",
-  pt: "en", // pt removed, fallback
+  fr: "fr",
+  it: "it",
+  pl: "pl",
+  nl: "nl",
+  hu: "hu",
+  uk: "uk",
+  ru: "ru",
+};
+const toTolgee = (l: string) => TOLGEE_MAP[l as Lang] ?? "en";
+const fromTolgee = (t: string): Lang => {
+  const entry = (Object.entries(TOLGEE_MAP) as [Lang, string][]).find(([, v]) => v === t);
+  return entry?.[0] ?? (t.split("-")[0] as Lang) ?? "sk";
 };
 
 const storedLang = (): Lang => {
-  if (typeof window === "undefined") return "sk-SK";
-  let s = localStorage.getItem("lang") || "sk-SK";
-  if (LEGACY_MAP[s]) s = LEGACY_MAP[s];
-  return (SUPPORTED_LANGS.some((l) => l.code === s) ? s : "sk-SK") as Lang;
+  if (typeof window === "undefined") return "sk";
+  const s = localStorage.getItem("lang") || "sk";
+  return (SUPPORTED_LANGS.some((l) => l.code === s) ? s : "sk") as Lang;
 };
 
 const tolgee = Tolgee()
   .use(DevTools())
   .use(FormatSimple())
   .init({
-    language: storedLang(),
+    language: toTolgee(storedLang()),
     defaultLanguage: "sk-SK",
     fallbackLanguage: "en",
-    availableLanguages: SUPPORTED_LANGS.map((l) => l.code),
+    availableLanguages: SUPPORTED_LANGS.map((l) => toTolgee(l.code)),
     apiKey: TOLGEE_API_KEY,
     apiUrl: TOLGEE_API_URL,
     staticData: {
@@ -207,7 +219,7 @@ const I18nCtx = createContext<Ctx | null>(null);
 function InnerProvider({ children }: { children: ReactNode }) {
   const tg = useTolgee(["language"]);
   const { t: tTrans } = useTranslate();
-  const lang = (tg.getLanguage() as Lang) || "sk-SK";
+  const lang = fromTolgee(tg.getLanguage() || "sk-SK");
 
   useEffect(() => {
     localStorage.setItem("lang", lang);
@@ -218,13 +230,13 @@ function InnerProvider({ children }: { children: ReactNode }) {
     () => ({
       lang,
       setLang: (l: Lang) => {
-        tg.changeLanguage(l);
+        tg.changeLanguage(toTolgee(l));
       },
       t: (k) => {
         const v = tTrans(k as string);
         if (v && v !== k) return v;
         // fallback to static dict
-        const base = lang.startsWith("en") ? dict.en : dict.sk;
+        const base = lang === "en" ? dict.en : dict.sk;
         return (
           (base as Record<string, string>)[k as string] ??
           (dict.sk as Record<string, string>)[k as string] ??
