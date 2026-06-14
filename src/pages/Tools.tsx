@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { downloadText } from "@/lib/exporters";
+import { useI18n } from "@/hooks/useI18n";
 
 /** Convert Julian Date to UTC Date (Meeus). */
 function jdToDate(jd: number): Date {
@@ -44,7 +45,12 @@ function vsnetDateFromJD(jd: number): string {
   return `${y}${mo}${dayWithFrac}`;
 }
 
-function convertTabVtoVSNET(text: string, starCode: string, obsCode: string): { out: string; count: number; errors: string[] } {
+function convertTabVtoVSNET(
+  text: string,
+  starCode: string,
+  obsCode: string,
+  msgs: { minCols: (line: number) => string; nonNumeric: (line: number) => string },
+): { out: string; count: number; errors: string[] } {
   const errors: string[] = [];
   const lines = text.split(/\r?\n/);
   const code = starCode.trim().padEnd(8, " ");
@@ -55,13 +61,13 @@ function convertTabVtoVSNET(text: string, starCode: string, obsCode: string): { 
     if (!line || line.startsWith("#") || line.startsWith("//")) return;
     const parts = line.split(/[\s,;]+/);
     if (parts.length < 2) {
-      errors.push(`Riadok ${i + 1}: očakávané min. 2 stĺpce (JD, mag)`);
+      errors.push(msgs.minCols(i + 1));
       return;
     }
     const jd = parseFloat(parts[0]);
     const mag = parseFloat(parts[1]);
     if (!Number.isFinite(jd) || !Number.isFinite(mag)) {
-      errors.push(`Riadok ${i + 1}: nečíselná hodnota`);
+      errors.push(msgs.nonNumeric(i + 1));
       return;
     }
     const dateStr = vsnetDateFromJD(jd);
@@ -72,6 +78,7 @@ function convertTabVtoVSNET(text: string, starCode: string, obsCode: string): { 
 }
 
 export default function Tools() {
+  const { t } = useI18n();
   const [input, setInput] = useState("");
   const [starCode, setStarCode] = useState("");
   const [obsCode, setObsCode] = useState("");
@@ -87,15 +94,18 @@ export default function Tools() {
 
   const run = () => {
     if (!starCode.trim() || !obsCode.trim()) {
-      setInfo("Zadaj kód hviezdy (VSNET) a kód pozorovateľa.");
+      setInfo(t("tools.error.missingCodes"));
       setOutput("");
       setErrs([]);
       return;
     }
-    const r = convertTabVtoVSNET(input, starCode, obsCode);
+    const r = convertTabVtoVSNET(input, starCode, obsCode, {
+      minCols: (line) => t("tools.error.minCols").replace("{line}", String(line)),
+      nonNumeric: (line) => t("tools.error.nonNumeric").replace("{line}", String(line)),
+    });
     setOutput(r.out);
     setErrs(r.errors);
-    setInfo(`Skonvertovaných ${r.count} riadkov.`);
+    setInfo(t("tools.info.converted").replace("{count}", String(r.count)));
   };
 
   const dl = () => {
@@ -107,33 +117,29 @@ export default function Tools() {
     <div className="min-h-screen bg-background">
       <AppHeader />
       <main className="container mx-auto px-4 py-6 max-w-3xl">
-        <h1 className="text-2xl font-semibold mb-1">Nástroje</h1>
-        <p className="text-sm text-muted-foreground mb-6">
-          Pomocné konverzie a utility.
-        </p>
+        <h1 className="text-2xl font-semibold mb-1">{t("tools.title")}</h1>
+        <p className="text-sm text-muted-foreground mb-6">{t("tools.subtitle")}</p>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Konvertor tab_V.dat → VSNET</CardTitle>
+            <CardTitle className="text-lg">{t("tools.converter.title")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Vstup: textový súbor so stĺpcami <code>JD&nbsp;&nbsp;mag&nbsp;&nbsp;err</code> (err je voliteľný a ignoruje sa).
-            </p>
+            <p className="text-sm text-muted-foreground">{t("tools.converter.inputDesc")}</p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label htmlFor="star">Kód hviezdy (VSNET)</Label>
-                <Input id="star" value={starCode} onChange={(e) => setStarCode(e.target.value)} placeholder="napr. SSCYG" />
+                <Label htmlFor="star">{t("tools.starCode")}</Label>
+                <Input id="star" value={starCode} onChange={(e) => setStarCode(e.target.value)} placeholder={t("tools.starCode.placeholder")} />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="obs">Kód pozorovateľa</Label>
-                <Input id="obs" value={obsCode} onChange={(e) => setObsCode(e.target.value)} placeholder="napr. Jpy" />
+                <Label htmlFor="obs">{t("tools.obsCode")}</Label>
+                <Input id="obs" value={obsCode} onChange={(e) => setObsCode(e.target.value)} placeholder={t("tools.obsCode.placeholder")} />
               </div>
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="file">Súbor (.dat / .txt)</Label>
+              <Label htmlFor="file">{t("tools.file")}</Label>
               <Input
                 id="file"
                 type="file"
@@ -143,7 +149,7 @@ export default function Tools() {
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="input">…alebo vložiť obsah</Label>
+              <Label htmlFor="input">{t("tools.pasteInstead")}</Label>
               <Textarea
                 id="input"
                 value={input}
@@ -155,21 +161,21 @@ export default function Tools() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Button onClick={run}>Konvertovať</Button>
-              <Button variant="outline" onClick={dl} disabled={!output}>Stiahnuť .txt</Button>
+              <Button onClick={run}>{t("tools.convert")}</Button>
+              <Button variant="outline" onClick={dl} disabled={!output}>{t("tools.download")}</Button>
             </div>
 
             {info && <p className="text-sm text-muted-foreground">{info}</p>}
             {errs.length > 0 && (
               <div className="text-xs text-destructive space-y-0.5">
                 {errs.slice(0, 10).map((e, i) => <div key={i}>{e}</div>)}
-                {errs.length > 10 && <div>… a ďalších {errs.length - 10}</div>}
+                {errs.length > 10 && <div>{t("tools.error.andMore").replace("{count}", String(errs.length - 10))}</div>}
               </div>
             )}
 
             {output && (
               <div className="space-y-1">
-                <Label>Výstup VSNET</Label>
+                <Label>{t("tools.output")}</Label>
                 <Textarea readOnly value={output} rows={8} className="font-mono text-xs" />
               </div>
             )}
