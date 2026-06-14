@@ -48,12 +48,11 @@ export function GlobalSearch() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 h-8 px-3 rounded-md border border-border bg-secondary/40 hover:bg-secondary text-muted-foreground text-xs transition-colors min-w-[180px]"
+        className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
         title={t("search.placeholder")}
+        aria-label={t("search.placeholder")}
       >
-        <Search className="h-3.5 w-3.5" />
-        <span className="flex-1 text-left">{t("search.placeholder")}</span>
-        <kbd className="hidden md:inline text-[10px] font-mono px-1.5 py-0.5 rounded bg-background border border-border">⌘K</kbd>
+        <Search className="h-4 w-4" />
       </button>
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder={t("search.placeholder")} />
