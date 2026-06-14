@@ -76,7 +76,7 @@ export function AppHeader() {
           {link("/catalog", t("nav.catalog"), BookOpen)}
           {link("/prom", t("nav.prom"), Sparkles)}
           {link("/graphs", t("nav.graphs"), BarChart3)}
-          {link("/tools", t("nav.tools"), Wrench)}
+          {link("/tools", "Nástroje", Wrench)}
           {link("/settings", t("nav.settings"), SettingsIcon)}
           {link("/about", t("nav.info"), Info)}
         </nav>
@@ -118,7 +118,7 @@ export function AppHeader() {
                 {link("/catalog", t("nav.catalog"), BookOpen)}
                 {link("/prom", t("nav.prom"), Sparkles)}
                 {link("/graphs", t("nav.graphs"), BarChart3)}
-                {link("/tools", t("nav.tools"), Wrench)}
+                {link("/tools", "Nástroje", Wrench)}
                 {link("/settings", t("nav.settings"), SettingsIcon)}
                 {link("/about", t("nav.info"), Info)}
                 <button
