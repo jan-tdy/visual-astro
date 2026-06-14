@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LogOut, BookOpen, Settings as SettingsIcon, ListChecks, Info, Sun, Moon, Menu, Sparkles, BarChart3 } from "lucide-react";
+import { LogOut, BookOpen, Settings as SettingsIcon, ListChecks, Info, Sun, Moon, Menu, Sparkles, BarChart3, Wrench } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { GlobalSearch } from "@/components/app/GlobalSearch";
@@ -76,6 +76,7 @@ export function AppHeader() {
           {link("/catalog", t("nav.catalog"), BookOpen)}
           {link("/prom", t("nav.prom"), Sparkles)}
           {link("/graphs", t("nav.graphs"), BarChart3)}
+          {link("/tools", t("nav.tools"), Wrench)}
           {link("/settings", t("nav.settings"), SettingsIcon)}
           {link("/about", t("nav.info"), Info)}
         </nav>
@@ -117,6 +118,7 @@ export function AppHeader() {
                 {link("/catalog", t("nav.catalog"), BookOpen)}
                 {link("/prom", t("nav.prom"), Sparkles)}
                 {link("/graphs", t("nav.graphs"), BarChart3)}
+                {link("/tools", t("nav.tools"), Wrench)}
                 {link("/settings", t("nav.settings"), SettingsIcon)}
                 {link("/about", t("nav.info"), Info)}
                 <button
