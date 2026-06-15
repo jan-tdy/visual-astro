@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { downloadText } from "@/lib/exporters";
 import { usePrefs } from "@/hooks/usePrefs";
+import { useI18n } from "@/hooks/useI18n";
 
 /** Convert Julian Date to UTC Date (Meeus). */
 function jdToDate(jd: number): Date {
@@ -53,7 +54,10 @@ interface SipsParsed {
   errors: string[];
 }
 
-function parseSIPS(text: string): SipsParsed {
+function parseSIPS(
+  text: string,
+  msgs: { minCols: (line: number) => string; nonNumeric: (line: number) => string },
+): SipsParsed {
   const rows: SipsRow[] = [];
   const errors: string[] = [];
   let varName: string | null = null;
@@ -70,12 +74,12 @@ function parseSIPS(text: string): SipsParsed {
       return;
     }
     const parts = line.split(/[\s,;]+/);
-    if (parts.length < 2) { errors.push(`Riadok ${i + 1}: očakávané min. 2 stĺpce.`); return; }
+    if (parts.length < 2) { errors.push(msgs.minCols(i + 1)); return; }
     const jd = parseFloat(parts[0]);
     const mag = parseFloat(parts[1]);
     const err = parts.length >= 3 ? parseFloat(parts[2]) : NaN;
     if (!Number.isFinite(jd) || !Number.isFinite(mag)) {
-      errors.push(`Riadok ${i + 1}: nečíselné hodnoty.`);
+      errors.push(msgs.nonNumeric(i + 1));
       return;
     }
     rows.push({ jd, mag, err: Number.isFinite(err) ? err : 0 });
@@ -148,13 +152,21 @@ function buildAAVSOFromSIPS(
 
 export default function Tools() {
   const { prefs } = usePrefs();
+  const { t } = useI18n();
   const [input, setInput] = useState("");
   const [starCode, setStarCode] = useState("");
   const [aavsoCode, setAavsoCode] = useState("");
   const [obsCode, setObsCode] = useState("");
   const [chartId, setChartId] = useState("");
 
-  const parsed = useMemo(() => parseSIPS(input), [input]);
+  const parsed = useMemo(
+    () =>
+      parseSIPS(input, {
+        minCols: (n) => t("tools.error.minCols").replace("{line}", String(n)),
+        nonNumeric: (n) => t("tools.error.nonNumeric").replace("{line}", String(n)),
+      }),
+    [input, t],
+  );
 
   const handleFile = async (f: File | null) => {
     if (!f) return;
@@ -190,43 +202,37 @@ export default function Tools() {
     <div className="min-h-screen bg-background">
       <AppHeader />
       <main className="container mx-auto px-4 py-6 max-w-3xl">
-        <h1 className="text-2xl font-semibold mb-1">Nástroje</h1>
-        <p className="text-sm text-muted-foreground mb-6">
-          Pomocné nástroje pre prácu s pozorovacími dátami.
-        </p>
+        <h1 className="text-2xl font-semibold mb-1">{t("tools.title")}</h1>
+        <p className="text-sm text-muted-foreground mb-6">{t("tools.subtitle")}</p>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Konvertor SIPS Standart → VSNET/AAVSO</CardTitle>
+            <CardTitle className="text-lg">{t("tools.converter.title")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Nahraj výstup zo SIPS (hlavička so <code>#&nbsp;VAR&nbsp;Name</code>, <code>#&nbsp;Filter</code>
-              a riadky <code>JD&nbsp;mag&nbsp;err</code>) a stiahni výsledok v požadovanom formáte.
-              Filter a názov hviezdy sa načítajú automaticky z hlavičky.
-            </p>
+            <p className="text-sm text-muted-foreground">{t("tools.converter.desc")}</p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label htmlFor="star">VSNET kód hviezdy</Label>
-                <Input id="star" value={starCode} onChange={(e) => setStarCode(e.target.value)} placeholder="napr. DODRA" />
+                <Label htmlFor="star">{t("tools.starVSNET")}</Label>
+                <Input id="star" value={starCode} onChange={(e) => setStarCode(e.target.value)} placeholder={t("tools.starVSNET.ph")} />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="aavso">AAVSO názov hviezdy</Label>
-                <Input id="aavso" value={aavsoCode} onChange={(e) => setAavsoCode(e.target.value)} placeholder="napr. DO DRA" />
+                <Label htmlFor="aavso">{t("tools.starAAVSO")}</Label>
+                <Input id="aavso" value={aavsoCode} onChange={(e) => setAavsoCode(e.target.value)} placeholder={t("tools.starAAVSO.ph")} />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="obs">Kód pozorovateľa</Label>
-                <Input id="obs" value={obsCode} onChange={(e) => setObsCode(e.target.value)} placeholder="napr. JAP" />
+                <Label htmlFor="obs">{t("tools.obs")}</Label>
+                <Input id="obs" value={obsCode} onChange={(e) => setObsCode(e.target.value)} placeholder={t("tools.obs.ph")} />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="chart">AAVSO chart ID (voliteľné)</Label>
-                <Input id="chart" value={chartId} onChange={(e) => setChartId(e.target.value)} placeholder="napr. X12345ABC" />
+                <Label htmlFor="chart">{t("tools.chart")}</Label>
+                <Input id="chart" value={chartId} onChange={(e) => setChartId(e.target.value)} placeholder={t("tools.chart.ph")} />
               </div>
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="file">Súbor zo SIPS (.dat / .txt)</Label>
+              <Label htmlFor="file">{t("tools.file")}</Label>
               <Input
                 id="file"
                 type="file"
@@ -236,7 +242,7 @@ export default function Tools() {
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="input">Alebo vlož obsah priamo:</Label>
+              <Label htmlFor="input">{t("tools.paste")}</Label>
               <Textarea
                 id="input"
                 value={input}
@@ -249,16 +255,18 @@ export default function Tools() {
 
             {(parsed.varName || parsed.filter || parsed.rows.length > 0) && (
               <div className="text-xs text-muted-foreground space-y-0.5">
-                {parsed.varName && <div>Hviezda z hlavičky: <span className="font-mono">{parsed.varName}</span></div>}
-                {parsed.filter && <div>Filter: <span className="font-mono">{parsed.filter}</span> → AAVSO: <span className="font-mono">{aavsoFilter(parsed.filter)}</span></div>}
-                <div>Načítaných pozorovaní: <span className="font-mono">{parsed.rows.length}</span></div>
+                {parsed.varName && <div>{t("tools.parsed.star")}: <span className="font-mono">{parsed.varName}</span></div>}
+                {parsed.filter && <div>{t("tools.parsed.filter")}: <span className="font-mono">{parsed.filter}</span> → {t("tools.parsed.aavso")}: <span className="font-mono">{aavsoFilter(parsed.filter)}</span></div>}
+                <div>{t("tools.parsed.count")}: <span className="font-mono">{parsed.rows.length}</span></div>
               </div>
             )}
 
             {parsed.errors.length > 0 && (
               <div className="text-xs text-destructive space-y-0.5">
                 {parsed.errors.slice(0, 10).map((e, i) => <div key={i}>{e}</div>)}
-                {parsed.errors.length > 10 && <div>… a ďalších {parsed.errors.length - 10} chýb</div>}
+                {parsed.errors.length > 10 && (
+                  <div>{t("tools.errors.more").replace("{n}", String(parsed.errors.length - 10))}</div>
+                )}
               </div>
             )}
 
@@ -267,20 +275,20 @@ export default function Tools() {
                 onClick={dlVSNET}
                 disabled={parsed.rows.length === 0 || !starCode.trim() || !obsCode.trim()}
               >
-                Stiahnuť VSNET
+                {t("tools.download.vsnet")}
               </Button>
               <Button
                 variant="outline"
                 onClick={dlAAVSO}
                 disabled={parsed.rows.length === 0 || !aavsoCode.trim() || !obsCode.trim()}
               >
-                Stiahnuť AAVSO
+                {t("tools.download.aavso")}
               </Button>
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Po stiahnutí sa portál (VSNET / AAVSO) otvorí v novej karte podľa nastavenia
-              v <span className="font-medium">Nastavenia → Po stiahnutí exportu</span>.
+              {t("tools.portal.info")}{" "}
+              <span className="font-medium">{t("tools.portal.settings")}</span>.
             </p>
           </CardContent>
         </Card>
