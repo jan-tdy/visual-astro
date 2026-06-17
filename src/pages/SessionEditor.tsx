@@ -791,14 +791,14 @@ export default function SessionEditor() {
             ))}
           </div>
           <div className="flex flex-wrap gap-x-5 gap-y-1 pt-2 border-t border-border/60">
-            {TYPE_FILTERS.map((t) => (
+            {TYPE_FILTERS.map((tf) => (
               <a
-                key={t}
-                onClick={() => setTypeFilter(t)}
+                key={tf}
+                onClick={() => setTypeFilter(tf)}
                 className="nav-link"
-                data-active={typeFilter === t}
+                data-active={typeFilter === tf}
               >
-                {t === "ALL" ? tt("common.add") /* placeholder */ : t}
+                {tf === "ALL" ? (t("graphs.tab.curve") === "Svetelná krivka" ? "Všetky" : "All") : tf}
               </a>
             ))}
           </div>
