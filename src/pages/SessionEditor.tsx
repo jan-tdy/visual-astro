@@ -798,7 +798,7 @@ export default function SessionEditor() {
                 className="nav-link"
                 data-active={typeFilter === t}
               >
-                {TYPE_LABEL[t]}
+                {t === "ALL" ? tt("common.add") /* placeholder */ : t}
               </a>
             ))}
           </div>
