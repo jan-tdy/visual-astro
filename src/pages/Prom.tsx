@@ -20,7 +20,7 @@ import { useI18n } from "@/hooks/useI18n";
 type Row = { name: string; letters: Record<string, number> };
 
 export default function Prom() {
-  const { lang } = useI18n();
+  const { lang, t } = useI18n();
   const [tick, setTick] = useState(0);
   const [filter, setFilter] = useState("");
   const [editing, setEditing] = useState<Row | null>(null);
@@ -39,8 +39,6 @@ export default function Prom() {
 
   const filtered = rows.filter((r) => r.name.toLowerCase().includes(filter.toLowerCase()));
 
-  const tr = (sk: string, en: string) => (lang === "sk" ? sk : en);
-
   const onExport = () => {
     const blob = new Blob([exportPromJSON()], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -56,7 +54,7 @@ export default function Prom() {
     reader.onload = () => {
       try {
         importPromJSON(String(reader.result));
-        toast.success(tr("Importované", "Imported"));
+        toast.success(t("prom.toast.imported"));
       } catch (e: any) {
         toast.error(e.message ?? "Invalid JSON");
       }
@@ -70,28 +68,23 @@ export default function Prom() {
       <main className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
           <div>
-            <h1 className="text-2xl font-semibold">{tr("Katalóg prom", "Prom catalog")}</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {tr(
-                "Tabuľka porovnávacích hviezd: písmenám (a, b, c…) priradíš magnitúdu. Tieto hodnoty sa používajú pri výpočte v editore session.",
-                "Comparison-star table: assign a magnitude to each letter (a, b, c…). These values are used by the magnitude calculation in the session editor.",
-              )}
-            </p>
+            <h1 className="text-2xl font-semibold">{t("prom.title")}</h1>
+            <p className="text-sm text-muted-foreground mt-1">{t("prom.subtitle")}</p>
           </div>
           <div className="flex gap-2 flex-wrap">
             <Input
-              placeholder={tr("Hľadať…", "Search…")}
+              placeholder={t("prom.search")}
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               className="w-48"
             />
             <Button variant="outline" size="sm" onClick={onExport}>
-              <Download className="h-4 w-4 mr-1.5" /> JSON
+              <Download className="h-4 w-4 mr-1.5" /> {t("prom.export")}
             </Button>
             <label className="inline-flex">
               <Button variant="outline" size="sm" asChild>
                 <span className="cursor-pointer">
-                  <Upload className="h-4 w-4 mr-1.5" /> Import
+                  <Upload className="h-4 w-4 mr-1.5" /> {t("prom.import")}
                 </span>
               </Button>
               <input
@@ -106,24 +99,24 @@ export default function Prom() {
               />
             </label>
             <Button variant="outline" size="sm" onClick={() => setConfirmReset(true)}>
-              <RotateCcw className="h-4 w-4 mr-1.5" /> {tr("Reset", "Reset")}
+              <RotateCcw className="h-4 w-4 mr-1.5" /> {t("prom.reset")}
             </Button>
             <Button size="sm" onClick={() => setCreating(true)}>
-              <Plus className="h-4 w-4 mr-1.5" /> {tr("Pridať", "Add")}
+              <Plus className="h-4 w-4 mr-1.5" /> {t("prom.add")}
             </Button>
           </div>
         </div>
 
         <p className="text-xs text-muted-foreground mb-4">
-          {tr("Spolu hviezd:", "Total stars:")} {rows.length}
+          {t("prom.total")} {rows.length}
         </p>
 
         <Card className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-b border-border bg-secondary/40">
               <tr className="text-left">
-                <th className="px-3 py-2 w-48">{tr("Hviezda", "Star")}</th>
-                <th className="px-3 py-2">{tr("Písmená → magnitúdy", "Letters → magnitudes")}</th>
+                <th className="px-3 py-2 w-48">{t("prom.col.star")}</th>
+                <th className="px-3 py-2">{t("prom.col.letters")}</th>
                 <th className="px-3 py-2 w-28"></th>
               </tr>
             </thead>
@@ -154,7 +147,7 @@ export default function Prom() {
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={3} className="px-3 py-8 text-center text-muted-foreground">
-                    {tr("Žiadne hviezdy.", "No stars.")}
+                    {t("prom.none")}
                   </td>
                 </tr>
               )}
@@ -173,24 +166,21 @@ export default function Prom() {
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{tr("Vymazať hviezdu?", "Delete star?")}</AlertDialogTitle>
+            <AlertDialogTitle>{t("prom.delete.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {tr(
-                `Naozaj chceš odstrániť „${confirmDelete}" z katalógu prom? Túto akciu môžeš vrátiť tlačidlom Reset.`,
-                `Remove "${confirmDelete}" from the prom catalog? You can revert this with the Reset button.`,
-              )}
+              {t("prom.delete.desc").replace("{name}", String(confirmDelete ?? ""))}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{tr("Zrušiť", "Cancel")}</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (confirmDelete) deletePromStar(confirmDelete);
                 setConfirmDelete(null);
-                toast.success(tr("Vymazané", "Deleted"));
+                toast.success(t("prom.toast.deleted"));
               }}
             >
-              {tr("Vymazať", "Delete")}
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -199,20 +189,15 @@ export default function Prom() {
       <AlertDialog open={confirmReset} onOpenChange={setConfirmReset}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{tr("Resetovať katalóg?", "Reset catalog?")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {tr(
-                "Všetky tvoje úpravy sa zahodia a katalóg sa vráti k pôvodným hodnotám.",
-                "All your edits will be discarded and the catalog will revert to its original values.",
-              )}
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("prom.reset.title")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("prom.reset.desc")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{tr("Zrušiť", "Cancel")}</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => { resetPromOverrides(); setConfirmReset(false); toast.success(tr("Resetované", "Reset")); }}
+              onClick={() => { resetPromOverrides(); setConfirmReset(false); toast.success(t("prom.toast.reset")); }}
             >
-              {tr("Resetovať", "Reset")}
+              {t("prom.reset")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -229,7 +214,7 @@ function PromDialog({
   onClose: () => void;
   lang: string;
 }) {
-  const tr = (sk: string, en: string) => (lang === "sk" ? sk : en);
+  const { t } = useI18n();
   const [name, setName] = useState("");
   const [pairs, setPairs] = useState<{ letter: string; mag: string }[]>([]);
 
@@ -254,7 +239,7 @@ function PromDialog({
   const save = () => {
     const trimmed = name.trim();
     if (!trimmed) {
-      toast.error(tr("Zadaj názov hviezdy", "Enter a star name"));
+      toast.error(t("prom.err.name"));
       return;
     }
     const letters: Record<string, number> = {};
@@ -263,20 +248,20 @@ function PromDialog({
       const v = parseFloat(p.mag);
       if (!k) continue;
       if (!Number.isFinite(v)) {
-        toast.error(tr(`Neplatná magnitúda pre „${k}"`, `Invalid magnitude for "${k}"`));
+        toast.error(t("prom.err.mag").replace("{k}", k));
         return;
       }
       letters[k] = v;
     }
     if (Object.keys(letters).length === 0) {
-      toast.error(tr("Pridaj aspoň jedno písmeno", "Add at least one letter"));
+      toast.error(t("prom.err.pairs"));
       return;
     }
     if (row && row.name !== trimmed) {
       renamePromStar(row.name, trimmed);
     }
     upsertPromStar(trimmed, letters);
-    toast.success(tr("Uložené", "Saved"));
+    toast.success(t("prom.toast.saved"));
     onClose();
   };
 
@@ -284,15 +269,15 @@ function PromDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{row ? tr("Upraviť hviezdu", "Edit star") : tr("Nová hviezda", "New star")}</DialogTitle>
+          <DialogTitle>{row ? t("prom.dialog.edit") : t("prom.dialog.new")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>{tr("Názov hviezdy", "Star name")}</Label>
+            <Label>{t("prom.dialog.name")}</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="napr. AF Cyg" />
           </div>
           <div>
-            <Label>{tr("Porovnávacie hviezdy", "Comparison stars")}</Label>
+            <Label>{t("prom.dialog.pairs")}</Label>
             <div className="space-y-2 mt-1 max-h-72 overflow-y-auto pr-1">
               {pairs.map((p, i) => (
                 <div key={i} className="flex gap-2 items-center">
@@ -319,11 +304,11 @@ function PromDialog({
               ))}
             </div>
             <Button variant="outline" size="sm" onClick={addPair} className="mt-2">
-              <Plus className="h-4 w-4 mr-1.5" /> {tr("Pridať písmeno", "Add letter")}
+              <Plus className="h-4 w-4 mr-1.5" /> {t("prom.dialog.addLetter")}
             </Button>
           </div>
           <Button className="w-full" onClick={save}>
-            <Save className="h-4 w-4 mr-1.5" /> {tr("Uložiť", "Save")}
+            <Save className="h-4 w-4 mr-1.5" /> {t("prom.dialog.save")}
           </Button>
         </div>
       </DialogContent>

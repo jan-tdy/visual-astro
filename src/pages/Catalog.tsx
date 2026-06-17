@@ -14,6 +14,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useI18n } from "@/hooks/useI18n";
 
 type Star = {
   id: string;
@@ -54,6 +55,7 @@ const sortConstellationStars = (items: Star[]) =>
 
 export default function Catalog() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [stars, setStars] = useState<Star[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
@@ -117,7 +119,7 @@ export default function Catalog() {
   const remove = async (id: string) => {
     const { error } = await supabase.from("stars").delete().eq("id", id);
     if (error) toast.error(error.message);
-    else { toast.success("Vymazané"); reload(); }
+    else { toast.success(t("catalog.toast.deleted")); reload(); }
   };
 
   const saveEdit = async (s: Star) => {
@@ -135,7 +137,7 @@ export default function Catalog() {
       .eq("id", s.id);
     if (error) toast.error(error.message);
     else {
-      toast.success("Uložené");
+      toast.success(t("catalog.toast.saved"));
       setEditing(null);
       reload();
     }
@@ -151,7 +153,7 @@ export default function Catalog() {
     });
     if (error) toast.error(error.message);
     else {
-      toast.success("Pridané");
+      toast.success(t("catalog.toast.added"));
       setCreating(false);
       reload();
     }
@@ -173,10 +175,10 @@ export default function Catalog() {
     reader.onload = () => {
       try {
         const parsed = JSON.parse(String(reader.result));
-        if (!Array.isArray(parsed)) throw new Error("JSON musí obsahovať pole hviezd");
+        if (!Array.isArray(parsed)) throw new Error(t("catalog.toast.invalidArr"));
         setConfirmImport({ data: parsed, replace: false });
       } catch (e: any) {
-        toast.error("Neplatný JSON: " + e.message);
+        toast.error(t("catalog.toast.invalidJson") + ": " + e.message);
       }
     };
     reader.readAsText(file);
@@ -201,12 +203,12 @@ export default function Catalog() {
       notes: s.notes ?? null,
       sort_order: typeof s.sort_order === "number" ? s.sort_order : baseSort + i + 1,
     })).filter((r) => r.name && r.constellation);
-    if (rows.length === 0) { toast.error("Žiadne platné riadky"); setConfirmImport(null); return; }
+    if (rows.length === 0) { toast.error(t("catalog.toast.noRows")); setConfirmImport(null); return; }
     for (let i = 0; i < rows.length; i += 200) {
       const { error } = await supabase.from("stars").insert(rows.slice(i, i + 200));
       if (error) { toast.error(error.message); return; }
     }
-    toast.success(`Importovaných ${rows.length} hviezd`);
+    toast.success(t("catalog.toast.imported").replace("{n}", String(rows.length)));
     setConfirmImport(null);
     reload();
   };
@@ -216,16 +218,16 @@ export default function Catalog() {
       <AppHeader />
       <main className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
-          <h1 className="text-2xl font-semibold">Katalóg hviezd</h1>
+          <h1 className="text-2xl font-semibold">{t("catalog.title")}</h1>
           <div className="flex gap-2 flex-wrap">
-            <Input placeholder="Hľadať…" value={filter} onChange={(e) => setFilter(e.target.value)} className="w-48" />
+            <Input placeholder={t("catalog.search")} value={filter} onChange={(e) => setFilter(e.target.value)} className="w-48" />
             <Button variant="outline" size="sm" onClick={exportJSON}>
               <Download className="h-4 w-4 mr-1.5" /> JSON
             </Button>
             <label className="inline-flex">
               <Button variant="outline" size="sm" asChild>
                 <span className="cursor-pointer">
-                  <Upload className="h-4 w-4 mr-1.5" /> Import
+                  <Upload className="h-4 w-4 mr-1.5" /> {t("catalog.import")}
                 </span>
               </Button>
               <input
@@ -240,7 +242,7 @@ export default function Catalog() {
               />
             </label>
             <Button onClick={() => setCreating(true)}>
-              <Plus className="h-4 w-4 mr-1.5" /> Pridať
+              <Plus className="h-4 w-4 mr-1.5" /> {t("catalog.add")}
             </Button>
           </div>
         </div>
@@ -254,12 +256,12 @@ export default function Catalog() {
             <table className="w-full text-sm">
               <thead className="border-b border-border bg-secondary/40">
                 <tr className="text-left">
-                  <th className="px-3 py-2">Hviezda</th>
-                  <th className="px-3 py-2">Súhvezdie</th>
-                  <th className="px-3 py-2">Typ</th>
-                  <th className="px-3 py-2">VSNET</th>
-                  <th className="px-3 py-2">AAVSO</th>
-                  <th className="px-3 py-2">Karta</th>
+                  <th className="px-3 py-2">{t("catalog.col.star")}</th>
+                  <th className="px-3 py-2">{t("catalog.col.constellation")}</th>
+                  <th className="px-3 py-2">{t("catalog.col.type")}</th>
+                  <th className="px-3 py-2">{t("catalog.col.vsnet")}</th>
+                  <th className="px-3 py-2">{t("catalog.col.aavso")}</th>
+                  <th className="px-3 py-2">{t("catalog.col.chart")}</th>
                   <th className="px-3 py-2 w-32"></th>
                 </tr>
               </thead>
@@ -278,10 +280,10 @@ export default function Catalog() {
                     <td className="px-3 py-2 font-mono text-xs">{s.aavso_code}</td>
                     <td className="px-3 py-2 font-mono text-xs">{s.chart_id}</td>
                     <td className="px-3 py-2 text-right">
-                      <Button variant="ghost" size="icon" disabled={!canUp} title="Posunúť hore" onClick={(e) => { e.stopPropagation(); moveStar(s, -1); }}>
+                      <Button variant="ghost" size="icon" disabled={!canUp} title={t("catalog.moveUp")} onClick={(e) => { e.stopPropagation(); moveStar(s, -1); }}>
                         <ArrowUp className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" disabled={!canDown} title="Posunúť dole" onClick={(e) => { e.stopPropagation(); moveStar(s, 1); }}>
+                      <Button variant="ghost" size="icon" disabled={!canDown} title={t("catalog.moveDown")} onClick={(e) => { e.stopPropagation(); moveStar(s, 1); }}>
                         <ArrowDown className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setConfirmDelete(s); }}>
@@ -310,13 +312,13 @@ export default function Catalog() {
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Vymazať hviezdu?</AlertDialogTitle>
+            <AlertDialogTitle>{t("catalog.delete.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Naozaj chceš odstrániť „{confirmDelete?.name}" z katalógu? Táto akcia sa nedá vrátiť späť.
+              {t("catalog.delete.desc").replace("{name}", confirmDelete?.name ?? "")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Zrušiť</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 const id = confirmDelete?.id;
@@ -324,7 +326,7 @@ export default function Catalog() {
                 if (id) remove(id);
               }}
             >
-              Vymazať
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -333,15 +335,15 @@ export default function Catalog() {
       <AlertDialog open={!!confirmImport} onOpenChange={(o) => !o && setConfirmImport(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Importovať katalóg?</AlertDialogTitle>
+            <AlertDialogTitle>{t("catalog.import.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Súbor obsahuje {confirmImport?.data.length ?? 0} hviezd. Vyber, či ich chceš pridať k existujúcim, alebo nahradiť celý katalóg.
+              {t("catalog.import.desc").replace("{n}", String(confirmImport?.data.length ?? 0))}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-wrap gap-2">
-            <AlertDialogCancel>Zrušiť</AlertDialogCancel>
-            <Button variant="outline" onClick={() => runImport(false)}>Pridať</Button>
-            <AlertDialogAction onClick={() => runImport(true)}>Nahradiť všetko</AlertDialogAction>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <Button variant="outline" onClick={() => runImport(false)}>{t("catalog.import.append")}</Button>
+            <AlertDialogAction onClick={() => runImport(true)}>{t("catalog.import.replace")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -357,6 +359,7 @@ function StarDialog({
   onClose: () => void;
   onSave: (s: any) => void;
 }) {
+  const { t } = useI18n();
   const [form, setForm] = useState({
     name: "", constellation: "", type: "VISUAL" as Star["type"],
     vsnet_code: "", aavso_code: "", chart_id: "", notes: "",
@@ -380,22 +383,20 @@ function StarDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{star ? "Upraviť hviezdu" : "Nová hviezda"}</DialogTitle>
+          <DialogTitle>{star ? t("catalog.dialog.edit") : t("catalog.dialog.new")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Názov</Label>
+            <Label>{t("catalog.dialog.name")}</Label>
             <Input
-              placeholder="napr. SS Cyg"
+              placeholder={t("catalog.dialog.namePh")}
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              Označenie hviezdy (Bayer/Flamsteed alebo GCVS, napr. „SS Cyg", „V404 Cyg").
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{t("catalog.dialog.nameHint")}</p>
           </div>
           <div>
-            <Label>Súhvezdie</Label>
+            <Label>{t("catalog.dialog.constellation")}</Label>
             <Select
               value={constMode === "other" ? OTHER_CONST : (form.constellation || undefined)}
               onValueChange={(v) => {
@@ -408,45 +409,41 @@ function StarDialog({
                 }
               }}
             >
-              <SelectTrigger><SelectValue placeholder="Vyber súhvezdie…" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t("catalog.dialog.constPick")} /></SelectTrigger>
               <SelectContent className="max-h-72">
                 {CONSTELLATIONS.map((c) => (
                   <SelectItem key={c} value={c}>{c}</SelectItem>
                 ))}
-                <SelectItem value={OTHER_CONST}>Iné…</SelectItem>
+                <SelectItem value={OTHER_CONST}>{t("catalog.dialog.constOther")}</SelectItem>
               </SelectContent>
             </Select>
             {constMode === "other" && (
               <Input
                 className="mt-2"
-                placeholder="Zadaj názov súhvezdia (napr. CYGNUS)"
+                placeholder={t("catalog.dialog.constPh")}
                 value={form.constellation}
                 onChange={(e) => setForm({ ...form, constellation: e.target.value.toUpperCase() })}
                 autoFocus
               />
             )}
-            <p className="text-xs text-muted-foreground mt-1">
-              Horný riadok.
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{t("catalog.dialog.constHint")}</p>
           </div>
           <div>
-            <Label>Typ</Label>
+            <Label>{t("catalog.dialog.type")}</Label>
             <Select value={form.type} onValueChange={(v: any) => setForm({ ...form, type: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground mt-1">
-              Filter – dolný riadok.
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{t("catalog.dialog.typeHint")}</p>
           </div>
           {(
             [
-              { k: "vsnet_code", label: "VSNET kód", ph: "napr. SS Cyg", hint: "Označenie hviezdy v databáze VSNET (vsnet-obs)." },
-              { k: "aavso_code", label: "AAVSO kód", ph: "napr. 000-BCT-905", hint: "AUID identifikátor hviezdy v AAVSO (VSX)." },
-              { k: "chart_id", label: "Karta (chart ID)", ph: "napr. X28469DM", hint: "Identifikátor porovnávacej karty (AAVSO VSP)." },
-              { k: "notes", label: "Poznámky", ph: "napr. perióda ~50 dní, výrazné maximá", hint: "Voliteľné. Krátka poznámka k hviezde alebo pozorovaniam." },
+              { k: "vsnet_code", label: t("catalog.dialog.vsnet"), ph: t("catalog.dialog.vsnetPh"), hint: t("catalog.dialog.vsnetHint") },
+              { k: "aavso_code", label: t("catalog.dialog.aavso"), ph: t("catalog.dialog.aavsoPh"), hint: t("catalog.dialog.aavsoHint") },
+              { k: "chart_id", label: t("catalog.dialog.chart"), ph: t("catalog.dialog.chartPh"), hint: t("catalog.dialog.chartHint") },
+              { k: "notes", label: t("catalog.dialog.notes"), ph: t("catalog.dialog.notesPh"), hint: t("catalog.dialog.notesHint") },
             ] as const
           ).map(({ k, label, ph, hint }) => (
             <div key={k}>
@@ -460,7 +457,7 @@ function StarDialog({
             </div>
           ))}
           <Button className="w-full" onClick={() => onSave({ ...form, vsnet_code: form.vsnet_code || null, aavso_code: form.aavso_code || null, chart_id: form.chart_id || null, notes: form.notes || null })}>
-            <Save className="h-4 w-4 mr-1.5" /> Uložiť
+            <Save className="h-4 w-4 mr-1.5" /> {t("catalog.dialog.save")}
           </Button>
         </div>
       </DialogContent>

@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { computeMagnitude, dateToJD } from "@/lib/astro";
+import { useI18n } from "@/hooks/useI18n";
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar,
   XAxis, YAxis, Tooltip, CartesianGrid,
@@ -32,6 +33,7 @@ type SessionRow = { id: string; observed_at_utc: string };
 
 export default function Graphs() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [obs, setObs] = useState<ObsRow[]>([]);
   const [stars, setStars] = useState<StarRow[]>([]);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
@@ -156,61 +158,57 @@ export default function Graphs() {
     <div className="min-h-screen">
       <AppHeader />
       <main className="container mx-auto px-4 py-8 max-w-5xl">
-        <h1 className="text-2xl font-semibold mb-1">Grafy</h1>
-        <p className="text-sm text-muted-foreground mb-6">
-          Prehľad pozorovaní, hviezd a svetelných kriviek.
-        </p>
+        <h1 className="text-2xl font-semibold mb-1">{t("graphs.title")}</h1>
+        <p className="text-sm text-muted-foreground mb-6">{t("graphs.subtitle")}</p>
 
         {loading ? (
-          <Card className="p-8 text-center text-muted-foreground">Načítavam…</Card>
+          <Card className="p-8 text-center text-muted-foreground">{t("graphs.loading")}</Card>
         ) : totalObs === 0 ? (
-          <Card className="p-8 text-center text-muted-foreground">
-            Zatiaľ nemáš žiadne pozorovania.
-          </Card>
+          <Card className="p-8 text-center text-muted-foreground">{t("graphs.empty")}</Card>
         ) : (
           <>
             <div className="grid grid-cols-3 gap-3 mb-6">
               <Card className="p-4">
-                <div className="text-xs text-muted-foreground">Pozorovaní</div>
+                <div className="text-xs text-muted-foreground">{t("graphs.stat.obs")}</div>
                 <div className="text-2xl font-semibold">{totalObs}</div>
               </Card>
               <Card className="p-4">
-                <div className="text-xs text-muted-foreground">Hviezd</div>
+                <div className="text-xs text-muted-foreground">{t("graphs.stat.stars")}</div>
                 <div className="text-2xl font-semibold">{totalStars}</div>
               </Card>
               <Card className="p-4">
-                <div className="text-xs text-muted-foreground">Session</div>
+                <div className="text-xs text-muted-foreground">{t("graphs.stat.sessions")}</div>
                 <div className="text-2xl font-semibold">{totalSessions}</div>
               </Card>
             </div>
 
             <Tabs defaultValue="curve" className="w-full">
               <TabsList className="mb-4 flex-wrap h-auto">
-                <TabsTrigger value="curve">Svetelná krivka</TabsTrigger>
-                <TabsTrigger value="time">V čase</TabsTrigger>
-                <TabsTrigger value="stars">Top hviezdy</TabsTrigger>
-                <TabsTrigger value="const">Súhvezdia</TabsTrigger>
+                <TabsTrigger value="curve">{t("graphs.tab.curve")}</TabsTrigger>
+                <TabsTrigger value="time">{t("graphs.tab.time")}</TabsTrigger>
+                <TabsTrigger value="stars">{t("graphs.tab.stars")}</TabsTrigger>
+                <TabsTrigger value="const">{t("graphs.tab.const")}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="curve">
                 <Card className="p-4">
                   <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
-                    <h3 className="font-semibold">Svetelná krivka hviezdy</h3>
+                    <h3 className="font-semibold">{t("graphs.curve.title")}</h3>
                     <Popover open={starPickerOpen} onOpenChange={setStarPickerOpen}>
                       <PopoverTrigger asChild>
                         <Button variant="outline" role="combobox" className="w-64 justify-between">
                           {(() => {
                             const s = perStar.find(x => x.id === selectedStar);
-                            return s ? `${s.name} ${s.constellation} · ${s.count}×` : "Vyber hviezdu";
+                            return s ? `${s.name} ${s.constellation} · ${s.count}×` : t("graphs.curve.pick");
                           })()}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-64 p-0" align="end">
                         <Command>
-                          <CommandInput placeholder="Hľadať hviezdu…" />
+                          <CommandInput placeholder={t("graphs.curve.search")} />
                           <CommandList>
-                            <CommandEmpty>Žiadna hviezda.</CommandEmpty>
+                            <CommandEmpty>{t("graphs.curve.none")}</CommandEmpty>
                             <CommandGroup>
                               {perStar.map(s => (
                                 <CommandItem
@@ -230,7 +228,7 @@ export default function Graphs() {
                   </div>
                   {lightCurve.length === 0 ? (
                     <p className="text-sm text-muted-foreground p-6 text-center">
-                      Pre túto hviezdu nemáš pozorovania s vypočítateľnou magnitúdou.
+                      {t("graphs.curve.empty")}
                     </p>
                   ) : (
                     <div className="w-full h-80">
@@ -268,7 +266,7 @@ export default function Graphs() {
 
               <TabsContent value="time">
                 <Card className="p-4">
-                  <h3 className="font-semibold mb-3">Pozorovaní za mesiac</h3>
+                  <h3 className="font-semibold mb-3">{t("graphs.time.obsPerMonth")}</h3>
                   <div className="w-full h-72">
                     <ResponsiveContainer>
                       <BarChart data={perMonth} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
@@ -282,7 +280,7 @@ export default function Graphs() {
                   </div>
                 </Card>
                 <Card className="p-4 mt-4">
-                  <h3 className="font-semibold mb-3">Session za mesiac</h3>
+                  <h3 className="font-semibold mb-3">{t("graphs.time.sessionsPerMonth")}</h3>
                   <div className="w-full h-72">
                     <ResponsiveContainer>
                       <BarChart data={sessionsPerMonth} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
@@ -299,7 +297,7 @@ export default function Graphs() {
 
               <TabsContent value="stars">
                 <Card className="p-4">
-                  <h3 className="font-semibold mb-3">Najviac pozorované hviezdy</h3>
+                  <h3 className="font-semibold mb-3">{t("graphs.stars.top")}</h3>
                   <div className="w-full" style={{ height: Math.max(240, perStar.length * 22) }}>
                     <ResponsiveContainer>
                       <BarChart data={perStar.slice(0, 30)} layout="vertical" margin={{ top: 5, right: 20, left: 60, bottom: 5 }}>
@@ -316,7 +314,7 @@ export default function Graphs() {
 
               <TabsContent value="const">
                 <Card className="p-4">
-                  <h3 className="font-semibold mb-3">Pozorovania podľa súhvezdia</h3>
+                  <h3 className="font-semibold mb-3">{t("graphs.const.title")}</h3>
                   <div className="w-full" style={{ height: Math.max(240, perConstellation.length * 24) }}>
                     <ResponsiveContainer>
                       <BarChart data={perConstellation} layout="vertical" margin={{ top: 5, right: 20, left: 40, bottom: 5 }}>

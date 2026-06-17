@@ -22,9 +22,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { usePrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
 import { DEV_PLUS_KEY } from "@/hooks/useSubscription";
 import { Zap } from "lucide-react";
+import { useI18n } from "@/hooks/useI18n";
 
 export default function Settings() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const { isPlusActive, sub, isDevUser, devOverride, setDevOverride } = useSubscription();
   const { prefs, update: setPrefs } = usePrefs();
   const [obsCode, setObsCode] = useState("DPV");
@@ -62,7 +64,7 @@ export default function Settings() {
       .eq("user_id", user.id);
     setBusy(false);
     if (error) toast.error(error.message);
-    else toast.success("Uložené");
+    else toast.success(t("settings.saved"));
   };
 
   const computeUsage = async () => {
@@ -116,7 +118,7 @@ export default function Settings() {
     });
     setPortalBusy(false);
     if (error || !data?.url) {
-      toast.error(error?.message || "Nepodarilo sa otvoriť správu predplatného");
+      toast.error(error?.message || t("settings.plan.portalErr"));
       return;
     }
     window.open(data.url, "_blank");
@@ -128,7 +130,7 @@ export default function Settings() {
   const toggleDevPlus = async () => {
     const next = !devOverride;
     await setDevOverride(next);
-    toast.success(next ? "Plus aktivovaný (dev)" : "Plus deaktivovaný (dev)");
+    toast.success(next ? t("settings.dev.on") : t("settings.dev.off"));
   };
 
   return (
@@ -136,43 +138,41 @@ export default function Settings() {
       <PaymentTestModeBanner />
       <AppHeader />
       <main className="container mx-auto px-4 py-8 max-w-2xl">
-        <h1 className="text-2xl font-semibold mb-6">Nastavenia</h1>
+        <h1 className="text-2xl font-semibold mb-6">{t("settings.title")}</h1>
         <Tabs defaultValue="general" className="w-full">
           <TabsList className="mb-4">
-            <TabsTrigger value="general">Všeobecné</TabsTrigger>
-            <TabsTrigger value="billing">Plán & fakturácia</TabsTrigger>
+            <TabsTrigger value="general">{t("settings.tab.general")}</TabsTrigger>
+            <TabsTrigger value="billing">{t("settings.tab.billing")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general">
             <Card className="p-6 space-y-5">
           <div>
-            <Label htmlFor="obs">Kód pozorovateľa (Obs)</Label>
+            <Label htmlFor="obs">{t("settings.obsCode")}</Label>
             <Input id="obs" value={obsCode} onChange={(e) => setObsCode(e.target.value)} />
-            <p className="text-xs text-muted-foreground mt-1">Použije sa vo VSNET / AAVSO / MEDUZA exportoch.</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("settings.obsCodeHint")}</p>
           </div>
           <div>
-            <Label htmlFor="ref">Fecha de Referencia</Label>
+            <Label htmlFor="ref">{t("settings.refDate")}</Label>
             <Input id="ref" type="date" value={refDate} onChange={(e) => setRefDate(e.target.value)} />
           </div>
-          <Button onClick={save} disabled={busy}>Uložiť</Button>
+          <Button onClick={save} disabled={busy}>{t("settings.save")}</Button>
             </Card>
 
             <Card className="p-6 space-y-5 mt-4">
-              <h2 className="text-lg font-semibold">Pozorovanie & komfort</h2>
+              <h2 className="text-lg font-semibold">{t("settings.comfort")}</h2>
 
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-0.5">
                   <Label htmlFor="autofill" className="flex items-center gap-2">
-                    Auto-vyplniť čas
+                    {t("settings.autofill")}
                     {!isPlusActive && (
                       <Badge variant="outline" className="rounded-full text-[10px] gap-1 px-2 py-0">
                         <Lock className="h-2.5 w-2.5" /> Plus
                       </Badge>
                     )}
                   </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Pri vstupe do prázdneho riadku sa do UT predvyplní aktuálny čas (hh:mm).
-                  </p>
+                  <p className="text-xs text-muted-foreground">{t("settings.autofillDesc")}</p>
                 </div>
                 <Switch
                   id="autofill"
@@ -184,10 +184,8 @@ export default function Settings() {
 
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-0.5">
-                  <Label htmlFor="confirm">Potvrdenie pred mazaním</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Pýtať potvrdenie pri mazaní hviezd v katalógu a Prom katalógu.
-                  </p>
+                  <Label htmlFor="confirm">{t("settings.confirmDel")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("settings.confirmDelDesc")}</p>
                 </div>
                 <Switch
                   id="confirm"
@@ -198,7 +196,7 @@ export default function Settings() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label>Oneskorenie auto-save</Label>
+                  <Label>{t("settings.autosaveDelay")}</Label>
                   <span className="text-xs font-mono text-muted-foreground">{prefs.autosaveDelayMs} ms</span>
                 </div>
                 <Slider
@@ -208,14 +206,12 @@ export default function Settings() {
                   value={[prefs.autosaveDelayMs]}
                   onValueChange={([v]) => setPrefs({ autosaveDelayMs: v })}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Kratšie = okamžité ukladanie, dlhšie = menej zápisov pri rýchlom písaní.
-                </p>
+                <p className="text-xs text-muted-foreground">{t("settings.autosaveDesc")}</p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="defcon" className="flex items-center gap-2">
-                  Predvolené súhvezdie po otvorení session
+                  {t("settings.defaultConst")}
                   {!isPlusActive && (
                     <Badge variant="outline" className="rounded-full text-[10px] gap-1 px-2 py-0">
                       <Lock className="h-2.5 w-2.5" /> Plus
@@ -236,7 +232,7 @@ export default function Settings() {
                 </Select>
                 {!isPlusActive && (
                   <p className="text-xs text-muted-foreground">
-                    Predvolené súhvezdie je dostupné v pláne <strong>Plus</strong>.
+                    {t("settings.defaultConstHint")} <strong>Plus</strong>.
                   </p>
                 )}
               </div>
@@ -245,19 +241,17 @@ export default function Settings() {
             <Card className="p-6 space-y-4 mt-4">
               <div className="flex items-center gap-2">
                 <Upload className="h-4 w-4 text-muted-foreground" />
-                <h2 className="text-lg font-semibold">Po stiahnutí exportu</h2>
+                <h2 className="text-lg font-semibold">{t("settings.afterExport")}</h2>
                 {!isPlusActive && (
                   <Badge variant="outline" className="rounded-full text-[10px] gap-1 px-2 py-0">
                     <Lock className="h-2.5 w-2.5" /> Plus
                   </Badge>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground -mt-2">
-                Po stiahnutí súboru sa automaticky otvorí príslušná stránka v novom okne — pre rýchlejšie odoslanie pozorovaní.
-              </p>
+              <p className="text-xs text-muted-foreground -mt-2">{t("settings.afterExportDesc")}</p>
               {!isPlusActive && (
                 <p className="text-xs text-muted-foreground -mt-2">
-                  Táto funkcia je dostupná v pláne <strong>Plus</strong>.
+                  {t("settings.plusOnly")} <strong>Plus</strong>.
                 </p>
               )}
 
@@ -304,7 +298,7 @@ export default function Settings() {
                           portalUrls: { ...prefs.portalUrls, [k]: SUBMISSION_PORTALS[k].url },
                         })
                       }
-                      title="Obnoviť predvolenú URL"
+                      title={t("settings.resetUrl")}
                     >
                       <RefreshCw className="h-3.5 w-3.5" />
                     </Button>
@@ -321,34 +315,32 @@ export default function Settings() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-lg font-semibold">Free</h2>
-                    {!isPlusActive && <Badge variant="secondary" className="rounded-full">Aktívny</Badge>}
+                    {!isPlusActive && <Badge variant="secondary" className="rounded-full">{t("settings.plan.active")}</Badge>}
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Pre amatérskych pozorovateľov.
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">{t("settings.plan.freeDesc")}</p>
                 </div>
                 <div className="text-right">
                   <div className="text-3xl font-semibold text-primary">0 €</div>
-                  <div className="text-xs text-muted-foreground">/ mesačne</div>
+                  <div className="text-xs text-muted-foreground">{t("settings.plan.month")}</div>
                 </div>
               </div>
 
               <ul className="mt-4 space-y-2 text-sm">
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span>Takmer všetky aktuálne funkcie aplikácie</span>
+                  <span>{t("settings.plan.featFree")}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span>Exporty VSNET / AAVSO / MEDUZA, import .xlsx/.ods, JSON katalógov</span>
+                  <span>{t("settings.plan.exports")}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span>Limit úložiska <strong>200 MB</strong></span>
+                  <span>{t("settings.plan.storage")} <strong>200 MB</strong></span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span><strong>5 AI skenov</strong> papierových formulárov denne</span>
+                  <span><strong>5</strong> {t("settings.plan.ai")}</span>
                 </li>
               </ul>
             </Card>
@@ -358,47 +350,45 @@ export default function Settings() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-lg font-semibold">Plus</h2>
-                    {isPlusActive && <Badge className="rounded-full">Aktívny</Badge>}
+                    {isPlusActive && <Badge className="rounded-full">{t("settings.plan.active")}</Badge>}
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Pre aktívnych pozorovateľov.
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">{t("settings.plan.plusDesc")}</p>
                 </div>
                 <div className="text-right">
                   <div className="text-3xl font-semibold text-primary">2 €</div>
-                  <div className="text-xs text-muted-foreground">/ mesačne</div>
+                  <div className="text-xs text-muted-foreground">{t("settings.plan.month")}</div>
                 </div>
               </div>
               <ul className="mt-4 space-y-2 text-sm">
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span>Všetky aktuálne funkcie aplikácie</span>
+                  <span>{t("settings.plan.featAll")}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span>Exporty VSNET / AAVSO / MEDUZA, import .xlsx/.ods, JSON katalógov</span>
+                  <span>{t("settings.plan.exports")}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span>Limit úložiska <strong>800 MB</strong></span>
+                  <span>{t("settings.plan.storage")} <strong>800 MB</strong></span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span><strong>15 AI skenov</strong> papierových formulárov denne</span>
+                  <span><strong>15</strong> {t("settings.plan.ai")}</span>
                 </li>
               </ul>
               {isPlusActive ? (
                 <Button className="mt-5 w-full" variant="secondary" onClick={openPortal} disabled={portalBusy}>
-                  <ExternalLink className="h-4 w-4 mr-1.5" /> Spravovať predplatné
+                  <ExternalLink className="h-4 w-4 mr-1.5" /> {t("settings.plan.manage")}
                 </Button>
               ) : (
                 <Button className="mt-5 w-full" onClick={() => setCheckoutOpen(true)}>
-                  Aktivovať Plus
+                  {t("settings.plan.activate")}
                 </Button>
               )}
               {isPlusActive && sub?.current_period_end && (
                 <p className="text-xs text-muted-foreground mt-2">
-                  {sub.cancel_at_period_end ? "Predplatné končí " : "Ďalšia fakturácia "}
+                  {sub.cancel_at_period_end ? t("settings.plan.cancelAt") + " " : t("settings.plan.nextBill") + " "}
                   <strong>
                     {new Date(sub.current_period_end).toLocaleDateString("sk-SK", {
                       day: "numeric", month: "long", year: "numeric",
@@ -416,10 +406,10 @@ export default function Settings() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <Zap className="h-4 w-4 text-accent" />
-                      <h3 className="font-semibold">Dev override — Plus zadarmo</h3>
+                      <h3 className="font-semibold">{t("settings.dev.title")}</h3>
                     </div>
                     <p className="text-xs text-muted-foreground max-w-md">
-                      Si prihlásený ako vývojár ({user?.email}). Jedným klikom si môžeš zapnúť alebo vypnúť plán Plus bez platby.
+                      {t("settings.dev.desc").replace("{email}", user?.email ?? "")}
                     </p>
                   </div>
                   <Switch checked={devOverride} onCheckedChange={toggleDevPlus} />
@@ -431,10 +421,10 @@ export default function Settings() {
               <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
                 <div className="flex items-center gap-2">
                   <Database className="h-4 w-4 text-muted-foreground" />
-                  <h3 className="font-semibold">Využitie úložiska</h3>
+                  <h3 className="font-semibold">{t("settings.usage.title")}</h3>
                 </div>
                 <Button variant="ghost" size="sm" onClick={computeUsage} disabled={usage.loading}>
-                  <RefreshCw className={`h-4 w-4 mr-1.5 ${usage.loading ? "animate-spin" : ""}`} /> Obnoviť
+                  <RefreshCw className={`h-4 w-4 mr-1.5 ${usage.loading ? "animate-spin" : ""}`} /> {t("settings.usage.refresh")}
                 </Button>
               </div>
 
@@ -448,7 +438,7 @@ export default function Settings() {
                     </div>
                     <Progress value={pct} className="mt-2 h-2" />
                     <p className="text-xs text-muted-foreground mt-2">
-                      Využitých {pct.toFixed(2)} % z limitu plánu {isPlusActive ? "Plus" : "Free"}. Veľkosť tvojich dát (hviezdy, session, pozorovania, prom katalóg).
+                      {t("settings.usage.used").replace("{pct}", pct.toFixed(2)).replace("{plan}", isPlusActive ? "Plus" : "Free")}
                     </p>
                   </>
                 );
@@ -456,10 +446,10 @@ export default function Settings() {
 
               <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
                 {[
-                  { label: "Hviezdy", v: usage.counts.stars },
-                  { label: "Session", v: usage.counts.sessions },
-                  { label: "Pozorovania", v: usage.counts.observations },
-                  { label: "Prom úpravy", v: usage.counts.promOverrides },
+                  { label: t("settings.usage.stars"), v: usage.counts.stars },
+                  { label: t("settings.usage.sessions"), v: usage.counts.sessions },
+                  { label: t("settings.usage.obs"), v: usage.counts.observations },
+                  { label: t("settings.usage.prom"), v: usage.counts.promOverrides },
                 ].map((x) => (
                   <div key={x.label} className="rounded-lg border border-border p-3">
                     <div className="text-xs text-muted-foreground">{x.label}</div>
@@ -474,7 +464,7 @@ export default function Settings() {
         <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Aktivovať plán Plus — 2 € / mesačne</DialogTitle>
+              <DialogTitle>{t("settings.checkout.title")}</DialogTitle>
             </DialogHeader>
             {checkoutOpen && user && (
               <StripeEmbeddedCheckout
