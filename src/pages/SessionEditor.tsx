@@ -39,13 +39,6 @@ type Obs = {
 };
 
 const TYPE_FILTERS: (StarType | "ALL")[] = ["ALL", "VISUAL", "BINAR", "ECL faint", "ECL bright"];
-const TYPE_LABEL: Record<string, string> = {
-  ALL: "Všetky",
-  VISUAL: "VISUAL",
-  BINAR: "BINAR",
-  "ECL faint": "ECL faint",
-  "ECL bright": "ECL bright",
-};
 
 function constAbbrev(name: string): string {
   // Pretty short label for the constellation links (matches user image)
@@ -97,7 +90,7 @@ export default function SessionEditor() {
           supabase.from("profiles").select("obs_code").eq("user_id", user.id).maybeSingle(),
         ]);
       if (!session) {
-        toast.error("Session neexistuje");
+        toast.error(t("editor.sessionMissing"));
         nav("/");
         return;
       }
@@ -240,7 +233,7 @@ export default function SessionEditor() {
       }
       if (error) {
         if (error.message.includes("Storage limit exceeded")) {
-          toast.error("Prekročený limit úložiska. Upgraduj na Plus pre viac miesta.");
+          toast.error(t("editor.storageLimit"));
         } else {
           toast.error(error.message);
         }
@@ -281,7 +274,7 @@ export default function SessionEditor() {
       }
       if (error) {
         if (error.message.includes("Storage limit exceeded")) {
-          toast.error("Prekročený limit úložiska. Upgraduj na Plus pre viac miesta.");
+          toast.error(t("editor.storageLimit"));
         } else {
           toast.error(error.message);
         }
@@ -298,7 +291,7 @@ export default function SessionEditor() {
     setExtraByStar((prev) => {
       const cur = prev[starId] ?? [];
       if (cur.length >= 5) {
-        toast.error("Maximálne 5 ďalších riadkov pre jednu hviezdu");
+        toast.error(t("editor.maxExtra"));
         return prev;
       }
       return {
@@ -538,7 +531,7 @@ export default function SessionEditor() {
   const handleOcrFile = async (file: File) => {
     try {
       setOcrBusy(true);
-      toast.info("Skenujem papier… (môže to chvíľu trvať)");
+      toast.info(t("editor.ocrStart"));
       const dataUrl: string = await new Promise((resolve, reject) => {
         const fr = new FileReader();
         fr.onload = () => resolve(String(fr.result));
@@ -561,9 +554,9 @@ export default function SessionEditor() {
       await handleImportFile(new File([blob], "ocr.json", { type: "application/json" }));
       const used = (data as any)?.used;
       const lim = (data as any)?.dailyLimit;
-      if (used && lim) toast.info(`AI skeny dnes: ${used}/${lim}`);
+      if (used && lim) toast.info(`${t("editor.ocrCount")}: ${used}/${lim}`);
     } catch (e: any) {
-      toast.error("OCR zlyhalo: " + (e?.message ?? "neznáma chyba"));
+      toast.error(t("editor.ocrFailed") + ": " + (e?.message ?? t("editor.ocrUnknown")));
     } finally {
       setOcrBusy(false);
     }
@@ -599,10 +592,10 @@ export default function SessionEditor() {
   .print { position: fixed; top: 8px; right: 8px; }
   @media print { .print { display: none; } }
 </style></head><body>
-  <button class="print" onclick="window.print()">Tlačiť</button>
+  <button class="print" onclick="window.print()">${t("editor.paperPrint")}</button>
   <header>
-    <h1>VISUAL ASTRO · Pozorovací papier</h1>
-    <div class="meta">Dátum (UT):<span></span> Pozorovateľ:<span></span></div>
+    <h1>${t("editor.paperHeader")}</h1>
+    <div class="meta">${t("editor.paperDate")}<span></span> ${t("editor.paperObserver")}<span></span></div>
   </header>
   <div class="grid">
     ${renderTable(0)}
@@ -610,7 +603,7 @@ export default function SessionEditor() {
   </div>
 </body></html>`;
     const w = window.open("", "_blank");
-    if (!w) { toast.error("Prehliadač blokuje nové okno"); return; }
+    if (!w) { toast.error(t("editor.popupBlocked")); return; }
     w.document.write(html);
     w.document.close();
   };
