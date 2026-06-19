@@ -129,23 +129,7 @@ export default function About() {
             <h2 className="text-xl font-semibold">{t("about.howToUse")}</h2>
           </div>
           <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
-            {isSk ? <>
-              <li><strong>Vytvor session</strong> v zozname Sessions — buď prázdnu, alebo kópiu poslednej.</li>
-              <li><strong>Nastav UT dátum</strong> v hlavičke editora. JD sa dopočíta automaticky.</li>
-              <li><strong>Naviguj cez súhvezdia</strong> hore alebo filtruj podľa typu.</li>
-              <li>Pre každú hviezdu zadaj A, B, Paso A/B a UT čas v tvare <code>hh:mm</code>.</li>
-              <li>Ak hviezda nebola viditeľná, zadaj iba <strong>limit</strong> (napr. <code>&lt;14.9</code>).</li>
-              <li><strong>Import z papiera</strong> — odfoť ručne písaný papier a AI ho prepíše.</li>
-              <li><strong>Exportuj</strong> do VSNET / AAVSO / MEDUZA.</li>
-            </> : <>
-              <li><strong>Create a session</strong> in the Sessions list — empty or a copy of the last one.</li>
-              <li><strong>Set the UT date</strong> in the editor header. JD is computed automatically.</li>
-              <li><strong>Navigate constellations</strong> at the top, or filter by type.</li>
-              <li>For each star enter A, B, Paso A/B and the UT time as <code>hh:mm</code>.</li>
-              <li>If a star wasn't visible, enter just a <strong>limit</strong> (e.g. <code>&lt;14.9</code>).</li>
-              <li><strong>Import from paper</strong> — photograph a handwritten log and AI transcribes it.</li>
-              <li><strong>Export</strong> to VSNET / AAVSO / MEDUZA.</li>
-            </>}
+            {[1, 2, 3, 4, 5, 6, 7].map((n) => <li key={n}>{t(`about.use.${n}`)}</li>)}
           </ol>
         </Card>
 
@@ -155,17 +139,7 @@ export default function About() {
             <h2 className="text-xl font-semibold">{t("about.tech")}</h2>
           </div>
           <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
-            {isSk ? <>
-              <p>Aplikácia je <strong>React + TypeScript</strong> SPA na Vite. UI je postavené nad Tailwind CSS a shadcn/ui. Pozorovania sa ukladajú s debounce (~600 ms), bez tlačidla „Uložiť".</p>
-              <p>Backend beží na <strong>Lovable Cloud</strong> (PostgreSQL + auth). Tabuľky sú zabezpečené pomocou <strong>Row-Level Security</strong>.</p>
-              <p><strong>Magnitúda</strong>: <code className="font-mono">mag = A + (PA / (PA + PB)) · (B − A)</code>.</p>
-              <p>Exporty sú generované klientsky. AI OCR beží cez Lovable AI Gateway (Gemini 2.5 Pro).</p>
-            </> : <>
-              <p>The app is a <strong>React + TypeScript</strong> Vite SPA. UI is built on Tailwind CSS and shadcn/ui. Observations are saved with debounce (~600 ms) — no "Save" button.</p>
-              <p>The backend runs on <strong>Lovable Cloud</strong> (PostgreSQL + auth). Tables are protected by <strong>Row-Level Security</strong>.</p>
-              <p><strong>Magnitude</strong>: <code className="font-mono">mag = A + (PA / (PA + PB)) · (B − A)</code>.</p>
-              <p>Exports are generated client-side. AI OCR runs through the Lovable AI Gateway (Gemini 2.5 Pro).</p>
-            </>}
+            {[1, 2, 3, 4].map((n) => <p key={n}>{t(`about.tech.${n}`)}</p>)}
           </div>
         </Card>
       </main>
