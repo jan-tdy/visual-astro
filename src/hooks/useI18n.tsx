@@ -767,7 +767,7 @@ const tolgee = Tolgee()
   .init({
     language: toTolgee(storedLang()),
     defaultLanguage: "sk-SK",
-    fallbackLanguage: "en",
+    fallbackLanguage: "sk-SK",
     availableLanguages: SUPPORTED_LANGS.map((l) => toTolgee(l.code)),
     apiKey: TOLGEE_API_KEY,
     apiUrl: TOLGEE_API_URL,
