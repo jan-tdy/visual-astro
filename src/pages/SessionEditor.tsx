@@ -827,6 +827,11 @@ export default function SessionEditor() {
 
         {/* Sections per constellation */}
         <div className="space-y-6">
+          {grouped.order.length === 0 && (
+            <Card className="p-8 text-center text-sm text-muted-foreground">
+              {t("editor.noStarsMatch")}
+            </Card>
+          )}
           {grouped.order.map((c) => (
             <div
               key={c}
