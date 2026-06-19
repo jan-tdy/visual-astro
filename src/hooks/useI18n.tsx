@@ -751,6 +751,18 @@ const storedLang = (): Lang => {
 
 const tolgee = Tolgee()
   .use(DevTools())
+  .use(
+    BackendFetch({
+      prefix: TOLGEE_API_URL,
+      getPath: ({ language, prefix }) => `${prefix}/v2/projects/translations/${language}`,
+      headers: { "X-API-Key": TOLGEE_API_KEY, "Content-Type": "application/json" },
+      getData: async (r) => {
+        const data = await r.json();
+        return data?.[r.url.split("/").pop() || ""] ?? {};
+      },
+      fallbackOnFail: true,
+    }),
+  )
   .use(FormatSimple())
   .init({
     language: toTolgee(storedLang()),
@@ -759,13 +771,6 @@ const tolgee = Tolgee()
     availableLanguages: SUPPORTED_LANGS.map((l) => toTolgee(l.code)),
     apiKey: TOLGEE_API_KEY,
     apiUrl: TOLGEE_API_URL,
-    // Treat dots in keys as literal characters, not as nesting separators.
-    // Our static dict uses flat keys like "about.howItWorks". Tolgee's API
-    // returns them nested by default, which broke lookup for languages
-    // loaded from the API (es-ES, de-DE, fr, …). `structureDelimiter: ""`
-    // disables nesting. The option exists in @tolgee/core but isn't yet in
-    // the public TS types, so cast through any.
-    ...({ structureDelimiter: "" } as any),
     staticData: {
       "sk-SK": dict.sk as unknown as Record<string, string>,
       en: dict.en as unknown as Record<string, string>,
