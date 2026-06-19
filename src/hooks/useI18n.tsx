@@ -803,7 +803,8 @@ function InnerProvider({ children }: { children: ReactNode }) {
       },
       t: (k) => {
         const v = tTrans(k as string);
-        if (v && v !== k) return v;
+        const normalized = v?.replace(/[\u200B-\u200D\uFEFF]/g, "") ?? "";
+        if (v && normalized !== k && !normalized.includes(k as string)) return v;
         // fallback to static dict
         const base = lang === "en" ? dict.en : dict.sk;
         return (
