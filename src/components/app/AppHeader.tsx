@@ -100,7 +100,7 @@ export function AppHeader() {
               ))}
             </SelectContent>
           </Select>
-          <Button variant="ghost" size="icon" onClick={toggle} aria-label="Prepnúť režim">
+          <Button variant="ghost" size="icon" onClick={toggle} aria-label={t("nav.themeToggle")} title={t("nav.themeToggle")}>
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
           <Button variant="ghost" size="icon" onClick={signOut} className="hidden sm:inline-flex">
@@ -108,7 +108,7 @@ export function AppHeader() {
           </Button>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="sm:hidden" aria-label="Menu">
+              <Button variant="ghost" size="icon" className="sm:hidden" aria-label={t("nav.menu")} title={t("nav.menu")}>
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>

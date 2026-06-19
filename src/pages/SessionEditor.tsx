@@ -6,7 +6,7 @@ import { AppHeader } from "@/components/app/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus, ScanLine, Printer } from "lucide-react";
+import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus, ScanLine, Printer, Search } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
 import { buildAAVSO, buildMEDUZA, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
@@ -70,6 +70,7 @@ export default function SessionEditor() {
   const [sessionName, setSessionName] = useState<string>("");
   const [obsCode, setObsCode] = useState("DPV");
   const [typeFilter, setTypeFilter] = useState<(typeof TYPE_FILTERS)[number]>("ALL");
+  const [starSearch, setStarSearch] = useState("");
   const [activeConst, setActiveConst] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState<{ name: string; text: string; filename: string; kind: "vsnet" | "aavso" | "meduza" } | null>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -120,8 +121,16 @@ export default function SessionEditor() {
   const grouped = useMemo(() => {
     const order: string[] = [];
     const m: Record<string, Star[]> = {};
+    const q = starSearch.trim().toLowerCase();
     for (const s of stars) {
       if (typeFilter !== "ALL" && s.type !== typeFilter) continue;
+      if (q) {
+        const haystack = [s.name, s.constellation, s.type, s.vsnet_code, s.aavso_code, s.chart_id]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!haystack.includes(q)) continue;
+      }
       if (!m[s.constellation]) {
         m[s.constellation] = [];
         order.push(s.constellation);
@@ -129,7 +138,7 @@ export default function SessionEditor() {
       m[s.constellation].push(s);
     }
     return { order, map: m };
-  }, [stars, typeFilter]);
+  }, [stars, typeFilter, starSearch]);
 
   // Flat ordering of stars across constellations for keyboard navigation
   const flatIndex = useMemo(() => {
@@ -450,7 +459,7 @@ export default function SessionEditor() {
       const text = await file.text();
       const data = JSON.parse(text);
       const obsArr: any[] = Array.isArray(data) ? data : (data.observations ?? []);
-      if (!Array.isArray(obsArr)) throw new Error("Neplatný JSON: chýba pole 'observations'");
+      if (!Array.isArray(obsArr)) throw new Error(t("editor.importInvalid"));
 
       // Apply header (date / obs_code) if provided
       if (data && typeof data === "object" && data.observed_at_utc) {
@@ -502,7 +511,7 @@ export default function SessionEditor() {
           .upsert(chunk, { onConflict: "session_id,star_id" });
         if (error) {
           if (error.message.includes("Storage limit exceeded")) {
-            toast.error("Prekročený limit úložiska. Upgraduj na Plus pre viac miesta.");
+            toast.error(t("editor.storageLimit"));
           } else {
             toast.error(error.message);
           }
@@ -510,10 +519,11 @@ export default function SessionEditor() {
         }
       }
       toast.success(
-        `Importovaných ${matched} pozorovaní${skipped ? `, ${skipped} preskočených (chýbajú v katalógu)` : ""}`,
+        t("editor.importDone").replace("{matched}", String(matched)) +
+          (skipped ? t("editor.importSkipped").replace("{skipped}", String(skipped)) : ""),
       );
     } catch (e: any) {
-      toast.error("Chyba pri importe: " + e.message);
+      toast.error(t("editor.importErr") + ": " + e.message);
     }
   };
 
@@ -563,7 +573,7 @@ export default function SessionEditor() {
   };
 
   const downloadPaperTemplate = () => {
-    const headers = ["#", "Hviezda", "A", "Paso A", "Paso B", "B", "Limit", "UT", "Nota"];
+    const headers = ["#", t("editor.paperColStar"), "A", t("editor.paperColPasoA"), t("editor.paperColPasoB"), "B", t("editor.paperColLimit"), "UT", t("editor.paperColNote")];
     const ROWS_PER_COL = 50;
     const TOTAL = 100;
     const renderTable = (startIdx: number) => `
@@ -572,7 +582,7 @@ export default function SessionEditor() {
         <tbody>${Array.from({ length: ROWS_PER_COL }).map((_, i) => `<tr><td class="num">${startIdx + i + 1}</td>${Array.from({ length: headers.length - 1 }).map(() => `<td></td>`).join("")}</tr>`).join("")}</tbody>
       </table>`;
     void TOTAL;
-    const html = `<!doctype html><html lang="sk"><head><meta charset="utf-8"><title>Pozorovací papier – Visual Astro</title>
+    const html = `<!doctype html><html lang="sk"><head><meta charset="utf-8"><title>${t("editor.paperTitle")}</title>
 <style>
   @page { size: A4 portrait; margin: 6mm; }
   * { box-sizing: border-box; }
@@ -709,17 +719,19 @@ export default function SessionEditor() {
           {incompleteWarnings.length > 0 && (
             <div className="mt-3 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-xs text-yellow-700 dark:text-yellow-300">
               <div className="font-semibold mb-1">
-                Pozor — {incompleteWarnings.length} {incompleteWarnings.length === 1 ? "hviezda má" : "hviezd má"} zadaný čas, ale nedá sa vypočítať magnitúda:
+                {incompleteWarnings.length === 1
+                  ? t("editor.warnTitleOne")
+                  : t("editor.warnTitleMany").replace("{n}", String(incompleteWarnings.length))}
               </div>
               <ul className="list-disc pl-5 space-y-0.5">
                 {incompleteWarnings.map((w, i) => (
                   <li key={i}>
-                    <span className="font-medium">{w.name}</span>{w.row}
+                    <span className="font-medium">{w.name}</span>{w.row && t("editor.warnRow").replace("{n}", w.row.replace(/\D/g, ""))}
                   </li>
                 ))}
               </ul>
               <div className="mt-1.5 opacity-80">
-                Ak chceš tieto pozorovania započítať do počtu a exportu, doplň A/B + Paso A/Paso B alebo limitnú hodnotu (&lt;/=).
+                {t("editor.warnHint")}
               </div>
             </div>
           )}
@@ -778,6 +790,15 @@ export default function SessionEditor() {
 
         {/* Constellation nav (matches user image) */}
         <Card className="p-4 mb-4 sticky top-[57px] z-20 backdrop-blur bg-card/80">
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={starSearch}
+              onChange={(e) => setStarSearch(e.target.value)}
+              placeholder={t("editor.searchStars")}
+              className="pl-9 h-9"
+            />
+          </div>
           <div className="flex flex-wrap gap-x-5 gap-y-1 mb-2">
             {grouped.order.map((c) => (
               <a
@@ -798,7 +819,7 @@ export default function SessionEditor() {
                 className="nav-link"
                 data-active={typeFilter === tf}
               >
-                {tf === "ALL" ? (t("graphs.tab.curve") === "Svetelná krivka" ? "Všetky" : "All") : tf}
+                {tf === "ALL" ? t("editor.typeAll") : tf}
               </a>
             ))}
           </div>
@@ -806,6 +827,11 @@ export default function SessionEditor() {
 
         {/* Sections per constellation */}
         <div className="space-y-6">
+          {grouped.order.length === 0 && (
+            <Card className="p-8 text-center text-sm text-muted-foreground">
+              {t("editor.noStarsMatch")}
+            </Card>
+          )}
           {grouped.order.map((c) => (
             <div
               key={c}
@@ -817,15 +843,15 @@ export default function SessionEditor() {
                 <table className="w-full text-sm">
                   <thead className="border-b border-border bg-secondary/40">
                     <tr className="text-left whitespace-nowrap">
-                      <th className="px-2 py-1.5 sticky left-0 bg-secondary/60">Hviezda</th>
+                      <th className="px-2 py-1.5 sticky left-0 bg-secondary/60">{t("editor.col.star")}</th>
                       <th className="px-2 py-1.5 w-16">A</th>
-                      <th className="px-2 py-1.5 w-14">Paso A</th>
-                      <th className="px-2 py-1.5 w-14">Paso B</th>
+                      <th className="px-2 py-1.5 w-14">{t("editor.col.pasoA")}</th>
+                      <th className="px-2 py-1.5 w-14">{t("editor.col.pasoB")}</th>
                       <th className="px-2 py-1.5 w-16">B</th>
                       <th className="px-2 py-1.5 w-20">&lt;/=</th>
-                      <th className="px-2 py-1.5 w-20">UT</th>
-                      <th className="px-2 py-1.5">Nota</th>
-                      <th className="px-2 py-1.5 w-20 text-right">Mag</th>
+                      <th className="px-2 py-1.5 w-20">{t("editor.col.ut")}</th>
+                      <th className="px-2 py-1.5">{t("editor.col.note")}</th>
+                      <th className="px-2 py-1.5 w-20 text-right">{t("editor.col.mag")}</th>
                       <th className="px-2 py-1.5 w-10"></th>
                     </tr>
                   </thead>
@@ -878,7 +904,7 @@ export default function SessionEditor() {
                               variant="ghost"
                               size="icon"
                               className="h-6 w-6"
-                              title="Pridať ďalší riadok rovnakej hviezdy"
+                              title={t("editor.addRow")}
                               onClick={() => addExtraRow(s.id)}
                               disabled={extras.length >= 5}
                             >
@@ -921,7 +947,7 @@ export default function SessionEditor() {
                                 {emag.value ?? <span className="text-muted-foreground">—</span>}
                               </td>
                               <td className="px-1 py-1 text-right">
-                                <Button variant="ghost" size="icon" className="h-6 w-6" title="Odstrániť riadok" onClick={() => removeExtra(s.id, ei)}>
+                                 <Button variant="ghost" size="icon" className="h-6 w-6" title={t("editor.removeRow")} onClick={() => removeExtra(s.id, ei)}>
                                   <X className="h-3.5 w-3.5" />
                                 </Button>
                               </td>
@@ -951,7 +977,7 @@ export default function SessionEditor() {
           >
             <button
               onClick={() => setPreviewing(null)}
-              aria-label="Zavrieť"
+              aria-label={t("editor.close")}
               className="absolute -top-3 -right-3 h-9 w-9 rounded-full bg-card border border-border shadow-md flex items-center justify-center hover:bg-secondary transition-colors"
             >
               <X className="h-4 w-4" />
@@ -962,8 +988,8 @@ export default function SessionEditor() {
                 <div className="text-xs text-muted-foreground">{previewing.filename}</div>
               </div>
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(previewing.text); toast.success("Skopírované"); }}>
-                  Kopírovať
+                <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(previewing.text); toast.success(t("editor.copied")); }}>
+                  {t("editor.copy")}
                 </Button>
                 <Button size="sm" onClick={() => {
                   downloadText(previewing.filename, previewing.text);
@@ -973,7 +999,7 @@ export default function SessionEditor() {
                     setTimeout(() => window.open(url, "_blank", "noopener,noreferrer"), 250);
                   }
                 }}>
-                  <Download className="h-4 w-4 mr-1" /> Stiahnuť
+                  <Download className="h-4 w-4 mr-1" /> {t("editor.download")}
                 </Button>
               </div>
             </div>
