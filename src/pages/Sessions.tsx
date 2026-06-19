@@ -40,7 +40,7 @@ export default function Sessions() {
         await seedCatalogIfNeeded(user.id);
       } catch (e: any) {
         console.error(e);
-        toast.error("Seed katalógu zlyhal: " + e.message);
+        toast.error(`${t("sessions.seedFailed")}: ${e.message}`);
       }
       await reload();
     })();
