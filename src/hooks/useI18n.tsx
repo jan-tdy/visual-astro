@@ -628,6 +628,12 @@ const tolgee = Tolgee()
     availableLanguages: SUPPORTED_LANGS.map((l) => toTolgee(l.code)),
     apiKey: TOLGEE_API_KEY,
     apiUrl: TOLGEE_API_URL,
+    projectId: undefined,
+    // Treat dots in keys as literal characters, not as nesting separators.
+    // Our keys (e.g. "about.howItWorks") are flat in our static dict, but
+    // Tolgee's API returns them nested by default — which broke lookup for
+    // languages loaded from the API (es-ES, de-DE, fr, …).
+    structureDelimiter: "",
     staticData: {
       "sk-SK": dict.sk as unknown as Record<string, string>,
       en: dict.en as unknown as Record<string, string>,
