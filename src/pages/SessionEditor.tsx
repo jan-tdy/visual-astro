@@ -977,7 +977,7 @@ export default function SessionEditor() {
           >
             <button
               onClick={() => setPreviewing(null)}
-              aria-label="Zavrieť"
+              aria-label={t("editor.close")}
               className="absolute -top-3 -right-3 h-9 w-9 rounded-full bg-card border border-border shadow-md flex items-center justify-center hover:bg-secondary transition-colors"
             >
               <X className="h-4 w-4" />
@@ -988,8 +988,8 @@ export default function SessionEditor() {
                 <div className="text-xs text-muted-foreground">{previewing.filename}</div>
               </div>
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(previewing.text); toast.success("Skopírované"); }}>
-                  Kopírovať
+                <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(previewing.text); toast.success(t("editor.copied")); }}>
+                  {t("editor.copy")}
                 </Button>
                 <Button size="sm" onClick={() => {
                   downloadText(previewing.filename, previewing.text);
@@ -999,7 +999,7 @@ export default function SessionEditor() {
                     setTimeout(() => window.open(url, "_blank", "noopener,noreferrer"), 250);
                   }
                 }}>
-                  <Download className="h-4 w-4 mr-1" /> Stiahnuť
+                  <Download className="h-4 w-4 mr-1" /> {t("editor.download")}
                 </Button>
               </div>
             </div>
