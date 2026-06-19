@@ -629,12 +629,12 @@ const tolgee = Tolgee()
     apiKey: TOLGEE_API_KEY,
     apiUrl: TOLGEE_API_URL,
     // Treat dots in keys as literal characters, not as nesting separators.
-    // Our keys (e.g. "about.howItWorks") are flat in our static dict, but
-    // Tolgee's API returns them nested by default — which broke lookup for
-    // languages loaded from the API (es-ES, de-DE, fr, …).
-    ns: [""],
-    defaultNs: "",
-    ...( { structureDelimiter: "" } as object ),
+    // Our static dict uses flat keys like "about.howItWorks". Tolgee's API
+    // returns them nested by default, which broke lookup for languages
+    // loaded from the API (es-ES, de-DE, fr, …). `structureDelimiter: ""`
+    // disables nesting. The option exists in @tolgee/core but isn't yet in
+    // the public TS types, so cast through any.
+    ...({ structureDelimiter: "" } as any),
     staticData: {
       "sk-SK": dict.sk as unknown as Record<string, string>,
       en: dict.en as unknown as Record<string, string>,
