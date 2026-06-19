@@ -65,19 +65,7 @@ export default function About() {
         <Card className="p-6 mb-6">
           <h2 className="text-xl font-semibold mb-3">{t("about.howItWorks")}</h2>
           <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
-            {isSk ? <>
-              <li>V <strong>Sessions</strong> vytvor novú session — prázdnu, ako kópiu z <em>poslednej</em>, alebo z <em>obľúbenej</em> (predvyplní hodnoty A/Paso/B, časy ostanú prázdne).</li>
-              <li>V editore klikaj na súhvezdia v hornej navigácii alebo filtruj podľa typu (VISUAL, BINAR…).</li>
-              <li>Pre každú pozorovanú hviezdu zadaj <strong>UT čas</strong> a hodnoty A, Paso A/B, B (alebo limit <code>&lt;14.9</code>).</li>
-              <li>Magnitúda sa dopočíta sama. Vpravo hore vidíš počet vyplnených záznamov.</li>
-              <li>Stiahni si <strong>VSNET</strong>, <strong>AAVSO</strong> a <strong>MEDUZA</strong> súbory — pripravené na nahranie do databáz.</li>
-            </> : <>
-              <li>In <strong>Sessions</strong> create a new session — empty, a copy of the <em>last</em>, or from your <em>favorite</em> (prefills A/Paso/B values, clears UT times).</li>
-              <li>In the editor jump between constellations in the top nav, or filter by type (VISUAL, BINAR…).</li>
-              <li>For each observed star enter the <strong>UT time</strong> and A, Paso A/B, B values (or a limit like <code>&lt;14.9</code>).</li>
-              <li>Magnitude is computed automatically. The top-right counter shows filled entries.</li>
-              <li>Download <strong>VSNET</strong>, <strong>AAVSO</strong> and <strong>MEDUZA</strong> files — ready to submit to the databases.</li>
-            </>}
+            {[1, 2, 3, 4, 5].map((n) => <li key={n}>{t(`about.work.${n}`)}</li>)}
           </ol>
         </Card>
 
@@ -93,23 +81,10 @@ export default function About() {
 
         <Card className="p-6">
           <h2 className="text-xl font-semibold mb-3">{t("about.settingsCatalog")}</h2>
-          {isSk ? (
-            <>
-              <p className="text-sm text-muted-foreground mb-3">
-                V <Link to="/settings" className="text-primary underline underline-offset-2"><SettingsIcon className="inline h-3.5 w-3.5" /> Nastaveniach</Link> nastav svoj observer kód (default <code className="font-mono">DPV</code>).
-                V <Link to="/catalog" className="text-primary underline underline-offset-2">Katalógu</Link> môžeš pridávať, mazať a presúvať hviezdy medzi súhvezdiami.
-              </p>
-              <p className="text-xs text-muted-foreground">Údaje sú uložené v zabezpečenej cloudovej databáze, viazané na tvoje konto.</p>
-            </>
-          ) : (
-            <>
-              <p className="text-sm text-muted-foreground mb-3">
-                In <Link to="/settings" className="text-primary underline underline-offset-2"><SettingsIcon className="inline h-3.5 w-3.5" /> Settings</Link> set your observer code (default <code className="font-mono">DPV</code>).
-                In the <Link to="/catalog" className="text-primary underline underline-offset-2">Catalog</Link> you can add, remove and move stars between constellations.
-              </p>
-              <p className="text-xs text-muted-foreground">Data is stored in a secure cloud database, tied to your account.</p>
-            </>
-          )}
+          <p className="text-sm text-muted-foreground mb-3">
+            <SettingsIcon className="inline h-3.5 w-3.5 text-primary" /> {t("about.settingsDesc")}
+          </p>
+          <p className="text-xs text-muted-foreground">{t("about.dataStored")}</p>
         </Card>
 
         <Card className="p-6 mt-6 border-accent/40 bg-accent/5">
@@ -135,21 +110,17 @@ export default function About() {
                 <strong>Free</strong>
                 <span className="text-primary font-semibold">0 €</span>
               </div>
-              <p className="text-muted-foreground text-xs">{isSk ? "Takmer všetky funkcie · 200 MB úložiska · 5 AI skenov / deň." : "Almost all features · 200 MB storage · 5 AI scans / day."}</p>
+              <p className="text-muted-foreground text-xs">{t("about.plan.free")}</p>
             </div>
             <div className="rounded-lg border border-primary/40 p-4">
               <div className="flex items-center justify-between mb-1">
                 <strong>Plus</strong>
-                <span className="text-primary font-semibold">{isSk ? "2 € / mes." : "€2 / mo."}</span>
+                <span className="text-primary font-semibold">{t("about.plan.price")}</span>
               </div>
-              <p className="text-muted-foreground text-xs">{isSk ? "Predvolené súhvezdie · 800 MB úložiska · 15 AI skenov / deň." : "Default constellation · 800 MB storage · 15 AI scans / day."}</p>
+              <p className="text-muted-foreground text-xs">{t("about.plan.plus")}</p>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-3">
-            {isSk
-              ? <>Predplatné spravuješ v <Link to="/settings" className="text-primary underline underline-offset-2">Nastaveniach → Plán & fakturácia</Link>.</>
-              : <>Manage your subscription in <Link to="/settings" className="text-primary underline underline-offset-2">Settings → Plan & billing</Link>.</>}
-          </p>
+          <p className="text-xs text-muted-foreground mt-3">{t("about.plan.manage")}</p>
         </Card>
 
         <Card className="p-6 mt-6">
