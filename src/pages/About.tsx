@@ -5,37 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Telescope, Star, Clock, Download, BookOpen, Settings as SettingsIcon, Layers, Sparkles, ScanLine, HelpCircle, Cpu, Languages, Heart, CreditCard } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
 
-const FEATURES_SK = [
-  { icon: Telescope, title: "Pozorovacie session", desc: "Vytvor novú session jedným klikom — prázdnu, ako kópiu z poslednej alebo z obľúbenej (s vynulovanými časmi)." },
-  { icon: Star, title: "Katalóg hviezd", desc: "Plne editovateľný katalóg s konštantami VSNET / AAVSO, kartami porovnávacích hviezd a typmi (VISUAL, BINAR, ECL)." },
-  { icon: Layers, title: "Navigácia podľa súhvezdí", desc: "Rýchle skoky medzi súhvezdiami a filter podľa typu — presne ako v pôvodnej tabuľke." },
-  { icon: Clock, title: "Argelander metóda", desc: "Magnitúda sa počíta automaticky: mag = A + (Pasos A / (Pasos A + Pasos B)) · (B − A). Limity (<14.9) sú podporované." },
-  { icon: Download, title: "Exporty VSNET / AAVSO / MEDUZA", desc: "Tri samostatné .txt súbory v správnych formátoch. Exportujú sa iba záznamy s vyplneným UT časom." },
-  { icon: Sparkles, title: "Auto-save & JD", desc: "Všetko sa ukladá priebežne. Juliánsky dátum sa prepočítava v reálnom čase z UT." },
-  { icon: Heart, title: "Obľúbená session", desc: "Označ si jednu session ako šablónu — chráni sa pred vymazaním a dá sa z nej kedykoľvek vytvoriť nová." },
-  { icon: Languages, title: "Slovenčina / Angličtina", desc: "Prepínač jazyka v hlavičke (SK / EN) — voľba sa pamätá medzi reláciami." },
-  { icon: ScanLine, title: "AI OCR skenovanie", desc: "Odfotíš ručne písaný papier a AI ho automaticky prepíše do tabuľky. Free 5/deň, Plus 15/deň." },
-  { icon: Download, title: "JSON export & import", desc: "Zálohuj si katalóg aj jednotlivé sessions ako JSON a kedykoľvek ich obnov či prenes inde." },
-  { icon: CreditCard, title: "Plán Plus", desc: "Free plán (200 MB), alebo Plus za 2 €/mesačne — predvolené súhvezdie, 800 MB úložiska a 15 AI skenov denne." },
-];
-const FEATURES_EN = [
-  { icon: Telescope, title: "Observing sessions", desc: "Create a new session in one click — empty, a copy of the last, or from your favorite (with cleared UT times)." },
-  { icon: Star, title: "Star catalog", desc: "Fully editable catalog with VSNET / AAVSO codes, comparison-star charts and types (VISUAL, BINAR, ECL)." },
-  { icon: Layers, title: "Constellation navigation", desc: "Quick jumps between constellations and filter by type — exactly like the original spreadsheet." },
-  { icon: Clock, title: "Argelander method", desc: "Magnitude is computed automatically: mag = A + (Pasos A / (Pasos A + Pasos B)) · (B − A). Limits (<14.9) are supported." },
-  { icon: Download, title: "VSNET / AAVSO / MEDUZA exports", desc: "Three separate .txt files in correct formats. Only entries with a filled UT time are exported." },
-  { icon: Sparkles, title: "Auto-save & JD", desc: "Everything is saved as you type. Julian Date is computed in real time from UT." },
-  { icon: Heart, title: "Favorite session", desc: "Mark one session as a template — it's protected from deletion and can be used to spawn new ones." },
-  { icon: Languages, title: "Slovak / English", desc: "Language switcher in the header (SK / EN) — choice persists between sessions." },
-  { icon: ScanLine, title: "AI OCR scanning", desc: "Photograph a hand-written paper log and AI transcribes it into the table. Free 5/day, Plus 15/day." },
-  { icon: Download, title: "JSON export & import", desc: "Back up your catalog and individual sessions as JSON and restore or transfer anywhere." },
-  { icon: CreditCard, title: "Plus plan", desc: "Free plan (200 MB) or Plus at €2/month — default constellation, 800 MB storage and 15 AI scans/day." },
+const FEATURE_KEYS = [
+  { icon: Telescope, key: "sessions" },
+  { icon: Star, key: "catalog" },
+  { icon: Layers, key: "nav" },
+  { icon: Clock, key: "method" },
+  { icon: Download, key: "exports" },
+  { icon: Sparkles, key: "autosave" },
+  { icon: Heart, key: "favorite" },
+  { icon: Languages, key: "language" },
+  { icon: ScanLine, key: "ocr" },
+  { icon: Download, key: "json" },
+  { icon: CreditCard, key: "plus" },
 ];
 
 export default function About() {
-  const { lang, t } = useI18n();
-  const features = lang === "sk" ? FEATURES_SK : FEATURES_EN;
-  const isSk = lang === "sk";
+  const { t } = useI18n();
+  const features = FEATURE_KEYS.map((f) => ({
+    icon: f.icon,
+    title: t(`about.feature.${f.key}.title`),
+    desc: t(`about.feature.${f.key}.desc`),
+  }));
   return (
     <div className="min-h-screen">
       <AppHeader />
