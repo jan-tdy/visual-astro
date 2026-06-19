@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useMemo } from "react";
 import {
   Tolgee,
-  DevTools,
   BackendFetch,
   TolgeeProvider,
   FormatSimple,
@@ -750,7 +749,6 @@ const storedLang = (): Lang => {
 };
 
 const tolgee = Tolgee()
-  .use(DevTools())
   .use(
     BackendFetch({
       prefix: TOLGEE_API_URL,
