@@ -154,6 +154,8 @@ const dict = {
     "common.save": "Uložiť",
     "editor.addRow": "Pridať ďalší riadok rovnakej hviezdy",
     "editor.back": "Sessions",
+    "editor.alignLeft": "K ľavému okraju",
+    "editor.alignCenter": "Vycentrovať",
     "editor.close": "Zavrieť",
     "editor.col.mag": "Mag",
     "editor.col.note": "Nota",
