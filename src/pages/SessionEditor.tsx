@@ -80,27 +80,22 @@ export default function SessionEditor() {
   const [leftAlign, setLeftAlign] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Helpers: auto-format UT (e.g. "2246" -> "22:46", "246" -> "2:46")
+  // Helpers: auto-format UT — always strip non-digits then reinsert ":" based on length
   const formatUt = (raw: string) => {
-    let v = raw.replace(/\s+/g, ":");
-    if (!v.includes(":") && /^\d{3,4}$/.test(v)) {
-      if (v.length === 3) v = v[0] + ":" + v.slice(1);
-      else v = v.slice(0, 2) + ":" + v.slice(2);
-    }
-    return v;
+    const d = raw.replace(/\D/g, "").slice(0, 4);
+    if (d.length <= 2) return d;
+    if (d.length === 3) return d[0] + ":" + d.slice(1);
+    return d.slice(0, 2) + ":" + d.slice(2);
   };
-  // Helpers: format paso ("146" -> "14.6"); only insert decimal if no dot and >=3 digits
-  const formatPaso = (raw: string) => {
+  // Auto-format A/B comparator ("146" -> "14.6"); only insert decimal if no dot and >=3 digits
+  const formatAB = (raw: string) => {
+    // keep letters (comparator codes like "a","b") untouched
+    if (/[^\d.,\s]/.test(raw)) return raw.trim();
     let v = raw.replace(/[^\d.,]/g, "").replace(",", ".");
     if (!v.includes(".") && /^\d+$/.test(v) && v.length >= 3) {
       v = v.slice(0, -1) + "." + v.slice(-1);
     }
     return v;
-  };
-  const parsePaso = (v: string): number | null => {
-    if (v === "" || v == null) return null;
-    const n = parseFloat(v);
-    return Number.isFinite(n) ? n : null;
   };
 
   // Keyboard shortcut: "/" or Ctrl/Cmd+F focuses star search
