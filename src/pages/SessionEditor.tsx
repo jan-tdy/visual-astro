@@ -919,16 +919,16 @@ export default function SessionEditor() {
                         <tr className="border-b border-border/40 hover:bg-secondary/20">
                           <td className="px-2 py-1 font-medium sticky left-0 bg-card">{s.name}</td>
                           <td className="px-1 py-1">
-                            <Input data-cell={`${r}-0`} onKeyDown={handleCellKey} value={o?.a ?? ""} onChange={(e) => updateObs(s.id, { a: e.target.value || null })} className="h-7 text-xs rounded-sm" />
+                            <Input data-cell={`${r}-0`} onKeyDown={handleCellKey} value={o?.a ?? ""} onChange={(e) => updateObs(s.id, { a: formatAB(e.target.value) || null })} className="h-7 text-xs rounded-sm" />
                           </td>
                           <td className="px-1 py-1">
-                            <Input data-cell={`${r}-1`} onKeyDown={handleCellKey} inputMode="decimal" value={o?.pasos_a ?? ""} onChange={(e) => updateObs(s.id, { pasos_a: parsePaso(formatPaso(e.target.value)) })} className="h-7 text-xs rounded-sm" />
+                            <Input data-cell={`${r}-1`} onKeyDown={handleCellKey} inputMode="numeric" value={o?.pasos_a ?? ""} onChange={(e) => updateObs(s.id, { pasos_a: e.target.value === "" ? null : Number(e.target.value) })} className="h-7 text-xs rounded-sm" />
                           </td>
                           <td className="px-1 py-1">
-                            <Input data-cell={`${r}-2`} onKeyDown={handleCellKey} inputMode="decimal" value={o?.pasos_b ?? ""} onChange={(e) => updateObs(s.id, { pasos_b: parsePaso(formatPaso(e.target.value)) })} className="h-7 text-xs rounded-sm" />
+                            <Input data-cell={`${r}-2`} onKeyDown={handleCellKey} inputMode="numeric" value={o?.pasos_b ?? ""} onChange={(e) => updateObs(s.id, { pasos_b: e.target.value === "" ? null : Number(e.target.value) })} className="h-7 text-xs rounded-sm" />
                           </td>
                           <td className="px-1 py-1">
-                            <Input data-cell={`${r}-3`} onKeyDown={handleCellKey} value={o?.b ?? ""} onChange={(e) => updateObs(s.id, { b: e.target.value || null })} className="h-7 text-xs rounded-sm" />
+                            <Input data-cell={`${r}-3`} onKeyDown={handleCellKey} value={o?.b ?? ""} onChange={(e) => updateObs(s.id, { b: formatAB(e.target.value) || null })} className="h-7 text-xs rounded-sm" />
                           </td>
                           <td className="px-1 py-1">
                             <Input data-cell={`${r}-4`} onKeyDown={handleCellKey} value={o?.limit_value ?? ""} onChange={(e) => updateObs(s.id, { limit_value: e.target.value || null })} className="h-7 text-xs rounded-sm" placeholder="<14.9" />
@@ -971,16 +971,16 @@ export default function SessionEditor() {
                             <tr key={`${s.id}-extra-${ei}`} className="border-b border-border/40 bg-secondary/10">
                               <td className="px-2 py-1 text-muted-foreground sticky left-0 bg-card pl-6">↳ {s.name}</td>
                               <td className="px-1 py-1">
-                                <Input value={eo.a ?? ""} onChange={(e) => updateExtra(s.id, ei, { a: e.target.value || null })} className="h-7 text-xs rounded-sm" />
+                                <Input value={eo.a ?? ""} onChange={(e) => updateExtra(s.id, ei, { a: formatAB(e.target.value) || null })} className="h-7 text-xs rounded-sm" />
                               </td>
                               <td className="px-1 py-1">
-                                <Input inputMode="decimal" value={eo.pasos_a ?? ""} onChange={(e) => updateExtra(s.id, ei, { pasos_a: parsePaso(formatPaso(e.target.value)) })} className="h-7 text-xs rounded-sm" />
+                                <Input inputMode="numeric" value={eo.pasos_a ?? ""} onChange={(e) => updateExtra(s.id, ei, { pasos_a: e.target.value === "" ? null : Number(e.target.value) })} className="h-7 text-xs rounded-sm" />
                               </td>
                               <td className="px-1 py-1">
-                                <Input inputMode="decimal" value={eo.pasos_b ?? ""} onChange={(e) => updateExtra(s.id, ei, { pasos_b: parsePaso(formatPaso(e.target.value)) })} className="h-7 text-xs rounded-sm" />
+                                <Input inputMode="numeric" value={eo.pasos_b ?? ""} onChange={(e) => updateExtra(s.id, ei, { pasos_b: e.target.value === "" ? null : Number(e.target.value) })} className="h-7 text-xs rounded-sm" />
                               </td>
                               <td className="px-1 py-1">
-                                <Input value={eo.b ?? ""} onChange={(e) => updateExtra(s.id, ei, { b: e.target.value || null })} className="h-7 text-xs rounded-sm" />
+                                <Input value={eo.b ?? ""} onChange={(e) => updateExtra(s.id, ei, { b: formatAB(e.target.value) || null })} className="h-7 text-xs rounded-sm" />
                               </td>
                               <td className="px-1 py-1">
                                 <Input value={eo.limit_value ?? ""} onChange={(e) => updateExtra(s.id, ei, { limit_value: e.target.value || null })} className="h-7 text-xs rounded-sm" placeholder="<14.9" />
