@@ -1,0 +1,1 @@
+ALTER TABLE public.observations ALTER COLUMN pasos_a TYPE numeric USING pasos_a::numeric, ALTER COLUMN pasos_b TYPE numeric USING pasos_b::numeric;
