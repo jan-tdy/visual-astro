@@ -6,7 +6,7 @@ import { AppHeader } from "@/components/app/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus, ScanLine, Printer, Search } from "lucide-react";
+import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus, ScanLine, Printer, Search, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
 import { buildAAVSO, buildMEDUZA, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
@@ -77,6 +77,51 @@ export default function SessionEditor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const paperInputRef = useRef<HTMLInputElement>(null);
   const [ocrBusy, setOcrBusy] = useState(false);
+  const [leftAlign, setLeftAlign] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Helpers: auto-format UT (e.g. "2246" -> "22:46", "246" -> "2:46")
+  const formatUt = (raw: string) => {
+    let v = raw.replace(/\s+/g, ":");
+    if (!v.includes(":") && /^\d{3,4}$/.test(v)) {
+      if (v.length === 3) v = v[0] + ":" + v.slice(1);
+      else v = v.slice(0, 2) + ":" + v.slice(2);
+    }
+    return v;
+  };
+  // Helpers: format paso ("146" -> "14.6"); only insert decimal if no dot and >=3 digits
+  const formatPaso = (raw: string) => {
+    let v = raw.replace(/[^\d.,]/g, "").replace(",", ".");
+    if (!v.includes(".") && /^\d+$/.test(v) && v.length >= 3) {
+      v = v.slice(0, -1) + "." + v.slice(-1);
+    }
+    return v;
+  };
+  const parsePaso = (v: string): number | null => {
+    if (v === "" || v == null) return null;
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  // Keyboard shortcut: "/" or Ctrl/Cmd+F focuses star search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      const inField = tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select?.();
+        return;
+      }
+      if (!inField && e.key === "/") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   // Load session, stars, observations, profile
   useEffect(() => {
@@ -661,10 +706,21 @@ export default function SessionEditor() {
   return (
     <div className="min-h-screen">
       <AppHeader />
-      <main className="container mx-auto px-4 py-6 max-w-6xl">
-        <Button variant="ghost" size="sm" onClick={() => nav("/")} className="mb-3">
-          <ChevronLeft className="h-4 w-4 mr-1" /> {t("editor.back")}
-        </Button>
+      <main className={leftAlign ? "pl-4 pr-4 py-6 max-w-6xl" : "container mx-auto px-4 py-6 max-w-6xl"}>
+        <div className="flex items-center justify-between mb-3">
+          <Button variant="ghost" size="sm" onClick={() => nav("/")}>
+            <ChevronLeft className="h-4 w-4 mr-1" /> {t("editor.back")}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLeftAlign((v) => !v)}
+            title={leftAlign ? t("editor.alignCenter") : t("editor.alignLeft")}
+          >
+            {leftAlign ? <PanelLeftOpen className="h-4 w-4 mr-1" /> : <PanelLeftClose className="h-4 w-4 mr-1" />}
+            {leftAlign ? t("editor.alignCenter") : t("editor.alignLeft")}
+          </Button>
+        </div>
 
         {/* Header card: datetime + JD + counters + exports */}
         <Card className="p-4 mb-4">
@@ -793,6 +849,7 @@ export default function SessionEditor() {
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
+              ref={searchInputRef}
               value={starSearch}
               onChange={(e) => setStarSearch(e.target.value)}
               placeholder={t("editor.searchStars")}
