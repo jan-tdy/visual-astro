@@ -109,9 +109,10 @@ export default function SessionEditor() {
         searchInputRef.current?.select?.();
         return;
       }
-      if (!inField && e.key === "/") {
+      if (e.key === "/" && (e.target as HTMLElement) !== searchInputRef.current) {
         e.preventDefault();
         searchInputRef.current?.focus();
+        searchInputRef.current?.select?.();
       }
     };
     window.addEventListener("keydown", handler);
