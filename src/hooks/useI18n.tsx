@@ -500,6 +500,8 @@ const dict = {
     "common.save": "Save",
     "editor.addRow": "Add another row for the same star",
     "editor.back": "Sessions",
+    "editor.alignLeft": "Align left",
+    "editor.alignCenter": "Center",
     "editor.close": "Close",
     "editor.col.mag": "Mag",
     "editor.col.note": "Note",
