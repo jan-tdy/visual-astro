@@ -87,14 +87,38 @@ function parseSIPS(
   return { rows, varName, filter, errors };
 }
 
-function buildVSNETFromSIPS(rows: SipsRow[], starCode: string, obsCode: string): string {
+/**
+ * VSNET CCD line format used by AAVSO/VSNET tools:
+ *   CODE      yyyymmdd.ddd  mag  observer  filter
+ * JD is converted to fractional UT date; filter is appended at the end.
+ */
+function vsnetFilter(f: string | null): string {
+  if (!f) return "C"; // unfiltered / clear
+  const key = f.toUpperCase();
+  // Map common SIPS filter labels to VSNET conventions
+  const map: Record<string, string> = {
+    V: "V", B: "B", R: "R", I: "I", U: "U",
+    TR: "TR", TG: "TG", TB: "TB",
+    CV: "CV", CR: "CR", CBB: "CBB",
+    LPR: "CV", CLEAR: "C", CLR: "C", NONE: "C",
+  };
+  return map[key] ?? key;
+}
+
+function buildVSNETFromSIPS(
+  rows: SipsRow[],
+  starCode: string,
+  obsCode: string,
+  filter: string | null,
+): string {
   const code = starCode.trim().padEnd(8, " ");
   const obs = obsCode.trim();
+  const filt = vsnetFilter(filter);
   const out: string[] = [];
   for (const r of rows) {
     const dateStr = vsnetDateFromJD(r.jd);
     const magStr = r.mag.toFixed(4).padStart(7, " ");
-    out.push(`${code} ${dateStr} ${magStr} ${obs}`);
+    out.push(`${code} ${dateStr} ${magStr} ${obs} ${filt}`);
   }
   return out.join("\n") + (out.length ? "\n" : "");
 }
@@ -183,7 +207,7 @@ export default function Tools() {
   const dlVSNET = () => {
     if (!starCode.trim() || !obsCode.trim()) return;
     if (parsed.rows.length === 0) return;
-    const text = buildVSNETFromSIPS(parsed.rows, starCode, obsCode);
+    const text = buildVSNETFromSIPS(parsed.rows, starCode, obsCode, parsed.filter);
     const name = `${(starCode || "vsnet").trim()}.txt`;
     downloadText(name, text);
     openPortal("vsnet");
