@@ -79,6 +79,11 @@ export default function SessionEditor() {
   const [ocrBusy, setOcrBusy] = useState(false);
   const [leftAlign, setLeftAlign] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  type ExportSort = "catalog" | "name" | "constellation" | "ut" | "aavso";
+  const [exportSort, setExportSort] = useState<ExportSort>(() => {
+    try { return (localStorage.getItem("export_sort") as ExportSort) || "catalog"; } catch { return "catalog"; }
+  });
+  useEffect(() => { try { localStorage.setItem("export_sort", exportSort); } catch {} }, [exportSort]);
 
   // Helpers: auto-format UT — always strip non-digits then reinsert ":" based on length
   const formatUt = (raw: string) => {
@@ -402,6 +407,8 @@ export default function SessionEditor() {
   const buildExportRows = (): ExportRow[] => {
     const byId = new Map(stars.map((s) => [s.id, s]));
     const rows: ExportRow[] = [];
+    const catalogIdx = new Map(stars.map((s, i) => [s.id, i] as const));
+    const obsStarIds: { id: string; o: Obs }[] = [];
     for (const o of Object.values(obsByStar)) {
       const s = byId.get(o.star_id);
       if (!s) continue;
@@ -415,6 +422,7 @@ export default function SessionEditor() {
         a: o.a, pasos_a: o.pasos_a, pasos_b: o.pasos_b, b: o.b,
         limit_value: o.limit_value, note: o.note, ut_time: o.ut_time,
       });
+      obsStarIds.push({ id: o.star_id, o });
     }
     for (const [starId, arr] of Object.entries(extraByStar)) {
       const s = byId.get(starId);
@@ -429,9 +437,38 @@ export default function SessionEditor() {
           a: o.a, pasos_a: o.pasos_a, pasos_b: o.pasos_b, b: o.b,
           limit_value: o.limit_value, note: o.note, ut_time: o.ut_time,
         });
+        obsStarIds.push({ id: starId, o });
       }
     }
-    return rows;
+    const utMin = (v?: string | null) => {
+      const m = String(v ?? "").match(/(\d{1,2})[:.\s]+(\d{1,2})/);
+      if (!m) return Number.POSITIVE_INFINITY;
+      const h = parseInt(m[1]);
+      const mm = parseInt(m[2]);
+      // Times 0..11:59 belong to next day in observing night
+      return (h < 12 ? h + 24 : h) * 60 + mm;
+    };
+    const decorated = rows.map((r, i) => ({ r, i, star: byId.get(obsStarIds[i]?.id ?? "") }));
+    decorated.sort((A, B) => {
+      switch (exportSort) {
+        case "name":
+          return A.r.star_name.localeCompare(B.r.star_name);
+        case "constellation":
+          return (A.star?.constellation ?? "").localeCompare(B.star?.constellation ?? "")
+            || A.r.star_name.localeCompare(B.r.star_name);
+        case "ut":
+          return utMin(A.r.ut_time) - utMin(B.r.ut_time);
+        case "aavso":
+          return (A.r.aavso_code ?? "").localeCompare(B.r.aavso_code ?? "");
+        case "catalog":
+        default: {
+          const ai = catalogIdx.get(obsStarIds[A.i]?.id ?? "") ?? 0;
+          const bi = catalogIdx.get(obsStarIds[B.i]?.id ?? "") ?? 0;
+          return ai - bi;
+        }
+      }
+    });
+    return decorated.map((d) => d.r);
   };
 
   const exportFile = (kind: "vsnet" | "aavso" | "meduza", preview = false) => {
