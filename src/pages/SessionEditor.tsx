@@ -79,6 +79,11 @@ export default function SessionEditor() {
   const [ocrBusy, setOcrBusy] = useState(false);
   const [leftAlign, setLeftAlign] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  type ExportSort = "catalog" | "name" | "constellation" | "ut" | "aavso";
+  const [exportSort, setExportSort] = useState<ExportSort>(() => {
+    try { return (localStorage.getItem("export_sort") as ExportSort) || "catalog"; } catch { return "catalog"; }
+  });
+  useEffect(() => { try { localStorage.setItem("export_sort", exportSort); } catch {} }, [exportSort]);
 
   // Helpers: auto-format UT — always strip non-digits then reinsert ":" based on length
   const formatUt = (raw: string) => {
@@ -402,6 +407,8 @@ export default function SessionEditor() {
   const buildExportRows = (): ExportRow[] => {
     const byId = new Map(stars.map((s) => [s.id, s]));
     const rows: ExportRow[] = [];
+    const catalogIdx = new Map(stars.map((s, i) => [s.id, i] as const));
+    const obsStarIds: { id: string; o: Obs }[] = [];
     for (const o of Object.values(obsByStar)) {
       const s = byId.get(o.star_id);
       if (!s) continue;
@@ -415,6 +422,7 @@ export default function SessionEditor() {
         a: o.a, pasos_a: o.pasos_a, pasos_b: o.pasos_b, b: o.b,
         limit_value: o.limit_value, note: o.note, ut_time: o.ut_time,
       });
+      obsStarIds.push({ id: o.star_id, o });
     }
     for (const [starId, arr] of Object.entries(extraByStar)) {
       const s = byId.get(starId);
@@ -429,9 +437,38 @@ export default function SessionEditor() {
           a: o.a, pasos_a: o.pasos_a, pasos_b: o.pasos_b, b: o.b,
           limit_value: o.limit_value, note: o.note, ut_time: o.ut_time,
         });
+        obsStarIds.push({ id: starId, o });
       }
     }
-    return rows;
+    const utMin = (v?: string | null) => {
+      const m = String(v ?? "").match(/(\d{1,2})[:.\s]+(\d{1,2})/);
+      if (!m) return Number.POSITIVE_INFINITY;
+      const h = parseInt(m[1]);
+      const mm = parseInt(m[2]);
+      // Times 0..11:59 belong to next day in observing night
+      return (h < 12 ? h + 24 : h) * 60 + mm;
+    };
+    const decorated = rows.map((r, i) => ({ r, i, star: byId.get(obsStarIds[i]?.id ?? "") }));
+    decorated.sort((A, B) => {
+      switch (exportSort) {
+        case "name":
+          return A.r.star_name.localeCompare(B.r.star_name);
+        case "constellation":
+          return (A.star?.constellation ?? "").localeCompare(B.star?.constellation ?? "")
+            || A.r.star_name.localeCompare(B.r.star_name);
+        case "ut":
+          return utMin(A.r.ut_time) - utMin(B.r.ut_time);
+        case "aavso":
+          return (A.r.aavso_code ?? "").localeCompare(B.r.aavso_code ?? "");
+        case "catalog":
+        default: {
+          const ai = catalogIdx.get(obsStarIds[A.i]?.id ?? "") ?? 0;
+          const bi = catalogIdx.get(obsStarIds[B.i]?.id ?? "") ?? 0;
+          return ai - bi;
+        }
+      }
+    });
+    return decorated.map((d) => d.r);
   };
 
   const exportFile = (kind: "vsnet" | "aavso" | "meduza", preview = false) => {
@@ -789,6 +826,20 @@ export default function SessionEditor() {
           )}
 
           <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
+            <div className="flex items-center gap-2 mr-2">
+              <label className="text-xs text-muted-foreground">{t("editor.exportSort")}:</label>
+              <select
+                value={exportSort}
+                onChange={(e) => setExportSort(e.target.value as any)}
+                className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+              >
+                <option value="catalog">{t("editor.sort.catalog")}</option>
+                <option value="name">{t("editor.sort.name")}</option>
+                <option value="constellation">{t("editor.sort.constellation")}</option>
+                <option value="ut">{t("editor.sort.ut")}</option>
+                <option value="aavso">{t("editor.sort.aavso")}</option>
+              </select>
+            </div>
             {(["vsnet", "aavso", "meduza"] as const).map((k) => (
               <div key={k} className="flex gap-1">
                 <Button size="sm" onClick={() => exportFile(k)}>
@@ -899,6 +950,7 @@ export default function SessionEditor() {
                       <th className="px-2 py-1.5 sticky left-0 bg-secondary/60">{t("editor.col.star")}</th>
                       <th className="px-2 py-1.5 w-16">A</th>
                       <th className="px-2 py-1.5 w-14">{t("editor.col.pasoA")}</th>
+                      <th className="px-1 py-1.5 w-6 text-center text-muted-foreground">V</th>
                       <th className="px-2 py-1.5 w-14">{t("editor.col.pasoB")}</th>
                       <th className="px-2 py-1.5 w-16">B</th>
                       <th className="px-2 py-1.5 w-20">&lt;/=</th>
@@ -922,10 +974,11 @@ export default function SessionEditor() {
                             <Input data-cell={`${r}-0`} onKeyDown={handleCellKey} value={o?.a ?? ""} onChange={(e) => updateObs(s.id, { a: formatAB(e.target.value) || null })} className="h-7 text-xs rounded-sm" />
                           </td>
                           <td className="px-1 py-1">
-                            <Input data-cell={`${r}-1`} onKeyDown={handleCellKey} inputMode="numeric" value={o?.pasos_a ?? ""} onChange={(e) => updateObs(s.id, { pasos_a: e.target.value === "" ? null : Number(e.target.value) })} className="h-7 text-xs rounded-sm" />
+                            <Input data-cell={`${r}-1`} onKeyDown={handleCellKey} type="number" step={1} min={0} value={o?.pasos_a ?? ""} onChange={(e) => updateObs(s.id, { pasos_a: e.target.value === "" ? null : parseInt(e.target.value, 10) })} className="h-7 text-xs rounded-sm" />
                           </td>
+                          <td className="px-1 py-1 text-center text-xs text-muted-foreground font-semibold">V</td>
                           <td className="px-1 py-1">
-                            <Input data-cell={`${r}-2`} onKeyDown={handleCellKey} inputMode="numeric" value={o?.pasos_b ?? ""} onChange={(e) => updateObs(s.id, { pasos_b: e.target.value === "" ? null : Number(e.target.value) })} className="h-7 text-xs rounded-sm" />
+                            <Input data-cell={`${r}-2`} onKeyDown={handleCellKey} type="number" step={1} min={0} value={o?.pasos_b ?? ""} onChange={(e) => updateObs(s.id, { pasos_b: e.target.value === "" ? null : parseInt(e.target.value, 10) })} className="h-7 text-xs rounded-sm" />
                           </td>
                           <td className="px-1 py-1">
                             <Input data-cell={`${r}-3`} onKeyDown={handleCellKey} value={o?.b ?? ""} onChange={(e) => updateObs(s.id, { b: formatAB(e.target.value) || null })} className="h-7 text-xs rounded-sm" />
@@ -974,10 +1027,11 @@ export default function SessionEditor() {
                                 <Input value={eo.a ?? ""} onChange={(e) => updateExtra(s.id, ei, { a: formatAB(e.target.value) || null })} className="h-7 text-xs rounded-sm" />
                               </td>
                               <td className="px-1 py-1">
-                                <Input inputMode="numeric" value={eo.pasos_a ?? ""} onChange={(e) => updateExtra(s.id, ei, { pasos_a: e.target.value === "" ? null : Number(e.target.value) })} className="h-7 text-xs rounded-sm" />
+                                <Input type="number" step={1} min={0} value={eo.pasos_a ?? ""} onChange={(e) => updateExtra(s.id, ei, { pasos_a: e.target.value === "" ? null : parseInt(e.target.value, 10) })} className="h-7 text-xs rounded-sm" />
                               </td>
+                              <td className="px-1 py-1 text-center text-xs text-muted-foreground font-semibold">V</td>
                               <td className="px-1 py-1">
-                                <Input inputMode="numeric" value={eo.pasos_b ?? ""} onChange={(e) => updateExtra(s.id, ei, { pasos_b: e.target.value === "" ? null : Number(e.target.value) })} className="h-7 text-xs rounded-sm" />
+                                <Input type="number" step={1} min={0} value={eo.pasos_b ?? ""} onChange={(e) => updateExtra(s.id, ei, { pasos_b: e.target.value === "" ? null : parseInt(e.target.value, 10) })} className="h-7 text-xs rounded-sm" />
                               </td>
                               <td className="px-1 py-1">
                                 <Input value={eo.b ?? ""} onChange={(e) => updateExtra(s.id, ei, { b: formatAB(e.target.value) || null })} className="h-7 text-xs rounded-sm" />
