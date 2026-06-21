@@ -826,6 +826,20 @@ export default function SessionEditor() {
           )}
 
           <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
+            <div className="flex items-center gap-2 mr-2">
+              <label className="text-xs text-muted-foreground">{t("editor.exportSort")}:</label>
+              <select
+                value={exportSort}
+                onChange={(e) => setExportSort(e.target.value as any)}
+                className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+              >
+                <option value="catalog">{t("editor.sort.catalog")}</option>
+                <option value="name">{t("editor.sort.name")}</option>
+                <option value="constellation">{t("editor.sort.constellation")}</option>
+                <option value="ut">{t("editor.sort.ut")}</option>
+                <option value="aavso">{t("editor.sort.aavso")}</option>
+              </select>
+            </div>
             {(["vsnet", "aavso", "meduza"] as const).map((k) => (
               <div key={k} className="flex gap-1">
                 <Button size="sm" onClick={() => exportFile(k)}>
