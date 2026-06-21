@@ -950,6 +950,7 @@ export default function SessionEditor() {
                       <th className="px-2 py-1.5 sticky left-0 bg-secondary/60">{t("editor.col.star")}</th>
                       <th className="px-2 py-1.5 w-16">A</th>
                       <th className="px-2 py-1.5 w-14">{t("editor.col.pasoA")}</th>
+                      <th className="px-1 py-1.5 w-6 text-center text-muted-foreground">V</th>
                       <th className="px-2 py-1.5 w-14">{t("editor.col.pasoB")}</th>
                       <th className="px-2 py-1.5 w-16">B</th>
                       <th className="px-2 py-1.5 w-20">&lt;/=</th>
@@ -973,10 +974,11 @@ export default function SessionEditor() {
                             <Input data-cell={`${r}-0`} onKeyDown={handleCellKey} value={o?.a ?? ""} onChange={(e) => updateObs(s.id, { a: formatAB(e.target.value) || null })} className="h-7 text-xs rounded-sm" />
                           </td>
                           <td className="px-1 py-1">
-                            <Input data-cell={`${r}-1`} onKeyDown={handleCellKey} inputMode="numeric" value={o?.pasos_a ?? ""} onChange={(e) => updateObs(s.id, { pasos_a: e.target.value === "" ? null : Number(e.target.value) })} className="h-7 text-xs rounded-sm" />
+                            <Input data-cell={`${r}-1`} onKeyDown={handleCellKey} type="number" step={1} min={0} value={o?.pasos_a ?? ""} onChange={(e) => updateObs(s.id, { pasos_a: e.target.value === "" ? null : parseInt(e.target.value, 10) })} className="h-7 text-xs rounded-sm" />
                           </td>
+                          <td className="px-1 py-1 text-center text-xs text-muted-foreground font-semibold">V</td>
                           <td className="px-1 py-1">
-                            <Input data-cell={`${r}-2`} onKeyDown={handleCellKey} inputMode="numeric" value={o?.pasos_b ?? ""} onChange={(e) => updateObs(s.id, { pasos_b: e.target.value === "" ? null : Number(e.target.value) })} className="h-7 text-xs rounded-sm" />
+                            <Input data-cell={`${r}-2`} onKeyDown={handleCellKey} type="number" step={1} min={0} value={o?.pasos_b ?? ""} onChange={(e) => updateObs(s.id, { pasos_b: e.target.value === "" ? null : parseInt(e.target.value, 10) })} className="h-7 text-xs rounded-sm" />
                           </td>
                           <td className="px-1 py-1">
                             <Input data-cell={`${r}-3`} onKeyDown={handleCellKey} value={o?.b ?? ""} onChange={(e) => updateObs(s.id, { b: formatAB(e.target.value) || null })} className="h-7 text-xs rounded-sm" />
@@ -1025,10 +1027,11 @@ export default function SessionEditor() {
                                 <Input value={eo.a ?? ""} onChange={(e) => updateExtra(s.id, ei, { a: formatAB(e.target.value) || null })} className="h-7 text-xs rounded-sm" />
                               </td>
                               <td className="px-1 py-1">
-                                <Input inputMode="numeric" value={eo.pasos_a ?? ""} onChange={(e) => updateExtra(s.id, ei, { pasos_a: e.target.value === "" ? null : Number(e.target.value) })} className="h-7 text-xs rounded-sm" />
+                                <Input type="number" step={1} min={0} value={eo.pasos_a ?? ""} onChange={(e) => updateExtra(s.id, ei, { pasos_a: e.target.value === "" ? null : parseInt(e.target.value, 10) })} className="h-7 text-xs rounded-sm" />
                               </td>
+                              <td className="px-1 py-1 text-center text-xs text-muted-foreground font-semibold">V</td>
                               <td className="px-1 py-1">
-                                <Input inputMode="numeric" value={eo.pasos_b ?? ""} onChange={(e) => updateExtra(s.id, ei, { pasos_b: e.target.value === "" ? null : Number(e.target.value) })} className="h-7 text-xs rounded-sm" />
+                                <Input type="number" step={1} min={0} value={eo.pasos_b ?? ""} onChange={(e) => updateExtra(s.id, ei, { pasos_b: e.target.value === "" ? null : parseInt(e.target.value, 10) })} className="h-7 text-xs rounded-sm" />
                               </td>
                               <td className="px-1 py-1">
                                 <Input value={eo.b ?? ""} onChange={(e) => updateExtra(s.id, ei, { b: formatAB(e.target.value) || null })} className="h-7 text-xs rounded-sm" />
