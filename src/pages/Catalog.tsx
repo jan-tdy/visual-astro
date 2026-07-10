@@ -302,6 +302,7 @@ export default function Catalog() {
       <StarDialog
         open={!!editing || creating}
         star={editing}
+        usedConstellations={Array.from(new Set(stars.map((s) => s.constellation))).sort()}
         onClose={() => { setEditing(null); setCreating(false); }}
         onSave={(s) => {
           if (editing) saveEdit({ ...editing, ...s });
@@ -352,10 +353,11 @@ export default function Catalog() {
 }
 
 function StarDialog({
-  open, star, onClose, onSave,
+  open, star, usedConstellations, onClose, onSave,
 }: {
   open: boolean;
   star: Star | null;
+  usedConstellations: string[];
   onClose: () => void;
   onSave: (s: any) => void;
 }) {
@@ -372,12 +374,12 @@ function StarDialog({
         vsnet_code: star.vsnet_code ?? "", aavso_code: star.aavso_code ?? "",
         chart_id: star.chart_id ?? "", notes: star.notes ?? "",
       });
-      setConstMode((CONSTELLATIONS as readonly string[]).includes(star.constellation) ? "preset" : "other");
+      setConstMode(usedConstellations.includes(star.constellation) ? "preset" : "other");
     } else if (open) {
       setForm({ name: "", constellation: "", type: "VISUAL", vsnet_code: "", aavso_code: "", chart_id: "", notes: "" });
       setConstMode("preset");
     }
-  }, [star, open]);
+  }, [star, open, usedConstellations]);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -411,7 +413,7 @@ function StarDialog({
             >
               <SelectTrigger><SelectValue placeholder={t("catalog.dialog.constPick")} /></SelectTrigger>
               <SelectContent className="max-h-72">
-                {CONSTELLATIONS.map((c) => (
+                {usedConstellations.map((c) => (
                   <SelectItem key={c} value={c}>{c}</SelectItem>
                 ))}
                 <SelectItem value={OTHER_CONST}>{t("catalog.dialog.constOther")}</SelectItem>
