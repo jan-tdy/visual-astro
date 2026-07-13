@@ -170,8 +170,9 @@ export default function SessionEditor() {
     const unmatched: string[] = [];
     let matched = 0;
     for (const line of lines) {
+      if (!line.trim()) continue;
       const p = parseRawLine(line, tokens);
-      if (!p) continue;
+      if (!p) { unmatched.push(line.trim()); continue; }
       const star = byToken.get(p.starToken);
       if (!star) { unmatched.push(line.trim()); continue; }
       updateObs(star.id, {
