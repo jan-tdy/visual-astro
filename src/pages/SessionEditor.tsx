@@ -836,6 +836,7 @@ export default function SessionEditor() {
           <Button variant="ghost" size="sm" onClick={() => nav("/")}>
             <ChevronLeft className="h-4 w-4 mr-1" /> {t("editor.back")}
           </Button>
+          <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="sm"
@@ -854,6 +855,7 @@ export default function SessionEditor() {
             {rawMode ? <TableIcon className="h-4 w-4 mr-1" /> : <Type className="h-4 w-4 mr-1" />}
             {rawMode ? "Tabuľka" : "Raw"}
           </Button>
+          </div>
         </div>
 
         {/* Header card: datetime + JD + counters + exports */}
@@ -993,6 +995,7 @@ export default function SessionEditor() {
         </Card>
 
         {/* Constellation nav (matches user image) */}
+        {!rawMode && (
         <Card className="p-4 mb-4 sticky top-[57px] z-20 backdrop-blur bg-card/80">
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -1029,8 +1032,50 @@ export default function SessionEditor() {
             ))}
           </div>
         </Card>
+        )}
 
-        {/* Sections per constellation */}
+        {rawMode ? (
+          <Card className="p-4 mb-4">
+            <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+              <div>
+                <div className="font-semibold text-sm">Raw zápis</div>
+                <div className="text-xs text-muted-foreground">
+                  Jeden riadok = jedno pozorovanie. Formát:{" "}
+                  <code className="font-mono">hviezdaA{`{pasoA}`}v{`{pasoB}`}BUT</code>{" "}
+                  (napr. <code className="font-mono">agdraf3v1g2108</code> alebo{" "}
+                  <code className="font-mono">mvlyr12-51v312-92110</code>). Pomlčka
+                  v A/B znamená desatinnú bodku.
+                </div>
+              </div>
+              <Button size="sm" onClick={applyRaw} disabled={!rawText.trim()}>
+                Použiť ({rawText.split(/\r?\n/).filter((l) => l.trim()).length})
+              </Button>
+            </div>
+            <textarea
+              value={rawText}
+              onChange={(e) => setRawText(e.target.value)}
+              spellCheck={false}
+              autoFocus
+              placeholder={"agdraf3v1g2108\nmvlyr12-51v312-92110\n..."}
+              className="w-full min-h-[50vh] rounded-md border border-input bg-background p-3 font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            {rawReport && (
+              <div className="mt-3 text-xs">
+                <div className="text-primary">Uložené: {rawReport.matched}</div>
+                {rawReport.unmatched.length > 0 && (
+                  <div className="mt-1 text-destructive">
+                    Nerozpoznané ({rawReport.unmatched.length}):
+                    <ul className="list-disc pl-5 mt-1 space-y-0.5 font-mono">
+                      {rawReport.unmatched.slice(0, 20).map((l, i) => (
+                        <li key={i}>{l}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+        ) : (
         <div className="space-y-6">
           {grouped.order.length === 0 && (
             <Card className="p-8 text-center text-sm text-muted-foreground">
@@ -1171,6 +1216,7 @@ export default function SessionEditor() {
             </div>
           ))}
         </div>
+        )}
       </main>
 
       {/* Preview overlay */}
