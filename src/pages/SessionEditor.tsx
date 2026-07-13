@@ -6,7 +6,7 @@ import { AppHeader } from "@/components/app/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus, ScanLine, Printer, Search, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus, ScanLine, Printer, Search, PanelLeftClose, PanelLeftOpen, Table as TableIcon, Type } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
 import { buildAAVSO, buildMEDUZA, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
@@ -79,11 +79,103 @@ export default function SessionEditor() {
   const [ocrBusy, setOcrBusy] = useState(false);
   const [leftAlign, setLeftAlign] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [rawMode, setRawMode] = useState(false);
+  const [rawText, setRawText] = useState("");
+  const [rawReport, setRawReport] = useState<{ matched: number; unmatched: string[] } | null>(null);
   type ExportSort = "catalog" | "name" | "constellation" | "ut" | "aavso";
   const [exportSort, setExportSort] = useState<ExportSort>(() => {
     try { return (localStorage.getItem("export_sort") as ExportSort) || "catalog"; } catch { return "catalog"; }
   });
   useEffect(() => { try { localStorage.setItem("export_sort", exportSort); } catch {} }, [exportSort]);
+
+  // ---- RAW MODE: parse one compact line into an observation ----
+  // Format: <starLetters><A><pasoA>v<pasoB><B><UT>
+  // - star: leading letters (matched by name, spaces stripped, case-insensitive)
+  // - 'v' (upper/lower) separates left (A + pasoA) and right (pasoB + B + UT)
+  // - pasoA = last single digit of left; A = everything before
+  // - pasoB = first single digit of right; then B; UT = trailing 3-4 digits
+  // - dashes '-' inside A/B are converted to '.' (so "12-5" -> "12.5")
+  // Examples:
+  //   "agdraf3v1g2108"       -> AG Dra   A=f    pA=3 pB=1 B=g    UT=21:08
+  //   "mvlyr12-51v312-92110" -> MV Lyr   A=12.5 pA=1 pB=3 B=12.9 UT=21:10
+  type ParsedRaw = {
+    starToken: string;
+    a: string | null; pasos_a: number | null;
+    pasos_b: number | null; b: string | null;
+    ut_time: string | null;
+  };
+  const parseRawLine = (line: string): ParsedRaw | null => {
+    const s = line.trim().toLowerCase();
+    if (!s) return null;
+    const m = /^([a-zà-ÿ][a-zà-ÿ\s]*?)(\d.*)$/.exec(s);
+    if (!m) return null;
+    const starToken = m[1].replace(/\s+/g, "");
+    const rest = m[2];
+    const vIdx = rest.search(/v/i);
+    const left = vIdx >= 0 ? rest.slice(0, vIdx) : rest;
+    const right = vIdx >= 0 ? rest.slice(vIdx + 1) : "";
+    // left -> A, pasoA (last single digit)
+    let a: string | null = null;
+    let pasos_a: number | null = null;
+    if (left) {
+      const lm = /^(.*)(\d)$/.exec(left);
+      if (lm) {
+        a = lm[1] || null;
+        pasos_a = parseInt(lm[2], 10);
+      } else {
+        a = left;
+      }
+    }
+    // right -> pasoB (first single digit), B, UT (trailing 3-4 digits)
+    let pasos_b: number | null = null;
+    let b: string | null = null;
+    let ut_time: string | null = null;
+    if (right) {
+      let inner = right;
+      const um = /^(.*)(\d{4})$/.exec(inner) ?? /^(.*)(\d{3})$/.exec(inner);
+      if (um) {
+        inner = um[1];
+        const d = um[2];
+        ut_time = d.length === 3 ? d[0] + ":" + d.slice(1) : d.slice(0, 2) + ":" + d.slice(2);
+      }
+      const pm = /^(\d)(.*)$/.exec(inner);
+      if (pm) {
+        pasos_b = parseInt(pm[1], 10);
+        b = pm[2] || null;
+      } else if (inner) {
+        b = inner;
+      }
+    }
+    const dashToDot = (v: string | null) => (v ? v.replace(/-/g, ".") : v);
+    return { starToken, a: dashToDot(a), pasos_a, pasos_b, b: dashToDot(b), ut_time };
+  };
+
+  const applyRaw = () => {
+    const norm = (x: string) => x.toLowerCase().replace(/\s+/g, "");
+    const byToken = new Map<string, Star>();
+    for (const s of stars) {
+      byToken.set(norm(s.name), s);
+      if (s.vsnet_code) byToken.set(norm(s.vsnet_code), s);
+      if (s.aavso_code) byToken.set(norm(s.aavso_code), s);
+    }
+    const lines = rawText.split(/\r?\n/);
+    const unmatched: string[] = [];
+    let matched = 0;
+    for (const line of lines) {
+      const p = parseRawLine(line);
+      if (!p) continue;
+      const star = byToken.get(p.starToken);
+      if (!star) { unmatched.push(line.trim()); continue; }
+      updateObs(star.id, {
+        a: p.a, pasos_a: p.pasos_a, pasos_b: p.pasos_b,
+        b: p.b, ut_time: p.ut_time,
+      });
+      matched++;
+    }
+    setRawReport({ matched, unmatched });
+    if (matched > 0) toast.success(`Uložených ${matched} pozorovaní`);
+    if (unmatched.length) toast.error(`Nerozpoznané: ${unmatched.length}`);
+  };
 
   // Helpers: auto-format UT — always strip non-digits then reinsert ":" based on length
   const formatUt = (raw: string) => {
@@ -744,6 +836,7 @@ export default function SessionEditor() {
           <Button variant="ghost" size="sm" onClick={() => nav("/")}>
             <ChevronLeft className="h-4 w-4 mr-1" /> {t("editor.back")}
           </Button>
+          <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="sm"
@@ -753,6 +846,16 @@ export default function SessionEditor() {
             {leftAlign ? <PanelLeftOpen className="h-4 w-4 mr-1" /> : <PanelLeftClose className="h-4 w-4 mr-1" />}
             {leftAlign ? t("editor.alignCenter") : t("editor.alignLeft")}
           </Button>
+          <Button
+            variant={rawMode ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setRawMode((v) => !v)}
+            title="Raw mód (rýchly textový zápis)"
+          >
+            {rawMode ? <TableIcon className="h-4 w-4 mr-1" /> : <Type className="h-4 w-4 mr-1" />}
+            {rawMode ? "Tabuľka" : "Raw"}
+          </Button>
+          </div>
         </div>
 
         {/* Header card: datetime + JD + counters + exports */}
@@ -892,6 +995,7 @@ export default function SessionEditor() {
         </Card>
 
         {/* Constellation nav (matches user image) */}
+        {!rawMode && (
         <Card className="p-4 mb-4 sticky top-[57px] z-20 backdrop-blur bg-card/80">
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -928,8 +1032,50 @@ export default function SessionEditor() {
             ))}
           </div>
         </Card>
+        )}
 
-        {/* Sections per constellation */}
+        {rawMode ? (
+          <Card className="p-4 mb-4">
+            <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+              <div>
+                <div className="font-semibold text-sm">Raw zápis</div>
+                <div className="text-xs text-muted-foreground">
+                  Jeden riadok = jedno pozorovanie. Formát:{" "}
+                  <code className="font-mono">hviezdaA{`{pasoA}`}v{`{pasoB}`}BUT</code>{" "}
+                  (napr. <code className="font-mono">agdraf3v1g2108</code> alebo{" "}
+                  <code className="font-mono">mvlyr12-51v312-92110</code>). Pomlčka
+                  v A/B znamená desatinnú bodku.
+                </div>
+              </div>
+              <Button size="sm" onClick={applyRaw} disabled={!rawText.trim()}>
+                Použiť ({rawText.split(/\r?\n/).filter((l) => l.trim()).length})
+              </Button>
+            </div>
+            <textarea
+              value={rawText}
+              onChange={(e) => setRawText(e.target.value)}
+              spellCheck={false}
+              autoFocus
+              placeholder={"agdraf3v1g2108\nmvlyr12-51v312-92110\n..."}
+              className="w-full min-h-[50vh] rounded-md border border-input bg-background p-3 font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            {rawReport && (
+              <div className="mt-3 text-xs">
+                <div className="text-primary">Uložené: {rawReport.matched}</div>
+                {rawReport.unmatched.length > 0 && (
+                  <div className="mt-1 text-destructive">
+                    Nerozpoznané ({rawReport.unmatched.length}):
+                    <ul className="list-disc pl-5 mt-1 space-y-0.5 font-mono">
+                      {rawReport.unmatched.slice(0, 20).map((l, i) => (
+                        <li key={i}>{l}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+        ) : (
         <div className="space-y-6">
           {grouped.order.length === 0 && (
             <Card className="p-8 text-center text-sm text-muted-foreground">
@@ -1070,6 +1216,7 @@ export default function SessionEditor() {
             </div>
           ))}
         </div>
+        )}
       </main>
 
       {/* Preview overlay */}
