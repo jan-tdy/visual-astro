@@ -104,13 +104,20 @@ export default function SessionEditor() {
     pasos_b: number | null; b: string | null;
     ut_time: string | null;
   };
-  const parseRawLine = (line: string): ParsedRaw | null => {
-    const s = line.trim().toLowerCase();
+  const parseRawLine = (
+    line: string,
+    tokens: string[],
+  ): ParsedRaw | null => {
+    const s = line.trim().toLowerCase().replace(/\s+/g, "");
     if (!s) return null;
-    const m = /^([a-zà-ÿ][a-zà-ÿ\s]*?)(\d.*)$/.exec(s);
-    if (!m) return null;
-    const starToken = m[1].replace(/\s+/g, "");
-    const rest = m[2];
+    // Find the longest known star token that is a prefix of the line
+    let starToken = "";
+    for (const tk of tokens) {
+      if (tk && s.startsWith(tk) && tk.length > starToken.length) starToken = tk;
+    }
+    if (!starToken) return null;
+    const rest = s.slice(starToken.length);
+    if (!rest) return { starToken, a: null, pasos_a: null, pasos_b: null, b: null, ut_time: null };
     const vIdx = rest.search(/v/i);
     const left = vIdx >= 0 ? rest.slice(0, vIdx) : rest;
     const right = vIdx >= 0 ? rest.slice(vIdx + 1) : "";
@@ -158,12 +165,14 @@ export default function SessionEditor() {
       if (s.vsnet_code) byToken.set(norm(s.vsnet_code), s);
       if (s.aavso_code) byToken.set(norm(s.aavso_code), s);
     }
+    const tokens = Array.from(byToken.keys()).sort((a, b) => b.length - a.length);
     const lines = rawText.split(/\r?\n/);
     const unmatched: string[] = [];
     let matched = 0;
     for (const line of lines) {
-      const p = parseRawLine(line);
-      if (!p) continue;
+      if (!line.trim()) continue;
+      const p = parseRawLine(line, tokens);
+      if (!p) { unmatched.push(line.trim()); continue; }
       const star = byToken.get(p.starToken);
       if (!star) { unmatched.push(line.trim()); continue; }
       updateObs(star.id, {
