@@ -82,6 +82,7 @@ export default function SessionEditor() {
   const [rawMode, setRawMode] = useState(false);
   const [rawText, setRawText] = useState("");
   const [rawReport, setRawReport] = useState<{ matched: number; unmatched: string[] } | null>(null);
+  const rawEditedRef = useRef(false);
   type ExportSort = "catalog" | "name" | "constellation" | "ut" | "aavso";
   const [exportSort, setExportSort] = useState<ExportSort>(() => {
     try { return (localStorage.getItem("export_sort") as ExportSort) || "catalog"; } catch { return "catalog"; }
