@@ -82,6 +82,7 @@ export default function SessionEditor() {
   const [rawMode, setRawMode] = useState(false);
   const [rawText, setRawText] = useState("");
   const [rawReport, setRawReport] = useState<{ matched: number; unmatched: string[] } | null>(null);
+  const rawEditedRef = useRef(false);
   type ExportSort = "catalog" | "name" | "constellation" | "ut" | "aavso";
   const [exportSort, setExportSort] = useState<ExportSort>(() => {
     try { return (localStorage.getItem("export_sort") as ExportSort) || "catalog"; } catch { return "catalog"; }
@@ -212,6 +213,44 @@ export default function SessionEditor() {
     if (matched > 0) toast.success(`Uložených ${matched} pozorovaní`);
     if (unmatched.length) toast.error(`Nerozpoznané: ${unmatched.length}`);
   };
+
+  // Reverse of parseRawLine: serialize one observation back to a compact raw line.
+  const serializeObsToRaw = (star: Star, o: Obs): string | null => {
+    const token = (star.name || "").toLowerCase().replace(/\s+/g, "");
+    const ut = (o.ut_time || "").replace(/\D/g, "");
+    const hasCore = (o.a != null && o.a !== "") || (o.b != null && o.b !== "") ||
+      o.pasos_a != null || o.pasos_b != null;
+    if (o.limit_value && !hasCore) {
+      return `${token}<${o.limit_value}${ut}${o.note ? `#${o.note}` : ""}`;
+    }
+    if (!hasCore && !ut && !o.note) return null;
+    const A = o.a ?? "";
+    const B = o.b ?? "";
+    const pA = o.pasos_a ?? "";
+    const pB = o.pasos_b ?? "";
+    return `${token}${A}${pA}v${pB}${B}${ut}${o.note ? `#${o.note}` : ""}`;
+  };
+
+  // Build raw text for the whole session, in catalog order.
+  const buildRawFromSession = (): string => {
+    const lines: string[] = [];
+    for (const s of stars) {
+      const o = obsByStar[s.id];
+      if (!o) continue;
+      const line = serializeObsToRaw(s, o);
+      if (line) lines.push(line);
+    }
+    return lines.join("\n");
+  };
+
+  // When entering raw mode, populate the textarea with the current session
+  // (unless the user has already edited it in this browser session).
+  useEffect(() => {
+    if (!rawMode) return;
+    if (rawEditedRef.current) return;
+    setRawText(buildRawFromSession());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawMode, stars, obsByStar]);
 
   // Helpers: auto-format UT — always strip non-digits then reinsert ":" based on length
   const formatUt = (raw: string) => {
@@ -1076,46 +1115,95 @@ export default function SessionEditor() {
               <div>
                 <div className="font-semibold text-sm">Raw zápis</div>
                 <div className="text-xs text-muted-foreground">
-                  Jeden riadok = jedno pozorovanie. Formát:{" "}
+                  Formát:{" "}
                   <code className="font-mono">hviezdaA{`{pasoA}`}v{`{pasoB}`}BUT</code>{" "}
-                  (napr. <code className="font-mono">agdraf3v1g2108</code> alebo{" "}
-                  <code className="font-mono">mvlyr12-51v312-92110</code> alebo{" "}
-                  <code className="font-mono">mvlyr12.51v312.92110</code>). Pomlčka
-                  aj bodka v A/B fungujú ako desatinný oddeľovač.
-                  Limit:{" "}
-                  <code className="font-mono">{`hviezda<13.5{UT}`}</code>{" "}
-                  (napr. <code className="font-mono">{`agdra<13-52108`}</code>).
-                  Poznámka na konci za <code className="font-mono">#</code>{" "}
-                  (napr. <code className="font-mono">agdraf3v1g2108#hmla</code>).
+                  (<code className="font-mono">agdraf3v1g2108</code>,{" "}
+                  <code className="font-mono">mvlyr12-51v312-92110</code>).
+                  Limit: <code className="font-mono">{`hviezda<13.5{UT}`}</code>.
+                  Poznámka za <code className="font-mono">#</code>.
                 </div>
               </div>
-              <Button size="sm" onClick={applyRaw} disabled={!rawText.trim()}>
-                Použiť ({rawText.split(/\r?\n/).filter((l) => l.trim()).length})
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => { rawEditedRef.current = false; setRawText(buildRawFromSession()); setRawReport(null); }}
+                  title="Načítať aktuálne dáta zo session"
+                >
+                  Zo session
+                </Button>
+                <Button size="sm" onClick={applyRaw} disabled={!rawText.trim()}>
+                  Použiť ({rawText.split(/\r?\n/).filter((l) => l.trim()).length})
+                </Button>
+              </div>
             </div>
-            <textarea
-              value={rawText}
-              onChange={(e) => setRawText(e.target.value)}
-              spellCheck={false}
-              autoFocus
-              placeholder={"agdraf3v1g2108\nmvlyr12-51v312-92110\n..."}
-              className="w-full min-h-[50vh] rounded-md border border-input bg-background p-3 font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-            {rawReport && (
-              <div className="mt-3 text-xs">
-                <div className="text-primary">Uložené: {rawReport.matched}</div>
-                {rawReport.unmatched.length > 0 && (
-                  <div className="mt-1 text-destructive">
-                    Nerozpoznané ({rawReport.unmatched.length}):
-                    <ul className="list-disc pl-5 mt-1 space-y-0.5 font-mono">
-                      {rawReport.unmatched.slice(0, 20).map((l, i) => (
-                        <li key={i}>{l}</li>
-                      ))}
-                    </ul>
+            <div className="grid md:grid-cols-2 gap-3">
+              <div>
+                <textarea
+                  value={rawText}
+                  onChange={(e) => { rawEditedRef.current = true; setRawText(e.target.value); }}
+                  spellCheck={false}
+                  autoFocus
+                  placeholder={"agdraf3v1g2108\nmvlyr12-51v312-92110\n..."}
+                  className="w-full min-h-[60vh] rounded-md border border-input bg-background p-3 font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                {rawReport && (
+                  <div className="mt-3 text-xs">
+                    <div className="text-primary">Uložené: {rawReport.matched}</div>
+                    {rawReport.unmatched.length > 0 && (
+                      <div className="mt-1 text-destructive">
+                        Nerozpoznané ({rawReport.unmatched.length}):
+                        <ul className="list-disc pl-5 mt-1 space-y-0.5 font-mono">
+                          {rawReport.unmatched.slice(0, 20).map((l, i) => (
+                            <li key={i}>{l}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
+              <div className="rounded-md border border-border overflow-auto max-h-[60vh]">
+                <table className="w-full text-xs">
+                  <thead className="border-b border-border bg-secondary/40 sticky top-0">
+                    <tr className="text-left whitespace-nowrap">
+                      <th className="px-2 py-1.5">{t("editor.col.star")}</th>
+                      <th className="px-1 py-1.5 w-12">A</th>
+                      <th className="px-1 py-1.5 w-8">pA</th>
+                      <th className="px-1 py-1.5 w-8">pB</th>
+                      <th className="px-1 py-1.5 w-12">B</th>
+                      <th className="px-1 py-1.5 w-14">&lt;/=</th>
+                      <th className="px-1 py-1.5 w-14">UT</th>
+                      <th className="px-2 py-1.5 w-14 text-right">{t("editor.col.mag")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stars.map((s) => {
+                      const o = obsByStar[s.id];
+                      if (!o) return null;
+                      const hasAny = o.a || o.b || o.pasos_a != null || o.pasos_b != null || o.limit_value || o.ut_time || o.note;
+                      if (!hasAny) return null;
+                      const mag = computeMagnitude(o, s.name);
+                      return (
+                        <tr key={s.id} className="border-b border-border/40">
+                          <td className="px-2 py-1 font-medium whitespace-nowrap">{s.name}</td>
+                          <td className="px-1 py-1 font-mono">{o.a ?? ""}</td>
+                          <td className="px-1 py-1 font-mono">{o.pasos_a ?? ""}</td>
+                          <td className="px-1 py-1 font-mono">{o.pasos_b ?? ""}</td>
+                          <td className="px-1 py-1 font-mono">{o.b ?? ""}</td>
+                          <td className="px-1 py-1 font-mono">{o.limit_value ?? ""}</td>
+                          <td className="px-1 py-1 font-mono">{o.ut_time ?? ""}</td>
+                          <td className="px-2 py-1 text-right font-mono">{mag.value ?? <span className="text-muted-foreground">—</span>}</td>
+                        </tr>
+                      );
+                    })}
+                    {Object.values(obsByStar).every((o) => !(o.a || o.b || o.pasos_a != null || o.pasos_b != null || o.limit_value || o.ut_time || o.note)) && (
+                      <tr><td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">Zatiaľ žiadne pozorovania</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </Card>
         ) : (
         <div className="space-y-6">
