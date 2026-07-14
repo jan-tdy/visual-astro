@@ -1079,8 +1079,14 @@ export default function SessionEditor() {
                   Jeden riadok = jedno pozorovanie. Formát:{" "}
                   <code className="font-mono">hviezdaA{`{pasoA}`}v{`{pasoB}`}BUT</code>{" "}
                   (napr. <code className="font-mono">agdraf3v1g2108</code> alebo{" "}
-                  <code className="font-mono">mvlyr12-51v312-92110</code>). Pomlčka
-                  v A/B znamená desatinnú bodku.
+                  <code className="font-mono">mvlyr12-51v312-92110</code> alebo{" "}
+                  <code className="font-mono">mvlyr12.51v312.92110</code>). Pomlčka
+                  aj bodka v A/B fungujú ako desatinný oddeľovač.
+                  Limit:{" "}
+                  <code className="font-mono">{`hviezda<13.5{UT}`}</code>{" "}
+                  (napr. <code className="font-mono">{`agdra<13-52108`}</code>).
+                  Poznámka na konci za <code className="font-mono">#</code>{" "}
+                  (napr. <code className="font-mono">agdraf3v1g2108#hmla</code>).
                 </div>
               </div>
               <Button size="sm" onClick={applyRaw} disabled={!rawText.trim()}>
