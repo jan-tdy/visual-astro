@@ -103,12 +103,18 @@ export default function SessionEditor() {
     a: string | null; pasos_a: number | null;
     pasos_b: number | null; b: string | null;
     ut_time: string | null;
+    limit_value?: string | null;
+    note?: string | null;
   };
   const parseRawLine = (
     line: string,
     tokens: string[],
   ): ParsedRaw | null => {
-    const s = line.trim().toLowerCase().replace(/\s+/g, "");
+    // Split off note at '#' (kept with original casing/spaces)
+    const hashIdx = line.indexOf("#");
+    const note = hashIdx >= 0 ? line.slice(hashIdx + 1).trim() || null : null;
+    const body = hashIdx >= 0 ? line.slice(0, hashIdx) : line;
+    const s = body.trim().toLowerCase().replace(/\s+/g, "");
     if (!s) return null;
     // Find the longest known star token that is a prefix of the line
     let starToken = "";
@@ -117,7 +123,27 @@ export default function SessionEditor() {
     }
     if (!starToken) return null;
     const rest = s.slice(starToken.length);
-    if (!rest) return { starToken, a: null, pasos_a: null, pasos_b: null, b: null, ut_time: null };
+    const dashToDot = (v: string | null) => (v ? v.replace(/-/g, ".") : v);
+    if (!rest) return { starToken, a: null, pasos_a: null, pasos_b: null, b: null, ut_time: null, limit_value: null, note };
+    // Limit line: starts with '<'
+    if (rest.startsWith("<")) {
+      let inner = rest.slice(1);
+      let limit_value: string | null = inner || null;
+      let ut_time: string | null = null;
+      const m = /^(.+?)(\d{3,4})$/.exec(inner);
+      if (m && /[.\-]/.test(m[1])) {
+        limit_value = m[1];
+        const d = m[2];
+        ut_time = d.length === 3 ? d[0] + ":" + d.slice(1) : d.slice(0, 2) + ":" + d.slice(2);
+      }
+      return {
+        starToken,
+        a: null, pasos_a: null, pasos_b: null, b: null,
+        ut_time,
+        limit_value: dashToDot(limit_value),
+        note,
+      };
+    }
     const vIdx = rest.search(/v/i);
     const left = vIdx >= 0 ? rest.slice(0, vIdx) : rest;
     const right = vIdx >= 0 ? rest.slice(vIdx + 1) : "";
@@ -153,8 +179,7 @@ export default function SessionEditor() {
         b = inner;
       }
     }
-    const dashToDot = (v: string | null) => (v ? v.replace(/-/g, ".") : v);
-    return { starToken, a: dashToDot(a), pasos_a, pasos_b, b: dashToDot(b), ut_time };
+    return { starToken, a: dashToDot(a), pasos_a, pasos_b, b: dashToDot(b), ut_time, limit_value: null, note };
   };
 
   const applyRaw = () => {
@@ -178,6 +203,8 @@ export default function SessionEditor() {
       updateObs(star.id, {
         a: p.a, pasos_a: p.pasos_a, pasos_b: p.pasos_b,
         b: p.b, ut_time: p.ut_time,
+        limit_value: p.limit_value ?? null,
+        ...(p.note !== undefined ? { note: p.note } : {}),
       });
       matched++;
     }
@@ -1052,8 +1079,14 @@ export default function SessionEditor() {
                   Jeden riadok = jedno pozorovanie. Formát:{" "}
                   <code className="font-mono">hviezdaA{`{pasoA}`}v{`{pasoB}`}BUT</code>{" "}
                   (napr. <code className="font-mono">agdraf3v1g2108</code> alebo{" "}
-                  <code className="font-mono">mvlyr12-51v312-92110</code>). Pomlčka
-                  v A/B znamená desatinnú bodku.
+                  <code className="font-mono">mvlyr12-51v312-92110</code> alebo{" "}
+                  <code className="font-mono">mvlyr12.51v312.92110</code>). Pomlčka
+                  aj bodka v A/B fungujú ako desatinný oddeľovač.
+                  Limit:{" "}
+                  <code className="font-mono">{`hviezda<13.5{UT}`}</code>{" "}
+                  (napr. <code className="font-mono">{`agdra<13-52108`}</code>).
+                  Poznámka na konci za <code className="font-mono">#</code>{" "}
+                  (napr. <code className="font-mono">agdraf3v1g2108#hmla</code>).
                 </div>
               </div>
               <Button size="sm" onClick={applyRaw} disabled={!rawText.trim()}>
