@@ -214,6 +214,44 @@ export default function SessionEditor() {
     if (unmatched.length) toast.error(`Nerozpoznané: ${unmatched.length}`);
   };
 
+  // Reverse of parseRawLine: serialize one observation back to a compact raw line.
+  const serializeObsToRaw = (star: Star, o: Obs): string | null => {
+    const token = (star.name || "").toLowerCase().replace(/\s+/g, "");
+    const ut = (o.ut_time || "").replace(/\D/g, "");
+    const hasCore = (o.a != null && o.a !== "") || (o.b != null && o.b !== "") ||
+      o.pasos_a != null || o.pasos_b != null;
+    if (o.limit_value && !hasCore) {
+      return `${token}<${o.limit_value}${ut}${o.note ? `#${o.note}` : ""}`;
+    }
+    if (!hasCore && !ut && !o.note) return null;
+    const A = o.a ?? "";
+    const B = o.b ?? "";
+    const pA = o.pasos_a ?? "";
+    const pB = o.pasos_b ?? "";
+    return `${token}${A}${pA}v${pB}${B}${ut}${o.note ? `#${o.note}` : ""}`;
+  };
+
+  // Build raw text for the whole session, in catalog order.
+  const buildRawFromSession = (): string => {
+    const lines: string[] = [];
+    for (const s of stars) {
+      const o = obsByStar[s.id];
+      if (!o) continue;
+      const line = serializeObsToRaw(s, o);
+      if (line) lines.push(line);
+    }
+    return lines.join("\n");
+  };
+
+  // When entering raw mode, populate the textarea with the current session
+  // (unless the user has already edited it in this browser session).
+  useEffect(() => {
+    if (!rawMode) return;
+    if (rawEditedRef.current) return;
+    setRawText(buildRawFromSession());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawMode, stars, obsByStar]);
+
   // Helpers: auto-format UT — always strip non-digits then reinsert ":" based on length
   const formatUt = (raw: string) => {
     const d = raw.replace(/\D/g, "").slice(0, 4);
