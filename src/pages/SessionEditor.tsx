@@ -116,31 +116,54 @@ export default function SessionEditor() {
     const body = hashIdx >= 0 ? line.slice(0, hashIdx) : line;
     const s = body.trim().toLowerCase().replace(/\s+/g, "");
     if (!s) return null;
-    // Find the longest known star token that is a prefix of the line
+    // 1) Prefer the longest known star token that is a prefix of the line
     let starToken = "";
+    let consumedLen = 0;
     for (const tk of tokens) {
-      if (tk && s.startsWith(tk) && tk.length > starToken.length) starToken = tk;
+      if (tk && s.startsWith(tk) && tk.length > starToken.length) {
+        starToken = tk;
+        consumedLen = tk.length;
+      }
+    }
+    // 2) Predikcia: ak sa nič presne nezhoduje, hľadaj najdlhší unikátny
+    //    spoločný prefix (aspoň 3 znaky) — napr. "sdss1730" → "sdss173062dra"
+    if (!starToken) {
+      const MIN = 3;
+      let bestLen = 0;
+      let bestTk = "";
+      let tie = false;
+      for (const tk of tokens) {
+        const max = Math.min(tk.length, s.length);
+        let k = 0;
+        while (k < max && tk[k] === s[k]) k++;
+        if (k >= MIN) {
+          if (k > bestLen) { bestLen = k; bestTk = tk; tie = false; }
+          else if (k === bestLen && tk !== bestTk) tie = true;
+        }
+      }
+      if (bestTk && !tie) { starToken = bestTk; consumedLen = bestLen; }
     }
     if (!starToken) return null;
-    const rest = s.slice(starToken.length);
+    const rest = s.slice(consumedLen);
     const dashToDot = (v: string | null) => (v ? v.replace(/-/g, ".") : v);
     if (!rest) return { starToken, a: null, pasos_a: null, pasos_b: null, b: null, ut_time: null, limit_value: null, note };
     // Limit line: starts with '<'
     if (rest.startsWith("<")) {
-      let inner = rest.slice(1);
-      let limit_value: string | null = inner || null;
+      const inner = rest.slice(1);
+      let limitBody: string | null = inner || null;
       let ut_time: string | null = null;
       const m = /^(.+?)(\d{3,4})$/.exec(inner);
       if (m && /[.\-]/.test(m[1])) {
-        limit_value = m[1];
+        limitBody = m[1];
         const d = m[2];
         ut_time = d.length === 3 ? d[0] + ":" + d.slice(1) : d.slice(0, 2) + ":" + d.slice(2);
       }
+      const normalized = dashToDot(limitBody);
       return {
         starToken,
         a: null, pasos_a: null, pasos_b: null, b: null,
         ut_time,
-        limit_value: dashToDot(limit_value),
+        limit_value: normalized ? "<" + normalized : null,
         note,
       };
     }
