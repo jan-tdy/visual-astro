@@ -894,6 +894,26 @@ export default function SessionEditor() {
     return list;
   })();
 
+  // Hviezdy kde bola upravená magnitúda (oproti baseline zo šablóny), ale
+  // UT čas ešte nie je vyplnený — používateľ pravdepodobne zabudol pridať čas.
+  const missingUtWarnings: { name: string }[] = (() => {
+    const list: { name: string }[] = [];
+    const byId = new Map(stars.map((s) => [s.id, s]));
+    const norm = (v: string | number | null | undefined) =>
+      v === null || v === undefined || v === "" ? "" : String(v).trim();
+    const magFields: (keyof Obs)[] = ["a", "pasos_a", "pasos_b", "b", "limit_value"];
+    for (const o of Object.values(obsByStar)) {
+      if (o.ut_time && o.ut_time.trim()) continue;
+      const s = byId.get(o.star_id);
+      if (!s) continue;
+      const base = baselineRef.current[o.star_id];
+      const changed = magFields.some((f) => norm(o[f] as any) !== norm(base?.[f] as any));
+      const hasValue = magFields.some((f) => norm(o[f] as any) !== "");
+      if (changed && hasValue) list.push({ name: s.name });
+    }
+    return list;
+  })();
+
   return (
     <div className="min-h-screen">
       <AppHeader />
@@ -990,6 +1010,22 @@ export default function SessionEditor() {
               </ul>
               <div className="mt-1.5 opacity-80">
                 {t("editor.warnHint")}
+              </div>
+            </div>
+          )}
+
+          {missingUtWarnings.length > 0 && (
+            <div className="mt-3 rounded-md border border-orange-500/40 bg-orange-500/10 p-3 text-xs text-orange-700 dark:text-orange-300">
+              <div className="font-semibold mb-1">
+                Zadaná magnitúda bez UT času ({missingUtWarnings.length}):
+              </div>
+              <ul className="list-disc pl-5 space-y-0.5">
+                {missingUtWarnings.map((w, i) => (
+                  <li key={i}><span className="font-medium">{w.name}</span></li>
+                ))}
+              </ul>
+              <div className="mt-1.5 opacity-80">
+                Doplň UT čas, inak sa tieto pozorovania nezahrnú do exportu.
               </div>
             </div>
           )}
