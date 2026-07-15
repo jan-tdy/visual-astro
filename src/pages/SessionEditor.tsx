@@ -82,6 +82,9 @@ export default function SessionEditor() {
   const [rawMode, setRawMode] = useState(false);
   const [rawText, setRawText] = useState("");
   const [rawReport, setRawReport] = useState<{ matched: number; unmatched: string[] } | null>(null);
+  // Snapshot obs values as loaded (baseline from template session). Použijeme na
+  // upozornenie ak používateľ upravil magnitúdu, ale zabudol UT čas.
+  const baselineRef = useRef<Record<string, Obs>>({});
   type ExportSort = "catalog" | "name" | "constellation" | "ut" | "aavso";
   const [exportSort, setExportSort] = useState<ExportSort>(() => {
     try { return (localStorage.getItem("export_sort") as ExportSort) || "catalog"; } catch { return "catalog"; }
@@ -116,31 +119,54 @@ export default function SessionEditor() {
     const body = hashIdx >= 0 ? line.slice(0, hashIdx) : line;
     const s = body.trim().toLowerCase().replace(/\s+/g, "");
     if (!s) return null;
-    // Find the longest known star token that is a prefix of the line
+    // 1) Prefer the longest known star token that is a prefix of the line
     let starToken = "";
+    let consumedLen = 0;
     for (const tk of tokens) {
-      if (tk && s.startsWith(tk) && tk.length > starToken.length) starToken = tk;
+      if (tk && s.startsWith(tk) && tk.length > starToken.length) {
+        starToken = tk;
+        consumedLen = tk.length;
+      }
+    }
+    // 2) Predikcia: ak sa nič presne nezhoduje, hľadaj najdlhší unikátny
+    //    spoločný prefix (aspoň 3 znaky) — napr. "sdss1730" → "sdss173062dra"
+    if (!starToken) {
+      const MIN = 3;
+      let bestLen = 0;
+      let bestTk = "";
+      let tie = false;
+      for (const tk of tokens) {
+        const max = Math.min(tk.length, s.length);
+        let k = 0;
+        while (k < max && tk[k] === s[k]) k++;
+        if (k >= MIN) {
+          if (k > bestLen) { bestLen = k; bestTk = tk; tie = false; }
+          else if (k === bestLen && tk !== bestTk) tie = true;
+        }
+      }
+      if (bestTk && !tie) { starToken = bestTk; consumedLen = bestLen; }
     }
     if (!starToken) return null;
-    const rest = s.slice(starToken.length);
+    const rest = s.slice(consumedLen);
     const dashToDot = (v: string | null) => (v ? v.replace(/-/g, ".") : v);
     if (!rest) return { starToken, a: null, pasos_a: null, pasos_b: null, b: null, ut_time: null, limit_value: null, note };
     // Limit line: starts with '<'
     if (rest.startsWith("<")) {
-      let inner = rest.slice(1);
-      let limit_value: string | null = inner || null;
+      const inner = rest.slice(1);
+      let limitBody: string | null = inner || null;
       let ut_time: string | null = null;
       const m = /^(.+?)(\d{3,4})$/.exec(inner);
       if (m && /[.\-]/.test(m[1])) {
-        limit_value = m[1];
+        limitBody = m[1];
         const d = m[2];
         ut_time = d.length === 3 ? d[0] + ":" + d.slice(1) : d.slice(0, 2) + ":" + d.slice(2);
       }
+      const normalized = dashToDot(limitBody);
       return {
         starToken,
         a: null, pasos_a: null, pasos_b: null, b: null,
         ut_time,
-        limit_value: dashToDot(limit_value),
+        limit_value: normalized ? "<" + normalized : null,
         note,
       };
     }
@@ -286,6 +312,10 @@ export default function SessionEditor() {
       }
       setObsByStar(map);
       setExtraByStar(extras);
+      // Uložíme kópiu pôvodných hodnôt ako baseline (deep clone stačí plytký).
+      baselineRef.current = Object.fromEntries(
+        Object.entries(map).map(([k, v]) => [k, { ...v }]),
+      );
       if (profile) setObsCode(profile.obs_code);
       setLoading(false);
     })();
@@ -864,6 +894,26 @@ export default function SessionEditor() {
     return list;
   })();
 
+  // Hviezdy kde bola upravená magnitúda (oproti baseline zo šablóny), ale
+  // UT čas ešte nie je vyplnený — používateľ pravdepodobne zabudol pridať čas.
+  const missingUtWarnings: { name: string }[] = (() => {
+    const list: { name: string }[] = [];
+    const byId = new Map(stars.map((s) => [s.id, s]));
+    const norm = (v: string | number | null | undefined) =>
+      v === null || v === undefined || v === "" ? "" : String(v).trim();
+    const magFields: (keyof Obs)[] = ["a", "pasos_a", "pasos_b", "b", "limit_value"];
+    for (const o of Object.values(obsByStar)) {
+      if (o.ut_time && o.ut_time.trim()) continue;
+      const s = byId.get(o.star_id);
+      if (!s) continue;
+      const base = baselineRef.current[o.star_id];
+      const changed = magFields.some((f) => norm(o[f] as any) !== norm(base?.[f] as any));
+      const hasValue = magFields.some((f) => norm(o[f] as any) !== "");
+      if (changed && hasValue) list.push({ name: s.name });
+    }
+    return list;
+  })();
+
   return (
     <div className="min-h-screen">
       <AppHeader />
@@ -960,6 +1010,22 @@ export default function SessionEditor() {
               </ul>
               <div className="mt-1.5 opacity-80">
                 {t("editor.warnHint")}
+              </div>
+            </div>
+          )}
+
+          {missingUtWarnings.length > 0 && (
+            <div className="mt-3 rounded-md border border-orange-500/40 bg-orange-500/10 p-3 text-xs text-orange-700 dark:text-orange-300">
+              <div className="font-semibold mb-1">
+                Zadaná magnitúda bez UT času ({missingUtWarnings.length}):
+              </div>
+              <ul className="list-disc pl-5 space-y-0.5">
+                {missingUtWarnings.map((w, i) => (
+                  <li key={i}><span className="font-medium">{w.name}</span></li>
+                ))}
+              </ul>
+              <div className="mt-1.5 opacity-80">
+                Doplň UT čas, inak sa tieto pozorovania nezahrnú do exportu.
               </div>
             </div>
           )}
