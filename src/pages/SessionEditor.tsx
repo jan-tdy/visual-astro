@@ -82,6 +82,9 @@ export default function SessionEditor() {
   const [rawMode, setRawMode] = useState(false);
   const [rawText, setRawText] = useState("");
   const [rawReport, setRawReport] = useState<{ matched: number; unmatched: string[] } | null>(null);
+  // Snapshot obs values as loaded (baseline from template session). Použijeme na
+  // upozornenie ak používateľ upravil magnitúdu, ale zabudol UT čas.
+  const baselineRef = useRef<Record<string, Obs>>({});
   type ExportSort = "catalog" | "name" | "constellation" | "ut" | "aavso";
   const [exportSort, setExportSort] = useState<ExportSort>(() => {
     try { return (localStorage.getItem("export_sort") as ExportSort) || "catalog"; } catch { return "catalog"; }
@@ -309,6 +312,10 @@ export default function SessionEditor() {
       }
       setObsByStar(map);
       setExtraByStar(extras);
+      // Uložíme kópiu pôvodných hodnôt ako baseline (deep clone stačí plytký).
+      baselineRef.current = Object.fromEntries(
+        Object.entries(map).map(([k, v]) => [k, { ...v }]),
+      );
       if (profile) setObsCode(profile.obs_code);
       setLoading(false);
     })();
