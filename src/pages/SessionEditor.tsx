@@ -1138,6 +1138,8 @@ export default function SessionEditor() {
 
         {rawMode ? (
           <Card className="p-4 mb-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div>
             <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
               <div>
                 <div className="font-semibold text-sm">Raw zápis</div>
@@ -1182,6 +1184,65 @@ export default function SessionEditor() {
                 )}
               </div>
             )}
+              </div>
+              <div className="min-w-0">
+                <div className="font-semibold text-sm mb-2">Prehľad session</div>
+                {(() => {
+                  const rows: { key: string; name: string; o: Obs; mag: ReturnType<typeof computeMagnitude> }[] = [];
+                  for (const s of stars) {
+                    const o = obsByStar[s.id];
+                    if (o && o.ut_time && o.ut_time.trim()) {
+                      rows.push({ key: s.id, name: s.name, o, mag: computeMagnitude(o, s.name) });
+                    }
+                    const extras = extraByStar[s.id] ?? [];
+                    extras.forEach((eo, ei) => {
+                      if (eo.ut_time && eo.ut_time.trim()) {
+                        rows.push({ key: `${s.id}-x${ei}`, name: s.name, o: eo, mag: computeMagnitude(eo, s.name) });
+                      }
+                    });
+                  }
+                  if (rows.length === 0) {
+                    return (
+                      <div className="text-xs text-muted-foreground p-3 border border-dashed border-border rounded-md">
+                        Zatiaľ žiadne pozorovanie s UT časom.
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="overflow-x-auto rounded-md border border-border">
+                      <table className="w-full text-xs">
+                        <thead className="bg-secondary/40 text-left">
+                          <tr className="whitespace-nowrap">
+                            <th className="px-2 py-1">{t("editor.col.star")}</th>
+                            <th className="px-2 py-1 w-12">A</th>
+                            <th className="px-2 py-1 w-10">{t("editor.col.pasoA")}</th>
+                            <th className="px-2 py-1 w-10">{t("editor.col.pasoB")}</th>
+                            <th className="px-2 py-1 w-12">B</th>
+                            <th className="px-2 py-1 w-14">&lt;/=</th>
+                            <th className="px-2 py-1 w-14">{t("editor.col.ut")}</th>
+                            <th className="px-2 py-1 w-14 text-right">{t("editor.col.mag")}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="font-mono">
+                          {rows.map((r) => (
+                            <tr key={r.key} className="border-t border-border/40">
+                              <td className="px-2 py-1 font-sans font-medium">{r.name}</td>
+                              <td className="px-2 py-1">{r.o.a ?? ""}</td>
+                              <td className="px-2 py-1">{r.o.pasos_a ?? ""}</td>
+                              <td className="px-2 py-1">{r.o.pasos_b ?? ""}</td>
+                              <td className="px-2 py-1">{r.o.b ?? ""}</td>
+                              <td className="px-2 py-1">{r.o.limit_value ?? ""}</td>
+                              <td className="px-2 py-1">{r.o.ut_time ?? ""}</td>
+                              <td className="px-2 py-1 text-right">{r.mag.value ?? <span className="text-muted-foreground">—</span>}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
           </Card>
         ) : (
         <div className="space-y-6">
