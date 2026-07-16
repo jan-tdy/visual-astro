@@ -82,6 +82,8 @@ export default function SessionEditor() {
   const [rawMode, setRawMode] = useState(false);
   const [rawText, setRawText] = useState("");
   const [rawReport, setRawReport] = useState<{ matched: number; unmatched: string[] } | null>(null);
+  const rawPrefilledRef = useRef(false);
+  const sessionNameRef = useRef("");
   // Snapshot obs values as loaded (baseline from template session). Použijeme na
   // upozornenie ak používateľ upravil magnitúdu, ale zabudol UT čas.
   const baselineRef = useRef<Record<string, Obs>>({});
@@ -108,6 +110,7 @@ export default function SessionEditor() {
     ut_time: string | null;
     limit_value?: string | null;
     note?: string | null;
+    plusLevel?: number; // 0 = new star, 1 = "+" (2nd obs of prev), 2 = "++" ...
   };
   const parseRawLine = (
     line: string,
@@ -117,11 +120,22 @@ export default function SessionEditor() {
     const hashIdx = line.indexOf("#");
     const note = hashIdx >= 0 ? line.slice(hashIdx + 1).trim() || null : null;
     const body = hashIdx >= 0 ? line.slice(0, hashIdx) : line;
-    const s = body.trim().toLowerCase().replace(/\s+/g, "");
+    let s = body.trim().toLowerCase().replace(/\s+/g, "");
     if (!s) return null;
+    // Extract leading "+" markers → další zápis pre predošlú hviezdu
+    let plusLevel = 0;
+    while (s.startsWith("+")) { plusLevel++; s = s.slice(1); }
+    if (plusLevel > 0 && !s) {
+      // sám "+" bez tela – ignoruj
+      return null;
+    }
     // 1) Prefer the longest known star token that is a prefix of the line
     let starToken = "";
     let consumedLen = 0;
+    if (plusLevel > 0) {
+      // Pri "+" prefixe nemusí byť názov hviezdy – použije sa predošlá
+      // (nastaví sa v applyRaw). Skús ho ale rozpoznať ak je uvedený.
+    }
     for (const tk of tokens) {
       if (tk && s.startsWith(tk) && tk.length > starToken.length) {
         starToken = tk;
@@ -130,7 +144,7 @@ export default function SessionEditor() {
     }
     // 2) Predikcia: ak sa nič presne nezhoduje, hľadaj najdlhší unikátny
     //    spoločný prefix (aspoň 3 znaky) — napr. "sdss1730" → "sdss173062dra"
-    if (!starToken) {
+    if (!starToken && plusLevel === 0) {
       const MIN = 3;
       let bestLen = 0;
       let bestTk = "";
@@ -146,10 +160,10 @@ export default function SessionEditor() {
       }
       if (bestTk && !tie) { starToken = bestTk; consumedLen = bestLen; }
     }
-    if (!starToken) return null;
+    if (!starToken && plusLevel === 0) return null;
     const rest = s.slice(consumedLen);
     const dashToDot = (v: string | null) => (v ? v.replace(/-/g, ".") : v);
-    if (!rest) return { starToken, a: null, pasos_a: null, pasos_b: null, b: null, ut_time: null, limit_value: null, note };
+    if (!rest) return { starToken, a: null, pasos_a: null, pasos_b: null, b: null, ut_time: null, limit_value: null, note, plusLevel };
     // Limit line: starts with '<'
     if (rest.startsWith("<")) {
       const inner = rest.slice(1);
@@ -168,6 +182,7 @@ export default function SessionEditor() {
         ut_time,
         limit_value: normalized ? "<" + normalized : null,
         note,
+        plusLevel,
       };
     }
     const vIdx = rest.search(/v/i);
@@ -205,7 +220,7 @@ export default function SessionEditor() {
         b = inner;
       }
     }
-    return { starToken, a: dashToDot(a), pasos_a, pasos_b, b: dashToDot(b), ut_time, limit_value: null, note };
+    return { starToken, a: dashToDot(a), pasos_a, pasos_b, b: dashToDot(b), ut_time, limit_value: null, note, plusLevel };
   };
 
   const applyRaw = () => {
@@ -220,24 +235,107 @@ export default function SessionEditor() {
     const lines = rawText.split(/\r?\n/);
     const unmatched: string[] = [];
     let matched = 0;
+    let prevStarId: string | null = null;
+    // Sledujeme, koľko "+"-zápisov už tento apply zapísal per hviezda,
+    // aby sme obchádzali stale state extraByStar.
+    const extrasOffset: Record<string, number> = {};
     for (const line of lines) {
       if (!line.trim()) continue;
       const p = parseRawLine(line, tokens);
       if (!p) { unmatched.push(line.trim()); continue; }
-      const star = byToken.get(p.starToken);
-      if (!star) { unmatched.push(line.trim()); continue; }
-      updateObs(star.id, {
+      const star = p.starToken ? byToken.get(p.starToken) : null;
+      const plus = p.plusLevel ?? 0;
+      // Ktorú hviezdu použiť
+      const targetStar = star ?? (plus > 0 && prevStarId ? stars.find((s) => s.id === prevStarId) : null);
+      if (!targetStar) { unmatched.push(line.trim()); continue; }
+      const patch = {
         a: p.a, pasos_a: p.pasos_a, pasos_b: p.pasos_b,
         b: p.b, ut_time: p.ut_time,
         limit_value: p.limit_value ?? null,
         ...(p.note !== undefined ? { note: p.note } : {}),
-      });
+      };
+      if (plus === 0) {
+        updateObs(targetStar.id, patch);
+        prevStarId = targetStar.id;
+      } else {
+        // "+" = ďalšie pozorovanie tej istej hviezdy (do extraByStar)
+        const existing = extraByStar[targetStar.id] ?? [];
+        const used = extrasOffset[targetStar.id] ?? existing.length;
+        if (used >= 5) {
+          unmatched.push(line.trim() + " (max 5 extra riadkov)");
+          continue;
+        }
+        // Pridaj prázdny riadok ak treba, potom updateni
+        setExtraByStar((prev) => {
+          const arr = prev[targetStar.id] ?? [];
+          if (arr.length <= used) {
+            const next = arr.slice();
+            while (next.length <= used) {
+              next.push({ star_id: targetStar.id, a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null, ut_time: null, note: null });
+            }
+            return { ...prev, [targetStar.id]: next };
+          }
+          return prev;
+        });
+        // Zavolaj update s krátkym oneskorením, aby state stihol updatnúť
+        setTimeout(() => updateExtra(targetStar.id, used, patch as Partial<Obs>), 10);
+        extrasOffset[targetStar.id] = used + 1;
+      }
       matched++;
     }
     setRawReport({ matched, unmatched });
     if (matched > 0) toast.success(`Uložených ${matched} pozorovaní`);
     if (unmatched.length) toast.error(`Nerozpoznané: ${unmatched.length}`);
   };
+
+  // Serialize existing observations back into raw format
+  const buildRawFromObs = () => {
+    const lines: string[] = [];
+    const stripDot = (v: string | null | undefined) => (v ?? "").replace(/\s+/g, "");
+    const nameToken = (s: Star) => (s.vsnet_code || s.name).toLowerCase().replace(/\s+/g, "");
+    const utNo = (v: string | null | undefined) => (v ?? "").replace(/[^0-9]/g, "");
+    const serializeObs = (name: string, o: Obs, plusPrefix = "") => {
+      const pn = plusPrefix;
+      const note = o.note ? "#" + o.note : "";
+      // Limit-only line
+      if (o.limit_value && !o.a && !o.b && o.pasos_a == null && o.pasos_b == null) {
+        const lim = String(o.limit_value).replace(/^<\s*/, "");
+        return `${pn}${name}<${lim}${utNo(o.ut_time)}${note}`;
+      }
+      const a = stripDot(o.a);
+      const pa = o.pasos_a != null ? String(o.pasos_a) : "";
+      const pb = o.pasos_b != null ? String(o.pasos_b) : "";
+      const b = stripDot(o.b);
+      const ut = utNo(o.ut_time);
+      return `${pn}${name}${a}${pa}v${pb}${b}${ut}${note}`;
+    };
+    for (const s of stars) {
+      const main = obsByStar[s.id];
+      const extras = extraByStar[s.id] ?? [];
+      const hasMain = main && main.ut_time && main.ut_time.trim();
+      const utExtras = extras.filter((e) => e.ut_time && e.ut_time.trim());
+      if (hasMain) {
+        lines.push(serializeObs(nameToken(s), main));
+        utExtras.forEach((e, i) => lines.push(serializeObs(nameToken(s), e, "+".repeat(i + 1))));
+      } else if (utExtras.length > 0) {
+        // Ak nie je main s časom, prvý extra sa berie ako hlavný záznam
+        lines.push(serializeObs(nameToken(s), utExtras[0]));
+        utExtras.slice(1).forEach((e, i) => lines.push(serializeObs(nameToken(s), e, "+".repeat(i + 1))));
+      }
+    }
+    return lines.join("\n");
+  };
+
+  // Pri prepnutí do RAW módu naplň textarea existujúcimi UT riadkami
+  useEffect(() => {
+    if (!rawMode) { rawPrefilledRef.current = false; return; }
+    if (rawPrefilledRef.current) return;
+    if (rawText.trim()) { rawPrefilledRef.current = true; return; }
+    const built = buildRawFromObs();
+    if (built.trim()) setRawText(built + "\n");
+    rawPrefilledRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawMode]);
 
   // Helpers: auto-format UT — always strip non-digits then reinsert ":" based on length
   const formatUt = (raw: string) => {
@@ -388,15 +486,28 @@ export default function SessionEditor() {
 
   // Save header (date/jd) on change with debounce
   useEffect(() => {
+    sessionNameRef.current = sessionName;
     if (!id || loading) return;
     const t = setTimeout(() => {
       supabase
         .from("sessions")
         .update({ name: sessionName || null })
         .eq("id", id);
-    }, 500);
+    }, 400);
     return () => clearTimeout(t);
   }, [id, loading, sessionName]);
+
+  // Save name on unmount (navigation back) in case debounce didn't fire
+  useEffect(() => {
+    return () => {
+      if (id) {
+        supabase
+          .from("sessions")
+          .update({ name: sessionNameRef.current || null })
+          .eq("id", id);
+      }
+    };
+  }, [id]);
 
   const saveNameNow = () => {
     if (!id) return;
@@ -1155,6 +1266,9 @@ export default function SessionEditor() {
                   (napr. <code className="font-mono">{`agdra<13-52108`}</code>).
                   Poznámka na konci za <code className="font-mono">#</code>{" "}
                   (napr. <code className="font-mono">agdraf3v1g2108#hmla</code>).
+                  {" "}Viac pozorovaní tej istej hviezdy: začni riadok
+                  {" "}<code className="font-mono">+</code> (2. zápis),
+                  {" "}<code className="font-mono">++</code> (3. zápis) atď.
                 </div>
               </div>
               <Button size="sm" onClick={applyRaw} disabled={!rawText.trim()}>

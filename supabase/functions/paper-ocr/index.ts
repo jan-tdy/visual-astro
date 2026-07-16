@@ -40,21 +40,33 @@ Deno.serve(async (req) => {
     const { data: prof } = await supabase
       .from('profiles').select('dev_plus_override').eq('user_id', userId).maybeSingle();
     const devOverride = !!(prof as any)?.dev_plus_override && email === 'var@kozmos.sk';
-    const isPlus = subActive || devOverride;
-    const dailyLimit = isPlus ? 15 : 5;
+    // Bonus (milestone free Plus)
+    const { data: bonusRow } = await supabase
+      .from('plus_bonuses')
+      .select('id')
+      .eq('user_id', userId)
+      .gt('expires_at', new Date().toISOString())
+      .limit(1)
+      .maybeSingle();
+    const bonusActive = !!bonusRow;
+    const isPlus = subActive || devOverride || bonusActive;
+    const monthlyLimit = isPlus ? 40 : 5;
 
-    const today = new Date().toISOString().slice(0, 10);
+    // Mesačný agregát: prvý deň mesiaca ako "bucket" v ocr_usage.used_on
+    const now = new Date();
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+      .toISOString().slice(0, 10);
     const { data: usageRow } = await supabase
       .from('ocr_usage')
       .select('id,count')
       .eq('user_id', userId)
-      .eq('used_on', today)
+      .eq('used_on', monthStart)
       .maybeSingle();
     const used = (usageRow as any)?.count ?? 0;
-    if (used >= dailyLimit) {
+    if (used >= monthlyLimit) {
       return new Response(JSON.stringify({
-        error: `Denný limit AI skenov vyčerpaný (${used}/${dailyLimit}). ${isPlus ? '' : 'Upgraduj na Plus pre 15 skenov denne.'}`,
-        limitReached: true, used, dailyLimit, isPlus,
+        error: `Mesačný limit AI skenov vyčerpaný (${used}/${monthlyLimit}). ${isPlus ? '' : 'Upgraduj na Plus pre 40 skenov mesačne.'}`,
+        limitReached: true, used, monthlyLimit, dailyLimit: monthlyLimit, isPlus,
       }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
@@ -123,10 +135,10 @@ Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
     if (usageRow) {
       await supabase.from('ocr_usage').update({ count: used + 1 }).eq('id', (usageRow as any).id);
     } else {
-      await supabase.from('ocr_usage').insert({ user_id: userId, used_on: today, count: 1 });
+      await supabase.from('ocr_usage').insert({ user_id: userId, used_on: monthStart, count: 1 });
     }
 
-    return new Response(JSON.stringify({ ...parsed, used: used + 1, dailyLimit, isPlus }), {
+    return new Response(JSON.stringify({ ...parsed, used: used + 1, monthlyLimit, dailyLimit: monthlyLimit, isPlus }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {

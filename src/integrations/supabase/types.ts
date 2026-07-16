@@ -107,12 +107,46 @@ export type Database = {
         }
         Relationships: []
       }
+      plus_bonuses: {
+        Row: {
+          created_at: string
+          expires_at: string
+          granted_at: string
+          id: string
+          milestone_key: string
+          reason: string
+          seen: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          granted_at?: string
+          id?: string
+          milestone_key: string
+          reason: string
+          seen?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          granted_at?: string
+          id?: string
+          milestone_key?: string
+          reason?: string
+          seen?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           catalog_seeded: boolean
           created_at: string
           dev_plus_override: boolean
           fecha_referencia: string
+          milestone_progress: Json
           obs_code: string
           open_portal_after_export: Json
           portal_urls: Json
@@ -124,6 +158,7 @@ export type Database = {
           created_at?: string
           dev_plus_override?: boolean
           fecha_referencia?: string
+          milestone_progress?: Json
           obs_code?: string
           open_portal_after_export?: Json
           portal_urls?: Json
@@ -135,6 +170,7 @@ export type Database = {
           created_at?: string
           dev_plus_override?: boolean
           fecha_referencia?: string
+          milestone_progress?: Json
           obs_code?: string
           open_portal_after_export?: Json
           portal_urls?: Json
@@ -277,6 +313,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      grant_milestone_bonus: {
+        Args: { _kind: string; _user_id: string }
+        Returns: undefined
+      }
+      has_active_bonus: { Args: { _user_id: string }; Returns: boolean }
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean

@@ -20,6 +20,7 @@ export function useSubscription() {
   const [sub, setSub] = useState<SubscriptionRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [devOverride, setDevOverrideState] = useState<boolean>(false);
+  const [activeBonus, setActiveBonus] = useState<{ id: string; reason: string; expires_at: string; seen: boolean } | null>(null);
 
   useEffect(() => {
     if (!user) { setDevOverrideState(false); return; }
@@ -57,6 +58,16 @@ export function useSubscription() {
       .limit(1)
       .maybeSingle();
     setSub((data as SubscriptionRow | null) ?? null);
+    // Fetch latest non-expired bonus
+    const { data: bonus } = await supabase
+      .from("plus_bonuses")
+      .select("id,reason,expires_at,seen")
+      .eq("user_id", user.id)
+      .gt("expires_at", new Date().toISOString())
+      .order("expires_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setActiveBonus((bonus as any) ?? null);
     setLoading(false);
   };
 
@@ -84,7 +95,14 @@ export function useSubscription() {
   );
 
   const isDevUser = user?.email?.toLowerCase() === DEV_PLUS_EMAIL;
-  const isPlusActive = realPlusActive || (isDevUser && devOverride);
+  const isBonusActive = !!activeBonus && new Date(activeBonus.expires_at) > new Date();
+  const isPlusActive = realPlusActive || isBonusActive || (isDevUser && devOverride);
 
-  return { sub, loading, isPlusActive, refetch, isDevUser, devOverride, setDevOverride };
+  const markBonusSeen = async () => {
+    if (!activeBonus || activeBonus.seen) return;
+    await supabase.from("plus_bonuses").update({ seen: true }).eq("id", activeBonus.id);
+    setActiveBonus({ ...activeBonus, seen: true });
+  };
+
+  return { sub, loading, isPlusActive, refetch, isDevUser, devOverride, setDevOverride, activeBonus, isBonusActive, markBonusSeen };
 }

@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.has_active_bonus(uuid) FROM authenticated;

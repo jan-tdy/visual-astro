@@ -34,6 +34,7 @@ export default function Settings() {
   const [busy, setBusy] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [portalBusy, setPortalBusy] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [usage, setUsage] = useState<{
     bytes: number;
     counts: { stars: number; sessions: number; observations: number; promOverrides: number };
@@ -340,7 +341,7 @@ export default function Settings() {
                 </li>
                 <li className="flex items-start gap-2">
                   <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span><strong>5</strong> {t("settings.plan.ai")}</span>
+                  <span><strong>5</strong> AI skenov / mesiac</span>
                 </li>
               </ul>
             </Card>
@@ -355,10 +356,35 @@ export default function Settings() {
                   <p className="text-sm text-muted-foreground mt-1">{t("settings.plan.plusDesc")}</p>
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-semibold text-primary">2 €</div>
-                  <div className="text-xs text-muted-foreground">{t("settings.plan.month")}</div>
+                  <div className="text-3xl font-semibold text-primary">
+                    {billingCycle === "monthly" ? "2,99 €" : "2,65 €"}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {t("settings.plan.month")}
+                    {billingCycle === "yearly" && <span className="ml-1 text-primary">· 31,80 €/rok</span>}
+                  </div>
                 </div>
               </div>
+
+              {!isPlusActive && (
+                <div className="mt-3 inline-flex rounded-md border border-border p-0.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setBillingCycle("monthly")}
+                    className={`px-3 py-1 rounded ${billingCycle === "monthly" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                  >
+                    Mesačne
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBillingCycle("yearly")}
+                    className={`px-3 py-1 rounded ${billingCycle === "yearly" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                  >
+                    Ročne · <span className="text-primary/90 font-semibold ml-1">−11 %</span>
+                  </button>
+                </div>
+              )}
+
               <ul className="mt-4 space-y-2 text-sm">
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
@@ -374,7 +400,7 @@ export default function Settings() {
                 </li>
                 <li className="flex items-start gap-2">
                   <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span><strong>15</strong> {t("settings.plan.ai")}</span>
+                  <span><strong>40</strong> AI skenov / mesiac</span>
                 </li>
               </ul>
               {isPlusActive ? (
@@ -468,7 +494,7 @@ export default function Settings() {
             </DialogHeader>
             {checkoutOpen && user && (
               <StripeEmbeddedCheckout
-                priceId={PLUS_PRICE_ID}
+                priceId={billingCycle === "yearly" ? "plus_yearly" : PLUS_PRICE_ID}
                 customerEmail={user.email ?? undefined}
                 userId={user.id}
                 returnUrl={`${window.location.origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}`}

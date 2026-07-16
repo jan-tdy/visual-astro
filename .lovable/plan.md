@@ -1,77 +1,76 @@
+# Plán zmien
 
-# Reducciones — webová appka pre pozorovania premenných hviezd
+Rozsiahla požiadavka — rozdelené do 4 oblastí. Prejdem ich všetky v jednom kole.
 
-Plnohodnotná náhrada ODS tabuľky: editovateľný katalóg hviezd, zápis pozorovania s automatickým výpočtom magnitúdy a JD, navigácia po súhvezdiach (linky ako na obrázku), predvyplnenie zo šablóny poslednej session a export troch hlásení (VSNET, AAVSO, MEDUZA) ako samostatné súbory na stiahnutie.
+## 1. Raw mód – vylepšenia
 
-## Prihlásenie
-- Email + heslo (Lovable Cloud auth). Jeden užívateľ, ale registrácia/login sú zapnuté.
-- Po prihlásení sa pri prvom použití naimportuje katalóg hviezd a posledná session z nahraného ODS súboru (`Reducciones2604.ods`) do databázy užívateľa.
+**Aktuálny stav:** vľavo textarea, vpravo tabuľka pozorovaní s UT časom.
 
-## Hlavná obrazovka — Sessions
-- Zoznam uložených sessions (dátum, UT, počet zapísaných hviezd, JD).
-- Tlačidlo **Nová session** → vytvorí kópiu poslednej session ako šablónu:
-  - hlavička (dátum, UT, JD) sa posunie na „teraz“,
-  - hodnoty hviezd (A, Pasos A, Pasos B, B, „<=", nota) sa prevezmú z poslednej session,
-  - užívateľ upraví len to, čo sa zmenilo.
-- Akcie pri session: otvoriť, duplikovať, zmazať, exportovať.
+**Zmeny:**
 
-## Editor session
-Hlavička (editovateľná, JD sa prepočítava automaticky):
-- Dátum (UT), Hora (UT) → JD (kompletný a desatinné dni)
-- Fecha de Referencia (default 01/01/1980)
+- **Ľavý panel = editovateľný „raw list"**: každé existujúce pozorovanie s UT časom sa zobrazí ako jeden raw riadok (napr. `sscyga12v8.12215`). Riadky sa dajú:
+  - editovať priamo (textarea zostáva zdrojom pravdy),
+  - mazať (jednocho vymazaním riadku),
+  - pridávať (Enter na novom riadku – ako doteraz).
+  - Pri načítaní raw mdoe session sa textarea automaticky naplní existujúcimi riadkami ktoré majú ut čas ale ak tam nie sú žiadne také(nová session či uz z poslednej/oblúbenej alebo nová) tak to bdue proste prázdne.
+- **Viac pozorovaní jednej hviezdy:** prefix `+` na začiatku riadku = ďalšie pozorovanie predošlej hviezdy v session, `++` = tretie atď. Príklad:
+  ```
+  sscyga12v8.12215
+  +sscyg12v162247
+  ++sscyg12v8.12320
+  rxandave2230
+  ```
+  Uloží sa do `extraByStar` (existujúca štruktúra pre extra riadky).
+- **Pravý panel** (tabuľka) zostáva, filter „len s UT časom" zachovaný.
 
-Pod hlavičkou navigácia presne podľa obrázku — dva riadky liniek:
+## 2. Bug fix – názov session sa neukladá
 
-```text
-AND   CAS   CAM   UMA   HER   DRA           CYG
-ORI   GEM   LEO   AQL   SGE   PEGASUS
-VISUAL   BINAR   ECL faint        ECL bright
-```
+Prejdem `SessionEditor.tsx` – over kedy sa `name` posiela do `supabase.update`, či sa neprepisuje pri autosave alebo pri refetchi. Fix + otestovať že sa objaví v `Sessions.tsx` zozname.
 
-- Linky súhvezdí scrollujú/filtrujú na danú sekciu hviezd.
-- Druhý riadok (VISUAL / BINAR / ECL faint / ECL bright) filtruje typ hviezdy.
-- Aktívny link je zvýraznený, navštívené tmavšou farbou (ako na obrázku).
+## 3. Nová cenotvorba
 
-Pre každé súhvezdie tabuľka hviezd so stĺpcami:
-- Hviezda · A · Pasos A · Pasos B · B · `< / =` · UT · `:` · Nota
-- Vypočítané (read-only): VSNET kód a magnitúda, AAVSO riadok, MEDUZA riadok, JD
-- Indikátor stavu (vyplnené / limit / prázdne / chyba ako #DIV/0!).
+- Zmena z **denných** na **mesačné** limity AI skenov:
+  - Free: **5/mesiac** (bolo 5/deň)
+  - Plus: **40/mesiac** (bolo 15/deň)
+- Cena Plus:
+  - Mesačne: **eur2.99**
+  - Ročne: **eurxx.xx/rok** (= eur1.95/mesiac, ~xx% zľava)
+- Úpravy:
+  - `paper-ocr` edge function: zmena okna z `used_on = today` na mesačný agregát (`YYYY-MM`).
+  - Zobrazenie limitu v UI („X/5 tento mesiac").
+  - Stripe: pridať ročný price cez `batch_create_product` (nový price ID `plus_yearly`), UI toggle mesačne/ročne na paywall obrazovke.
 
-Vzorec magnitúdy: `mag = A + (Pasos A / (Pasos A + Pasos B)) * (B − A)`, zaokrúhlené na 2 desatinné. Pri vyplnenom „<=" sa zapisuje limit (napr. `<14.9`). Validácie ošetria delenie nulou (žiadne #DIV/0! v exporte).
+## 4. Milestone bonus – free Plus na 2 alebo 4 dni
 
-## Katalóg hviezd (editovateľný)
-Samostatná stránka **Katalóg**:
-- CRUD nad hviezdami: pridať, premenovať, zmazať, presunúť medzi súhvezdiami, zmeniť typ (VISUAL/BINAR/ECL faint/ECL bright).
-- Polia: názov, súhvezdie, typ, kód VSNET, kód AAVSO, ID karty (chart), poznámka.
-- Hromadný import/export katalógu (CSV) pre zálohu.
-- Pri importe z ODS sa katalóg založí raz; ďalej je plne editovateľný.
+Nová logika:
 
-## Exporty (na konci session)
-Tri tlačidlá → každé stiahne **samostatný textový súbor**, presne v rovnakých formátoch ako v ODS:
-- `vsnet_YYYYMMDD.txt` — riadky `KÓD YYYYMMDD.000 mag OBS`
-- `aavso_YYYYMMDD.txt` — AAVSO Visual File Format (hlavička `#TYPE=Visual`, `#OBSCODE=`, `#SOFTWARE=`, `#DELIM=,`, `#DATE=JD`, `#OBSTYPE=Visual`) + riadky `Estrella,JD,Mag,Comm,Comp1,Comp2,Carta,Notas`
-- `meduza_YYYYMMDD.txt` — `Estrella,JD,Mag,Fecha UT,Obs,Estima`
+- **Trigger 2 dni Plus:** nový účet, alebo prekročenie 10 / 900 / 1000 / 1500 / 5000 / 10000 pozorovaní.
+- **Trigger 4 dni Plus:** prekročenie 50 / 120 / 500 session.
+- **Opakovanie:** po vyčerpaní cyklu (posledný milník) sa milníky resetujú a začínajú odznova (nový bonus za ďalších 10 pozorovaní atď.).
+- Uvítací info banner (dismissable) na Sessions stránke: „Dostal si N dní Plus zadarmo za dosiahnutie X pozorovaní/session!".
+- PS: v nastaveniach nová sekica milníky kde všetky dosiahnuté vidno.
 
-Pri každom exporte sa preskakujú prázdne / chybné riadky. Tlačidlo **Náhľad** ukáže text pred stiahnutím a má aj „Kopírovať do schránky".
+**Technicky:**
 
-## Drobnosti
-- Kód observátora (OBS, default `DPV`) je v profile užívateľa, mení sa v Nastaveniach.
-- Uložiť sa dá kedykoľvek; auto-save každých pár sekúnd.
-- Mobile-friendly tabuľka (horizontálny scroll + sticky názov hviezdy).
+- Nová tabuľka `plus_bonuses` (user_id, granted_at, expires_at, reason, milestone_key) + `milestone_progress` stĺpec v `profiles` (JSONB s posledným splneným milníkom v každej kategórii + počet cyklov).
+- Trigger funkcia `check_and_grant_bonus(_user_id)` volaná po INSERT do `observations` a `sessions` (AFTER INSERT trigger).
+- `has_active_bonus(_user_id)` helper → doplniť do `user_storage_limit_bytes` a `has_active_subscription` logiky, aby bonus dával Plus práva.
+- Nový hook `usePlusStatus()` alebo rozšírenie `useSubscription()`: `isPlusActive = subscription || bonus`.
+- Banner komponent + state v profile („welcome_bonus_seen": bool).
 
-## Technické detaily
-- Stack: React + Vite + Tailwind + shadcn/ui, React Router.
-- Lovable Cloud (Supabase) — auth (email+heslo) a databáza s RLS na `user_id`.
-- Tabuľky:
-  - `profiles` (user_id, obs_code, fecha_referencia)
-  - `stars` (id, user_id, name, constellation, type, vsnet_code, aavso_code, chart_id, notes, sort_order)
-  - `sessions` (id, user_id, observed_at_utc, jd, created_at)
-  - `observations` (id, session_id, star_id, a, pasos_a, pasos_b, b, limit_value, ut_time, note)
-- JD prepočet a vzorce magnitúdy v čistých TS utilitách (`src/lib/astro.ts`) + unit testy.
-- Generátory exportov v `src/lib/exporters/{vsnet,aavso,meduza}.ts`, sťahované cez Blob.
-- Jednorazový import z `Reducciones2604.ods` cez tlačidlo „Importovať katalóg z ODS" v Nastaveniach (parsovanie cez `xlsx` knižnicu, hviezdy + posledná session sa zapíšu do DB).
+## 5. Testing / bug sweep
 
-## Mimo rozsahu (môžeme pridať neskôr)
-- Viac užívateľov so zdieľaním sessions.
-- Grafy svetelných kriviek hviezdy v čase.
-- Priame odoslanie hlásenia do VSNET/AAVSO emailom.
+Po implementácii:
+
+- prejsť `psql`om observations/sessions/subscriptions per user či všetko sedí,
+- spustiť build a existujúce testy,
+- vizuálne otestovať cez Playwright: raw mode edit/delete/`+` prefix, milestone banner, mesačný limit, ročný toggle na paywall.
+
+## Poradie práce
+
+1. Fix bug s ukladaním názvu session (rýchle).
+2. Raw mód – ľavý panel editovateľný + `+` prefix.
+3. Backend: migrácia (`plus_bonuses`, `milestone_progress`, triggery, helper), zmena `paper-ocr` na mesačné.
+4. Frontend: hook, banner, paywall toggle.
+5. Stripe: pridať ročný produkt.
+6. Test sweep.
