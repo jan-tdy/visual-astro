@@ -494,7 +494,7 @@ export default function Settings() {
             </DialogHeader>
             {checkoutOpen && user && (
               <StripeEmbeddedCheckout
-                priceId={PLUS_PRICE_ID}
+                priceId={billingCycle === "yearly" ? "plus_yearly" : PLUS_PRICE_ID}
                 customerEmail={user.email ?? undefined}
                 userId={user.id}
                 returnUrl={`${window.location.origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}`}
