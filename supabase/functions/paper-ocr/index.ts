@@ -40,7 +40,16 @@ Deno.serve(async (req) => {
     const { data: prof } = await supabase
       .from('profiles').select('dev_plus_override').eq('user_id', userId).maybeSingle();
     const devOverride = !!(prof as any)?.dev_plus_override && email === 'var@kozmos.sk';
-    const isPlus = subActive || devOverride;
+    // Bonus (milestone free Plus)
+    const { data: bonusRow } = await supabase
+      .from('plus_bonuses')
+      .select('id')
+      .eq('user_id', userId)
+      .gt('expires_at', new Date().toISOString())
+      .limit(1)
+      .maybeSingle();
+    const bonusActive = !!bonusRow;
+    const isPlus = subActive || devOverride || bonusActive;
     const monthlyLimit = isPlus ? 40 : 5;
 
     // Mesačný agregát: prvý deň mesiaca ako "bucket" v ocr_usage.used_on
