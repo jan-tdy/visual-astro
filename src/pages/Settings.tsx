@@ -341,7 +341,7 @@ export default function Settings() {
                 </li>
                 <li className="flex items-start gap-2">
                   <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span><strong>5</strong> {t("settings.plan.ai")}</span>
+                  <span><strong>5</strong> AI skenov / mesiac</span>
                 </li>
               </ul>
             </Card>
