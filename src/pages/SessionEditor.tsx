@@ -1266,6 +1266,9 @@ export default function SessionEditor() {
                   (napr. <code className="font-mono">{`agdra<13-52108`}</code>).
                   Poznámka na konci za <code className="font-mono">#</code>{" "}
                   (napr. <code className="font-mono">agdraf3v1g2108#hmla</code>).
+                  {" "}Viac pozorovaní tej istej hviezdy: začni riadok
+                  {" "}<code className="font-mono">+</code> (2. zápis),
+                  {" "}<code className="font-mono">++</code> (3. zápis) atď.
                 </div>
               </div>
               <Button size="sm" onClick={applyRaw} disabled={!rawText.trim()}>
