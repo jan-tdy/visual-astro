@@ -1399,15 +1399,15 @@ export default function SessionEditor() {
                         </thead>
                         <tbody className="font-mono">
                           {rows.map((r) => (
-                            <tr key={r.key} className="border-t border-border/40">
-                              <td className="px-2 py-1 font-sans font-medium">{r.name}</td>
+                            <tr key={r.key} className={`border-t border-border/40 ${r.bad ? "text-destructive" : ""}`}>
+                              <td className="px-2 py-1 font-sans font-medium">{r.bad ? `? ${r.name}` : r.name}</td>
                               <td className="px-2 py-1">{r.o.a ?? ""}</td>
                               <td className="px-2 py-1">{r.o.pasos_a ?? ""}</td>
                               <td className="px-2 py-1">{r.o.pasos_b ?? ""}</td>
                               <td className="px-2 py-1">{r.o.b ?? ""}</td>
                               <td className="px-2 py-1">{r.o.limit_value ?? ""}</td>
                               <td className="px-2 py-1">{r.o.ut_time ?? ""}</td>
-                              <td className="px-2 py-1 text-right">{r.mag.value ?? <span className="text-muted-foreground">—</span>}</td>
+                              <td className="px-2 py-1 text-right">{r.mag?.value ?? <span className="text-muted-foreground">—</span>}</td>
                             </tr>
                           ))}
                         </tbody>
