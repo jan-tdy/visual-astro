@@ -492,7 +492,10 @@ export default function SessionEditor() {
       supabase
         .from("sessions")
         .update({ name: sessionName || null })
-        .eq("id", id);
+        .eq("id", id)
+        .then(({ error }) => {
+          if (error) console.error("save name failed", error);
+        });
     }, 400);
     return () => clearTimeout(t);
   }, [id, loading, sessionName]);
@@ -504,14 +507,23 @@ export default function SessionEditor() {
         supabase
           .from("sessions")
           .update({ name: sessionNameRef.current || null })
-          .eq("id", id);
+          .eq("id", id)
+          .then(({ error }) => {
+            if (error) console.error("save name failed", error);
+          });
       }
     };
   }, [id]);
 
   const saveNameNow = () => {
     if (!id) return;
-    supabase.from("sessions").update({ name: sessionName || null }).eq("id", id);
+    supabase
+      .from("sessions")
+      .update({ name: sessionName || null })
+      .eq("id", id)
+      .then(({ error }) => {
+        if (error) console.error("save name failed", error);
+      });
   };
 
   const updateObs = (starId: string, patch: Partial<Obs>) => {
