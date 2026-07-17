@@ -83,6 +83,27 @@ export default function SessionEditor() {
   const [rawText, setRawText] = useState("");
   const [rawReport, setRawReport] = useState<{ matched: number; unmatched: string[] } | null>(null);
   const rawPrefilledRef = useRef(false);
+  const rawDraftKey = id ? `raw_draft_${id}` : "";
+  const rawModeKey = id ? `raw_mode_${id}` : "";
+  // Restore persisted draft + mode on mount (survives refresh / net drops)
+  useEffect(() => {
+    if (!id) return;
+    try {
+      const saved = localStorage.getItem(`raw_draft_${id}`);
+      if (saved != null) { setRawText(saved); rawPrefilledRef.current = true; }
+      const mode = localStorage.getItem(`raw_mode_${id}`);
+      if (mode === "1") setRawMode(true);
+    } catch {}
+  }, [id]);
+  // Persist draft on every change
+  useEffect(() => {
+    if (!rawDraftKey) return;
+    try { localStorage.setItem(rawDraftKey, rawText); } catch {}
+  }, [rawText, rawDraftKey]);
+  useEffect(() => {
+    if (!rawModeKey) return;
+    try { localStorage.setItem(rawModeKey, rawMode ? "1" : "0"); } catch {}
+  }, [rawMode, rawModeKey]);
   const sessionNameRef = useRef("");
   // Snapshot obs values as loaded (baseline from template session). Použijeme na
   // upozornenie ak používateľ upravil magnitúdu, ale zabudol UT čas.
