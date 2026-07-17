@@ -1333,21 +1333,48 @@ export default function SessionEditor() {
             )}
               </div>
               <div className="min-w-0">
-                <div className="font-semibold text-sm mb-2">Prehľad session</div>
+                <div className="font-semibold text-sm mb-2">
+                  Živý náhľad
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    (nezapísané — stlač „Použiť")
+                  </span>
+                </div>
                 {(() => {
-                  const rows: { key: string; name: string; o: Obs; mag: ReturnType<typeof computeMagnitude> }[] = [];
+                  // Live preview: parse the current raw text without touching DB.
+                  const norm = (x: string) => x.toLowerCase().replace(/\s+/g, "");
+                  const byToken = new Map<string, Star>();
                   for (const s of stars) {
-                    const o = obsByStar[s.id];
-                    if (o && o.ut_time && o.ut_time.trim()) {
-                      rows.push({ key: s.id, name: s.name, o, mag: computeMagnitude(o, s.name) });
-                    }
-                    const extras = extraByStar[s.id] ?? [];
-                    extras.forEach((eo, ei) => {
-                      if (eo.ut_time && eo.ut_time.trim()) {
-                        rows.push({ key: `${s.id}-x${ei}`, name: s.name, o: eo, mag: computeMagnitude(eo, s.name) });
-                      }
-                    });
+                    byToken.set(norm(s.name), s);
+                    if (s.vsnet_code) byToken.set(norm(s.vsnet_code), s);
+                    if (s.aavso_code) byToken.set(norm(s.aavso_code), s);
                   }
+                  const tokens = Array.from(byToken.keys()).sort((a, b) => b.length - a.length);
+                  const rows: { key: string; name: string; o: Obs; mag: ReturnType<typeof computeMagnitude>; bad?: boolean }[] = [];
+                  let prevStar: Star | null = null;
+                  const lines = rawText.split(/\r?\n/);
+                  lines.forEach((line, i) => {
+                    if (!line.trim()) return;
+                    const p = parseRawLine(line, tokens);
+                    if (!p) {
+                      rows.push({ key: `bad-${i}`, name: line.trim(), o: { star_id: "", a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null, ut_time: null, note: null }, mag: null as any, bad: true });
+                      return;
+                    }
+                    const star = p.starToken ? byToken.get(p.starToken) : null;
+                    const target = star ?? ((p.plusLevel ?? 0) > 0 ? prevStar : null);
+                    if (!target) {
+                      rows.push({ key: `bad-${i}`, name: line.trim(), o: { star_id: "", a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null, ut_time: null, note: null }, mag: null as any, bad: true });
+                      return;
+                    }
+                    const o: Obs = {
+                      star_id: target.id,
+                      a: p.a, pasos_a: p.pasos_a, pasos_b: p.pasos_b, b: p.b,
+                      limit_value: p.limit_value ?? null,
+                      ut_time: p.ut_time,
+                      note: p.note ?? null,
+                    };
+                    rows.push({ key: `r-${i}`, name: target.name, o, mag: computeMagnitude(o, target.name) });
+                    if (!(p.plusLevel && p.plusLevel > 0) || star) prevStar = target;
+                  });
                   if (rows.length === 0) {
                     return (
                       <div className="text-xs text-muted-foreground p-3 border border-dashed border-border rounded-md">
