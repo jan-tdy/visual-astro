@@ -6,7 +6,7 @@ import { AppHeader } from "@/components/app/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus, ScanLine, Printer, Search, PanelLeftClose, PanelLeftOpen, Table as TableIcon, Type } from "lucide-react";
+import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus, ScanLine, Printer, Search, PanelLeftClose, PanelLeftOpen, Table as TableIcon, Type, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
 import { buildAAVSO, buildMEDUZA, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
@@ -86,6 +86,10 @@ export default function SessionEditor() {
     try { return (localStorage.getItem("raw_preview_sort") as any) || "catalog"; } catch { return "catalog"; }
   });
   useEffect(() => { try { localStorage.setItem("raw_preview_sort", rawPreviewSort); } catch {} }, [rawPreviewSort]);
+  const [rawPreviewOrder, setRawPreviewOrder] = useState<"asc" | "desc">(() => {
+    try { return (localStorage.getItem("raw_preview_order") as any) || "asc"; } catch { return "asc"; }
+  });
+  useEffect(() => { try { localStorage.setItem("raw_preview_order", rawPreviewOrder); } catch {} }, [rawPreviewOrder]);
   const rawPrefilledRef = useRef(false);
   const rawDraftKey = id ? `raw_draft_${id}` : "";
   const rawModeKey = id ? `raw_mode_${id}` : "";
@@ -1309,7 +1313,7 @@ export default function SessionEditor() {
                 </div>
               </div>
               <Button size="sm" onClick={applyRaw} disabled={!rawText.trim()}>
-                Použiť ({rawText.split(/\r?\n/).filter((l) => l.trim()).length})
+                {t("editor.rawApply")} ({rawText.split(/\r?\n/).filter((l) => l.trim()).length})
               </Button>
             </div>
             <textarea
@@ -1339,15 +1343,19 @@ export default function SessionEditor() {
               <div className="min-w-0">
                 <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
                   <div className="font-semibold text-sm">
-                    Živý náhľad
+                    {t("editor.rawPreview")}
                     <span className="ml-2 text-xs font-normal text-muted-foreground">
-                      (nezapísané — stlač „Použiť")
+                      {t("editor.rawPreviewHint").replace("{action}", t("editor.rawApply"))}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1 text-xs">
-                    <span className="text-muted-foreground">Zoradiť:</span>
-                    <Button size="sm" variant={rawPreviewSort === "catalog" ? "default" : "outline"} className="h-6 px-2 text-xs" onClick={() => setRawPreviewSort("catalog")}>Katalóg</Button>
-                    <Button size="sm" variant={rawPreviewSort === "ut" ? "default" : "outline"} className="h-6 px-2 text-xs" onClick={() => setRawPreviewSort("ut")}>UT čas</Button>
+                  <div className="flex items-center gap-1 text-xs flex-wrap">
+                    <span className="text-muted-foreground">{t("editor.rawSort")}</span>
+                    <Button size="sm" variant={rawPreviewSort === "catalog" ? "default" : "outline"} className="h-6 px-2 text-xs" onClick={() => setRawPreviewSort("catalog")}>{t("editor.rawSortCatalog")}</Button>
+                    <Button size="sm" variant={rawPreviewSort === "ut" ? "default" : "outline"} className="h-6 px-2 text-xs" onClick={() => setRawPreviewSort("ut")}>{t("editor.rawSortUt")}</Button>
+                    <Button size="sm" variant="outline" className="h-6 px-2 text-xs gap-1" onClick={() => setRawPreviewOrder((o) => (o === "asc" ? "desc" : "asc"))}>
+                      {rawPreviewOrder === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                      {rawPreviewOrder === "asc" ? t("editor.rawSortAsc") : t("editor.rawSortDesc")}
+                    </Button>
                   </div>
                 </div>
                 {(() => {
@@ -1391,21 +1399,24 @@ export default function SessionEditor() {
                   if (rows.length === 0) {
                     return (
                       <div className="text-xs text-muted-foreground p-3 border border-dashed border-border rounded-md">
-                        Zatiaľ žiadne pozorovanie s UT časom.
+                        {t("editor.rawNoObservations")}
                       </div>
                     );
                   }
                   const sorted = [...rows].sort((a, b) => {
+                    let cmp = 0;
                     if (rawPreviewSort === "ut") {
                       const at = a.o.ut_time ?? "";
                       const bt = b.o.ut_time ?? "";
-                      if (at && !bt) return -1;
-                      if (!at && bt) return 1;
-                      if (at !== bt) return at.localeCompare(bt);
-                      return a.order - b.order;
+                      if (at && !bt) cmp = -1;
+                      else if (!at && bt) cmp = 1;
+                      else if (at !== bt) cmp = at.localeCompare(bt);
+                      else cmp = a.order - b.order;
+                    } else {
+                      if (a.catIdx !== b.catIdx) cmp = a.catIdx - b.catIdx;
+                      else cmp = a.order - b.order;
                     }
-                    if (a.catIdx !== b.catIdx) return a.catIdx - b.catIdx;
-                    return a.order - b.order;
+                    return rawPreviewOrder === "desc" ? -cmp : cmp;
                   });
                   return (
                     <div className="overflow-x-auto rounded-md border border-border">
