@@ -1398,21 +1398,24 @@ export default function SessionEditor() {
                   if (rows.length === 0) {
                     return (
                       <div className="text-xs text-muted-foreground p-3 border border-dashed border-border rounded-md">
-                        Zatiaľ žiadne pozorovanie s UT časom.
+                        {t("editor.rawNoObservations")}
                       </div>
                     );
                   }
                   const sorted = [...rows].sort((a, b) => {
+                    let cmp = 0;
                     if (rawPreviewSort === "ut") {
                       const at = a.o.ut_time ?? "";
                       const bt = b.o.ut_time ?? "";
-                      if (at && !bt) return -1;
-                      if (!at && bt) return 1;
-                      if (at !== bt) return at.localeCompare(bt);
-                      return a.order - b.order;
+                      if (at && !bt) cmp = -1;
+                      else if (!at && bt) cmp = 1;
+                      else if (at !== bt) cmp = at.localeCompare(bt);
+                      else cmp = a.order - b.order;
+                    } else {
+                      if (a.catIdx !== b.catIdx) cmp = a.catIdx - b.catIdx;
+                      else cmp = a.order - b.order;
                     }
-                    if (a.catIdx !== b.catIdx) return a.catIdx - b.catIdx;
-                    return a.order - b.order;
+                    return rawPreviewOrder === "desc" ? -cmp : cmp;
                   });
                   return (
                     <div className="overflow-x-auto rounded-md border border-border">
