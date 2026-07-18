@@ -1343,15 +1343,18 @@ export default function SessionEditor() {
               <div className="min-w-0">
                 <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
                   <div className="font-semibold text-sm">
-                    Živý náhľad
+                    {t("editor.rawPreview")}
                     <span className="ml-2 text-xs font-normal text-muted-foreground">
-                      (nezapísané — stlač „Použiť")
+                      {t("editor.rawPreviewHint").replace("{action}", t("editor.rawApply"))}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1 text-xs">
-                    <span className="text-muted-foreground">Zoradiť:</span>
-                    <Button size="sm" variant={rawPreviewSort === "catalog" ? "default" : "outline"} className="h-6 px-2 text-xs" onClick={() => setRawPreviewSort("catalog")}>Katalóg</Button>
-                    <Button size="sm" variant={rawPreviewSort === "ut" ? "default" : "outline"} className="h-6 px-2 text-xs" onClick={() => setRawPreviewSort("ut")}>UT čas</Button>
+                  <div className="flex items-center gap-1 text-xs flex-wrap">
+                    <span className="text-muted-foreground">{t("editor.rawSort")}</span>
+                    <Button size="sm" variant={rawPreviewSort === "catalog" ? "default" : "outline"} className="h-6 px-2 text-xs" onClick={() => setRawPreviewSort("catalog")}>{t("editor.rawSortCatalog")}</Button>
+                    <Button size="sm" variant={rawPreviewSort === "ut" ? "default" : "outline"} className="h-6 px-2 text-xs" onClick={() => setRawPreviewSort("ut")}>{t("editor.rawSortUt")}</Button>
+                    <Button size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={() => setRawPreviewOrder((o) => (o === "asc" ? "desc" : "asc"))}>
+                      {rawPreviewOrder === "asc" ? t("editor.rawSortAsc") : t("editor.rawSortDesc")}
+                    </Button>
                   </div>
                 </div>
                 {(() => {
