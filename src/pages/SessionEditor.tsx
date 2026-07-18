@@ -86,6 +86,10 @@ export default function SessionEditor() {
     try { return (localStorage.getItem("raw_preview_sort") as any) || "catalog"; } catch { return "catalog"; }
   });
   useEffect(() => { try { localStorage.setItem("raw_preview_sort", rawPreviewSort); } catch {} }, [rawPreviewSort]);
+  const [rawPreviewOrder, setRawPreviewOrder] = useState<"asc" | "desc">(() => {
+    try { return (localStorage.getItem("raw_preview_order") as any) || "asc"; } catch { return "asc"; }
+  });
+  useEffect(() => { try { localStorage.setItem("raw_preview_order", rawPreviewOrder); } catch {} }, [rawPreviewOrder]);
   const rawPrefilledRef = useRef(false);
   const rawDraftKey = id ? `raw_draft_${id}` : "";
   const rawModeKey = id ? `raw_mode_${id}` : "";
