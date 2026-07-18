@@ -82,6 +82,10 @@ export default function SessionEditor() {
   const [rawMode, setRawMode] = useState(false);
   const [rawText, setRawText] = useState("");
   const [rawReport, setRawReport] = useState<{ matched: number; unmatched: string[] } | null>(null);
+  const [rawPreviewSort, setRawPreviewSort] = useState<"catalog" | "ut">(() => {
+    try { return (localStorage.getItem("raw_preview_sort") as any) || "catalog"; } catch { return "catalog"; }
+  });
+  useEffect(() => { try { localStorage.setItem("raw_preview_sort", rawPreviewSort); } catch {} }, [rawPreviewSort]);
   const rawPrefilledRef = useRef(false);
   const rawDraftKey = id ? `raw_draft_${id}` : "";
   const rawModeKey = id ? `raw_mode_${id}` : "";
