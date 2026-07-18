@@ -1352,7 +1352,8 @@ export default function SessionEditor() {
                     <span className="text-muted-foreground">{t("editor.rawSort")}</span>
                     <Button size="sm" variant={rawPreviewSort === "catalog" ? "default" : "outline"} className="h-6 px-2 text-xs" onClick={() => setRawPreviewSort("catalog")}>{t("editor.rawSortCatalog")}</Button>
                     <Button size="sm" variant={rawPreviewSort === "ut" ? "default" : "outline"} className="h-6 px-2 text-xs" onClick={() => setRawPreviewSort("ut")}>{t("editor.rawSortUt")}</Button>
-                    <Button size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={() => setRawPreviewOrder((o) => (o === "asc" ? "desc" : "asc"))}>
+                    <Button size="sm" variant="outline" className="h-6 px-2 text-xs gap-1" onClick={() => setRawPreviewOrder((o) => (o === "asc" ? "desc" : "asc"))}>
+                      {rawPreviewOrder === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
                       {rawPreviewOrder === "asc" ? t("editor.rawSortAsc") : t("editor.rawSortDesc")}
                     </Button>
                   </div>
