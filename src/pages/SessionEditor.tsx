@@ -1313,7 +1313,7 @@ export default function SessionEditor() {
                 </div>
               </div>
               <Button size="sm" onClick={applyRaw} disabled={!rawText.trim()}>
-                Použiť ({rawText.split(/\r?\n/).filter((l) => l.trim()).length})
+                {t("editor.rawApply")} ({rawText.split(/\r?\n/).filter((l) => l.trim()).length})
               </Button>
             </div>
             <textarea
