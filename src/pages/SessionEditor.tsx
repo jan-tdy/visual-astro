@@ -1337,11 +1337,18 @@ export default function SessionEditor() {
             )}
               </div>
               <div className="min-w-0">
-                <div className="font-semibold text-sm mb-2">
-                  Živý náhľad
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">
-                    (nezapísané — stlač „Použiť")
-                  </span>
+                <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+                  <div className="font-semibold text-sm">
+                    Živý náhľad
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      (nezapísané — stlač „Použiť")
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs">
+                    <span className="text-muted-foreground">Zoradiť:</span>
+                    <Button size="sm" variant={rawPreviewSort === "catalog" ? "default" : "outline"} className="h-6 px-2 text-xs" onClick={() => setRawPreviewSort("catalog")}>Katalóg</Button>
+                    <Button size="sm" variant={rawPreviewSort === "ut" ? "default" : "outline"} className="h-6 px-2 text-xs" onClick={() => setRawPreviewSort("ut")}>UT čas</Button>
+                  </div>
                 </div>
                 {(() => {
                   // Live preview: parse the current raw text without touching DB.
@@ -1353,20 +1360,22 @@ export default function SessionEditor() {
                     if (s.aavso_code) byToken.set(norm(s.aavso_code), s);
                   }
                   const tokens = Array.from(byToken.keys()).sort((a, b) => b.length - a.length);
-                  const rows: { key: string; name: string; o: Obs; mag: ReturnType<typeof computeMagnitude>; bad?: boolean }[] = [];
+                  const catalogIndex = new Map<string, number>();
+                  stars.forEach((s, i) => catalogIndex.set(s.id, i));
+                  const rows: { key: string; name: string; o: Obs; mag: ReturnType<typeof computeMagnitude>; bad?: boolean; catIdx: number; order: number }[] = [];
                   let prevStar: Star | null = null;
                   const lines = rawText.split(/\r?\n/);
                   lines.forEach((line, i) => {
                     if (!line.trim()) return;
                     const p = parseRawLine(line, tokens);
                     if (!p) {
-                      rows.push({ key: `bad-${i}`, name: line.trim(), o: { star_id: "", a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null, ut_time: null, note: null }, mag: null as any, bad: true });
+                      rows.push({ key: `bad-${i}`, name: line.trim(), o: { star_id: "", a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null, ut_time: null, note: null }, mag: null as any, bad: true, catIdx: Number.MAX_SAFE_INTEGER, order: i });
                       return;
                     }
                     const star = p.starToken ? byToken.get(p.starToken) : null;
                     const target = star ?? ((p.plusLevel ?? 0) > 0 ? prevStar : null);
                     if (!target) {
-                      rows.push({ key: `bad-${i}`, name: line.trim(), o: { star_id: "", a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null, ut_time: null, note: null }, mag: null as any, bad: true });
+                      rows.push({ key: `bad-${i}`, name: line.trim(), o: { star_id: "", a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null, ut_time: null, note: null }, mag: null as any, bad: true, catIdx: Number.MAX_SAFE_INTEGER, order: i });
                       return;
                     }
                     const o: Obs = {
@@ -1376,7 +1385,7 @@ export default function SessionEditor() {
                       ut_time: p.ut_time,
                       note: p.note ?? null,
                     };
-                    rows.push({ key: `r-${i}`, name: target.name, o, mag: computeMagnitude(o, target.name) });
+                    rows.push({ key: `r-${i}`, name: target.name, o, mag: computeMagnitude(o, target.name), catIdx: catalogIndex.get(target.id) ?? Number.MAX_SAFE_INTEGER, order: i });
                     if (!(p.plusLevel && p.plusLevel > 0) || star) prevStar = target;
                   });
                   if (rows.length === 0) {
@@ -1386,6 +1395,18 @@ export default function SessionEditor() {
                       </div>
                     );
                   }
+                  const sorted = [...rows].sort((a, b) => {
+                    if (rawPreviewSort === "ut") {
+                      const at = a.o.ut_time ?? "";
+                      const bt = b.o.ut_time ?? "";
+                      if (at && !bt) return -1;
+                      if (!at && bt) return 1;
+                      if (at !== bt) return at.localeCompare(bt);
+                      return a.order - b.order;
+                    }
+                    if (a.catIdx !== b.catIdx) return a.catIdx - b.catIdx;
+                    return a.order - b.order;
+                  });
                   return (
                     <div className="overflow-x-auto rounded-md border border-border">
                       <table className="w-full text-xs">
@@ -1399,10 +1420,11 @@ export default function SessionEditor() {
                             <th className="px-2 py-1 w-14">&lt;/=</th>
                             <th className="px-2 py-1 w-14">{t("editor.col.ut")}</th>
                             <th className="px-2 py-1 w-14 text-right">{t("editor.col.mag")}</th>
+                            <th className="px-2 py-1">{t("editor.col.note") || "Poznámka"}</th>
                           </tr>
                         </thead>
                         <tbody className="font-mono">
-                          {rows.map((r) => (
+                          {sorted.map((r) => (
                             <tr key={r.key} className={`border-t border-border/40 ${r.bad ? "text-destructive" : ""}`}>
                               <td className="px-2 py-1 font-sans font-medium">{r.bad ? `? ${r.name}` : r.name}</td>
                               <td className="px-2 py-1">{r.o.a ?? ""}</td>
@@ -1412,6 +1434,7 @@ export default function SessionEditor() {
                               <td className="px-2 py-1">{r.o.limit_value ?? ""}</td>
                               <td className="px-2 py-1">{r.o.ut_time ?? ""}</td>
                               <td className="px-2 py-1 text-right">{r.mag?.value ?? <span className="text-muted-foreground">—</span>}</td>
+                              <td className="px-2 py-1 font-sans text-muted-foreground">{r.o.note ?? ""}</td>
                             </tr>
                           ))}
                         </tbody>
