@@ -6,7 +6,7 @@ import { AppHeader } from "@/components/app/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus, ScanLine, Printer, Search, PanelLeftClose, PanelLeftOpen, Table as TableIcon, Type, ArrowUp, ArrowDown } from "lucide-react";
+  import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus, ScanLine, Printer, Search, PanelLeftClose, PanelLeftOpen, Table as TableIcon, Type, ArrowUp, ArrowDown, Sparkles, Minus } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
 import { buildAAVSO, buildMEDUZA, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
@@ -80,6 +80,10 @@ export default function SessionEditor() {
   const [leftAlign, setLeftAlign] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [rawMode, setRawMode] = useState(false);
+  const [simpleMode, setSimpleMode] = useState<boolean>(() => {
+    try { return localStorage.getItem("session_simple_mode") === "1"; } catch { return false; }
+  });
+  useEffect(() => { try { localStorage.setItem("session_simple_mode", simpleMode ? "1" : "0"); } catch {} }, [simpleMode]);
   const [rawText, setRawText] = useState("");
   const [rawReport, setRawReport] = useState<{ matched: number; unmatched: string[] } | null>(null);
   const [rawPreviewSort, setRawPreviewSort] = useState<"catalog" | "ut">(() => {
@@ -1067,7 +1071,8 @@ export default function SessionEditor() {
   })();
 
   return (
-    <div className="min-h-screen">
+    <div className={`min-h-screen ${simpleMode ? "simple-mode relative" : ""}`}>
+      {simpleMode && <div aria-hidden className="fixed inset-0 -z-10 bg-background" />}
       <AppHeader />
       <main className={leftAlign ? "pl-4 pr-4 py-6 max-w-6xl" : "container mx-auto px-4 py-6 max-w-6xl"}>
         <div className="flex items-center justify-between mb-3">
@@ -1075,6 +1080,15 @@ export default function SessionEditor() {
             <ChevronLeft className="h-4 w-4 mr-1" /> {t("editor.back")}
           </Button>
           <div className="flex items-center gap-1">
+          <Button
+            variant={simpleMode ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setSimpleMode((v) => !v)}
+            title={simpleMode ? "Vypnúť Simple mód" : "Zapnúť Simple mód"}
+          >
+            {simpleMode ? <Sparkles className="h-4 w-4 mr-1" /> : <Minus className="h-4 w-4 mr-1" />}
+            {simpleMode ? "Bohatý" : "Simple"}
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -1250,7 +1264,7 @@ export default function SessionEditor() {
 
         {/* Constellation nav (matches user image) */}
         {!rawMode && (
-        <Card className="p-4 mb-4 sticky top-[57px] z-20 backdrop-blur bg-card/80">
+        <Card className={`p-4 mb-4 ${simpleMode ? "bg-card" : "sticky top-[57px] z-20 backdrop-blur bg-card/80"}`}>
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
