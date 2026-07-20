@@ -80,6 +80,10 @@ export default function SessionEditor() {
   const [leftAlign, setLeftAlign] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [rawMode, setRawMode] = useState(false);
+  const [simpleMode, setSimpleMode] = useState<boolean>(() => {
+    try { return localStorage.getItem("session_simple_mode") === "1"; } catch { return false; }
+  });
+  useEffect(() => { try { localStorage.setItem("session_simple_mode", simpleMode ? "1" : "0"); } catch {} }, [simpleMode]);
   const [rawText, setRawText] = useState("");
   const [rawReport, setRawReport] = useState<{ matched: number; unmatched: string[] } | null>(null);
   const [rawPreviewSort, setRawPreviewSort] = useState<"catalog" | "ut">(() => {
