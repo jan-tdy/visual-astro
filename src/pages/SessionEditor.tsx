@@ -1071,7 +1071,8 @@ export default function SessionEditor() {
   })();
 
   return (
-    <div className="min-h-screen">
+    <div className={`min-h-screen ${simpleMode ? "simple-mode relative" : ""}`}>
+      {simpleMode && <div aria-hidden className="fixed inset-0 -z-10 bg-background" />}
       <AppHeader />
       <main className={leftAlign ? "pl-4 pr-4 py-6 max-w-6xl" : "container mx-auto px-4 py-6 max-w-6xl"}>
         <div className="flex items-center justify-between mb-3">
@@ -1079,6 +1080,15 @@ export default function SessionEditor() {
             <ChevronLeft className="h-4 w-4 mr-1" /> {t("editor.back")}
           </Button>
           <div className="flex items-center gap-1">
+          <Button
+            variant={simpleMode ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setSimpleMode((v) => !v)}
+            title={simpleMode ? t("editor.simpleOff") : t("editor.simpleOn")}
+          >
+            {simpleMode ? <Sparkles className="h-4 w-4 mr-1" /> : <Minus className="h-4 w-4 mr-1" />}
+            {simpleMode ? t("editor.simpleOff") : t("editor.simpleOn")}
+          </Button>
           <Button
             variant="ghost"
             size="sm"
