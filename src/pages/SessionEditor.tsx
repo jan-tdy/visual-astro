@@ -1084,10 +1084,10 @@ export default function SessionEditor() {
             variant={simpleMode ? "default" : "ghost"}
             size="sm"
             onClick={() => setSimpleMode((v) => !v)}
-            title={simpleMode ? t("editor.simpleOff") : t("editor.simpleOn")}
+            title={simpleMode ? "Vypnúť Simple mód" : "Zapnúť Simple mód"}
           >
             {simpleMode ? <Sparkles className="h-4 w-4 mr-1" /> : <Minus className="h-4 w-4 mr-1" />}
-            {simpleMode ? t("editor.simpleOff") : t("editor.simpleOn")}
+            {simpleMode ? "Bohatý" : "Simple"}
           </Button>
           <Button
             variant="ghost"
