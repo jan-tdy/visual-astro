@@ -16,6 +16,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useI18n } from "@/hooks/useI18n";
+import { getPrefs } from "@/hooks/usePrefs";
 
 type Star = {
   id: string;
@@ -287,7 +288,15 @@ export default function Catalog() {
                       <Button variant="ghost" size="icon" disabled={!canDown} title={t("catalog.moveDown")} onClick={(e) => { e.stopPropagation(); moveStar(s, 1); }}>
                         <ArrowDown className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setConfirmDelete(s); }}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (getPrefs().confirmDelete) setConfirmDelete(s);
+                          else remove(s.id);
+                        }}
+                      >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </td>

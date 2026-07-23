@@ -371,6 +371,11 @@ export default function SessionEditor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawMode]);
 
+  // Current UT time as "HH:MM" (Plus: autofill on opening a new row).
+  const nowUt = () => {
+    const now = new Date();
+    return `${String(now.getUTCHours()).padStart(2, "0")}:${String(now.getUTCMinutes()).padStart(2, "0")}`;
+  };
   // Helpers: auto-format UT — always strip non-digits then reinsert ":" based on length
   const formatUt = (raw: string) => {
     const d = raw.replace(/\D/g, "").slice(0, 4);
@@ -612,7 +617,7 @@ export default function SessionEditor() {
           toast.error(error.message);
         }
       }
-    }, 600);
+    }, getPrefs().autosaveDelayMs);
   };
 
   const extraTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -653,7 +658,7 @@ export default function SessionEditor() {
           toast.error(error.message);
         }
       }
-    }, 600);
+    }, getPrefs().autosaveDelayMs);
   };
 
   const scrollTo = (constellation: string) => {
@@ -1517,7 +1522,18 @@ export default function SessionEditor() {
                         <tr className="border-b border-border/40 hover:bg-secondary/20">
                           <td className="px-2 py-1 font-medium sticky left-0 bg-card">{s.name}</td>
                           <td className="px-1 py-1">
-                            <Input data-cell={`${r}-0`} onKeyDown={handleCellKey} value={o?.a ?? ""} onChange={(e) => updateObs(s.id, { a: formatAB(e.target.value) || null })} className="h-7 text-xs rounded-sm" />
+                            <Input
+                              data-cell={`${r}-0`}
+                              onKeyDown={handleCellKey}
+                              onFocus={() => {
+                                if (isPlusActive && getPrefs().autofillUtNow && !o?.ut_time) {
+                                  updateObs(s.id, { ut_time: nowUt() });
+                                }
+                              }}
+                              value={o?.a ?? ""}
+                              onChange={(e) => updateObs(s.id, { a: formatAB(e.target.value) || null })}
+                              className="h-7 text-xs rounded-sm"
+                            />
                           </td>
                           <td className="px-1 py-1">
                             <Input data-cell={`${r}-1`} onKeyDown={handleCellKey} type="number" step={1} min={0} value={o?.pasos_a ?? ""} onChange={(e) => updateObs(s.id, { pasos_a: e.target.value === "" ? null : parseInt(e.target.value, 10) })} className="h-7 text-xs rounded-sm" />

@@ -16,6 +16,7 @@ import {
   renamePromStar, resetPromOverrides, subscribePromStore, upsertPromStar,
 } from "@/lib/promStore";
 import { useI18n } from "@/hooks/useI18n";
+import { getPrefs } from "@/hooks/usePrefs";
 
 type Row = { name: string; letters: Record<string, number> };
 
@@ -38,6 +39,11 @@ export default function Prom() {
   }, [tick]);
 
   const filtered = rows.filter((r) => r.name.toLowerCase().includes(filter.toLowerCase()));
+
+  const doDelete = (name: string) => {
+    deletePromStar(name);
+    toast.success(t("prom.toast.deleted"));
+  };
 
   const onExport = () => {
     const blob = new Blob([exportPromJSON()], { type: "application/json" });
@@ -137,7 +143,15 @@ export default function Prom() {
                       <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setEditing(r); }}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setConfirmDelete(r.name); }}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (getPrefs().confirmDelete) setConfirmDelete(r.name);
+                          else doDelete(r.name);
+                        }}
+                      >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </td>
@@ -175,9 +189,8 @@ export default function Prom() {
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (confirmDelete) deletePromStar(confirmDelete);
+                if (confirmDelete) doDelete(confirmDelete);
                 setConfirmDelete(null);
-                toast.success(t("prom.toast.deleted"));
               }}
             >
               {t("common.delete")}
