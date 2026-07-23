@@ -47,6 +47,75 @@ export default function Graphs() {
   const starsRef = useRef<HTMLDivElement>(null);
   const constRef = useRef<HTMLDivElement>(null);
 
+  const exportChartPNG = async (ref: React.RefObject<HTMLDivElement>, filename: string) => {
+    const container = ref.current;
+    if (!container) return;
+    const svg = container.querySelector("svg");
+    if (!svg) { toast({ title: "Nothing to export" }); return; }
+    const clone = svg.cloneNode(true) as SVGSVGElement;
+    // Inline computed colors from CSS variables so exported PNG is readable
+    const rect = svg.getBoundingClientRect();
+    const w = Math.ceil(rect.width) || 800;
+    const h = Math.ceil(rect.height) || 400;
+    clone.setAttribute("width", String(w));
+    clone.setAttribute("height", String(h));
+    clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    // Resolve CSS vars in stroke/fill attributes and inline styles
+    const cs = getComputedStyle(document.documentElement);
+    const resolve = (v: string) =>
+      v.replace(/hsl\(var\(([^)]+)\)\)/g, (_, name) => `hsl(${cs.getPropertyValue(name.trim()).trim()})`);
+    clone.querySelectorAll<SVGElement>("*").forEach((el) => {
+      ["fill", "stroke"].forEach((attr) => {
+        const val = el.getAttribute(attr);
+        if (val && val.includes("var(")) el.setAttribute(attr, resolve(val));
+      });
+      const style = el.getAttribute("style");
+      if (style && style.includes("var(")) el.setAttribute("style", resolve(style));
+    });
+    const bg = `hsl(${cs.getPropertyValue("--background").trim()})`;
+    const fg = `hsl(${cs.getPropertyValue("--foreground").trim()})`;
+    clone.querySelectorAll<SVGElement>("text").forEach((el) => {
+      if (!el.getAttribute("fill")) el.setAttribute("fill", fg);
+    });
+    const xml = new XMLSerializer().serializeToString(clone);
+    const svgBlob = new Blob([`<?xml version="1.0"?>${xml}`], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = rej; img.src = url; });
+    const scale = 2;
+    const canvas = document.createElement("canvas");
+    canvas.width = w * scale;
+    canvas.height = h * scale;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    ctx.drawImage(img, 0, 0, w, h);
+    URL.revokeObjectURL(url);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }, "image/png");
+  };
+
+  const exportCurveCSV = () => {
+    if (lightCurve.length === 0) return;
+    const starName = starById[selectedStar]?.name ?? "star";
+    const rows = [["JD", "date", "mag"], ...lightCurve.map((p) => [p.jd, p.date, p.mag])];
+    const csv = rows.map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${starName.replace(/\s+/g, "_")}_lightcurve.csv`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+
   useEffect(() => {
     if (!user) return;
     (async () => {
