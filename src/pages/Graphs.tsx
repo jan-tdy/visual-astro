@@ -10,10 +10,10 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { computeMagnitude, dateToJD } from "@/lib/astro";
+import { computeMagnitude, dateToJD, parseLimitMagnitude } from "@/lib/astro";
 import { useI18n } from "@/hooks/useI18n";
 import {
-  ResponsiveContainer, LineChart, Line, BarChart, Bar,
+  ResponsiveContainer, ComposedChart, Line, BarChart, Bar, Scatter,
   XAxis, YAxis, Tooltip, CartesianGrid,
 } from "recharts";
 
@@ -32,6 +32,16 @@ type ObsRow = {
 
 type StarRow = { id: string; name: string; constellation: string };
 type SessionRow = { id: string; observed_at_utc: string };
+
+// Open downward triangle — the standard AAVSO symbol for a "fainter-than" (upper-limit) estimate:
+// the star was not seen even at this comparison magnitude, so the true magnitude lies below the apex.
+function LimitMarker(props: { cx?: number; cy?: number }) {
+  const { cx, cy } = props;
+  if (cx == null || cy == null) return null;
+  const r = 4.5;
+  const points = `${cx - r},${cy - r} ${cx + r},${cy - r} ${cx},${cy + r}`;
+  return <polygon points={points} fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} />;
+}
 
 export default function Graphs() {
   const { user } = useAuth();
@@ -105,9 +115,13 @@ export default function Graphs() {
   };
 
   const exportCurveCSV = () => {
-    if (lightCurve.length === 0) return;
+    if (lightCurve.length === 0 && limitCurve.length === 0) return;
     const starName = starById[selectedStar]?.name ?? "star";
-    const rows = [["JD", "date", "mag"], ...lightCurve.map((p) => [p.jd, p.date, p.mag])];
+    const combined = [
+      ...lightCurve.map((p) => ({ ...p, type: "detection" as const })),
+      ...limitCurve.map((p) => ({ ...p, type: "limit" as const })),
+    ].sort((a, b) => a.jd - b.jd);
+    const rows = [["JD", "date", "mag", "type"], ...combined.map((p) => [p.jd, p.date, p.mag, p.type])];
     const csv = rows.map((r) => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
@@ -248,6 +262,60 @@ export default function Graphs() {
     return points.sort((a, b) => a.jd - b.jd);
   }, [realObs, selectedStar, starById, sessionById]);
 
+  // "Fainter than" (upper-limit) observations for the selected star — the star wasn't
+  // seen even at this comparison magnitude, so plotted separately from real detections.
+  const limitCurve = useMemo(() => {
+    if (!selectedStar) return [];
+    const points: { jd: number; date: string; mag: number }[] = [];
+    realObs
+      .filter(o => o.star_id === selectedStar && o.limit_value && o.limit_value.trim())
+      .forEach(o => {
+        const dt = sessionById[o.session_id]?.observed_at_utc;
+        if (!dt) return;
+        const mag = parseLimitMagnitude(o.limit_value);
+        if (mag == null) return;
+        const d = new Date(dt);
+        if (isNaN(d.getTime())) return;
+        if (o.ut_time && /^\d{1,2}:\d{2}$/.test(o.ut_time)) {
+          const [hh, mm] = o.ut_time.split(":").map(Number);
+          d.setUTCHours(hh, mm, 0, 0);
+        }
+        points.push({
+          jd: +dateToJD(d).toFixed(5),
+          date: d.toISOString().slice(0, 16).replace("T", " "),
+          mag: +mag.toFixed(3),
+        });
+      });
+    return points.sort((a, b) => a.jd - b.jd);
+  }, [realObs, selectedStar, sessionById]);
+
+  // Basic descriptive statistics for the selected star's detections.
+  const curveStats = useMemo(() => {
+    if (lightCurve.length === 0) return null;
+    const mags = lightCurve.map(p => p.mag);
+    const n = mags.length;
+    const mean = mags.reduce((s, v) => s + v, 0) / n;
+    const variance = n > 1 ? mags.reduce((s, v) => s + (v - mean) ** 2, 0) / (n - 1) : 0;
+    const stdDev = Math.sqrt(variance);
+    const brightest = Math.min(...mags);
+    const faintest = Math.max(...mags);
+    const span = lightCurve[lightCurve.length - 1].jd - lightCurve[0].jd;
+    return { n, mean, stdDev, amplitude: faintest - brightest, span, limits: limitCurve.length };
+  }, [lightCurve, limitCurve]);
+
+  // Chart domains must account for limit markers too, or they'd be clipped off-axis.
+  const curveXDomain = useMemo((): [number | string, number | string] => {
+    const jds = [...lightCurve.map(p => p.jd), ...limitCurve.map(p => p.jd)];
+    if (jds.length === 0) return ["dataMin", "dataMax"];
+    return [Math.min(...jds), Math.max(...jds)];
+  }, [lightCurve, limitCurve]);
+
+  const curveYDomain = useMemo((): [number, number] => {
+    const mags = [...lightCurve.map(p => p.mag), ...limitCurve.map(p => p.mag)];
+    if (mags.length === 0) return [0, 1];
+    return [+(Math.min(...mags) - 0.2).toFixed(2), +(Math.max(...mags) + 0.2).toFixed(2)];
+  }, [lightCurve, limitCurve]);
+
   const totalObs = realObs.length;
   const totalStars = perStar.length;
   const totalSessions = sessions.length;
@@ -324,34 +392,47 @@ export default function Graphs() {
                         </Command>
                       </PopoverContent>
                     </Popover>
-                    <Button variant="outline" size="sm" onClick={() => exportChartPNG(curveRef, `${starById[selectedStar]?.name ?? "star"}_lightcurve.png`)} disabled={lightCurve.length === 0}>
+                    <Button variant="outline" size="sm" onClick={() => exportChartPNG(curveRef, `${starById[selectedStar]?.name ?? "star"}_lightcurve.png`)} disabled={lightCurve.length === 0 && limitCurve.length === 0}>
                       <Download className="h-4 w-4 mr-1" /> PNG
                     </Button>
-                    <Button variant="outline" size="sm" onClick={exportCurveCSV} disabled={lightCurve.length === 0}>
+                    <Button variant="outline" size="sm" onClick={exportCurveCSV} disabled={lightCurve.length === 0 && limitCurve.length === 0}>
                       <Download className="h-4 w-4 mr-1" /> CSV
                     </Button>
                     </div>
                   </div>
-                  {lightCurve.length === 0 ? (
+                  {curveStats && (
+                    <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground mb-3">
+                      <span>{t("graphs.curve.stat.n")}: <b className="text-foreground">{curveStats.n}</b></span>
+                      <span>{t("graphs.curve.stat.mean")}: <b className="text-foreground">{curveStats.mean.toFixed(2)}</b></span>
+                      <span>{t("graphs.curve.stat.stddev")}: <b className="text-foreground">±{curveStats.stdDev.toFixed(2)}</b></span>
+                      <span>{t("graphs.curve.stat.amplitude")}: <b className="text-foreground">{curveStats.amplitude.toFixed(2)}</b></span>
+                      <span>{t("graphs.curve.stat.span")}: <b className="text-foreground">{curveStats.span.toFixed(1)} d</b></span>
+                      {curveStats.limits > 0 && (
+                        <span>{t("graphs.curve.stat.limits")}: <b className="text-foreground">{curveStats.limits}</b></span>
+                      )}
+                    </div>
+                  )}
+                  {lightCurve.length === 0 && limitCurve.length === 0 ? (
                     <p className="text-sm text-muted-foreground p-6 text-center">
                       {t("graphs.curve.empty")}
                     </p>
                   ) : (
+                    <>
                     <div ref={curveRef} className="w-full h-80">
                       <ResponsiveContainer>
-                        <LineChart data={lightCurve} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                        <ComposedChart margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                           <XAxis
                             dataKey="jd"
                             type="number"
-                            domain={["dataMin", "dataMax"]}
+                            domain={curveXDomain}
                             tickFormatter={(v: number) => v.toFixed(2)}
                             tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                             label={{ value: "JD", position: "insideBottom", offset: -5, fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                           />
                           <YAxis
                             reversed
-                            domain={[(min: number) => +(min - 0.2).toFixed(2), (max: number) => +(max + 0.2).toFixed(2)]}
+                            domain={curveYDomain}
                             tickFormatter={(v: number) => v.toFixed(2)}
                             allowDecimals
                             tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
@@ -359,16 +440,35 @@ export default function Graphs() {
                           />
                           <Tooltip
                             contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", fontSize: 12 }}
-                            formatter={(v: number) => v.toFixed(2)}
+                            formatter={(v: number, name: string) => [v.toFixed(2), name]}
                             labelFormatter={(jd: number) => {
-                              const p = lightCurve.find(x => x.jd === jd);
+                              const p = lightCurve.find(x => x.jd === jd) ?? limitCurve.find(x => x.jd === jd);
                               return p ? `JD ${jd} · ${p.date}` : `JD ${jd}`;
                             }}
                           />
-                          <Line type="linear" dataKey="mag" stroke="hsl(var(--primary))" strokeWidth={1.5} dot={{ r: 2.5 }} isAnimationActive={false} connectNulls={false} />
-                        </LineChart>
+                          <Line data={lightCurve} type="linear" dataKey="mag" stroke="hsl(var(--primary))" strokeWidth={1.5} dot={{ r: 2.5 }} isAnimationActive={false} connectNulls={false} name={t("graphs.curve.legend.detection")} />
+                          {limitCurve.length > 0 && (
+                            <Scatter data={limitCurve} dataKey="mag" shape={LimitMarker} isAnimationActive={false} name={t("graphs.curve.legend.limit")} />
+                          )}
+                        </ComposedChart>
                       </ResponsiveContainer>
                     </div>
+                    {limitCurve.length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-2 flex items-center gap-4">
+                        <span className="inline-flex items-center gap-1">
+                          <span className="inline-block h-2 w-2 rounded-full" style={{ background: "hsl(var(--primary))" }} />
+                          {t("graphs.curve.legend.detection")}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <span aria-hidden className="inline-block" style={{
+                            width: 0, height: 0, borderLeft: "5px solid transparent", borderRight: "5px solid transparent",
+                            borderTop: "8px solid hsl(var(--muted-foreground))",
+                          }} />
+                          {t("graphs.curve.legend.limit")}
+                        </span>
+                      </p>
+                    )}
+                    </>
                   )}
                 </Card>
               </TabsContent>
