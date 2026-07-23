@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppHeader } from "@/components/app/AppHeader";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Download } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -40,19 +41,39 @@ export default function Graphs() {
   const [loading, setLoading] = useState(true);
   const [selectedStar, setSelectedStar] = useState<string>("");
   const [starPickerOpen, setStarPickerOpen] = useState(false);
+  const curveRef = useRef<HTMLDivElement>(null);
+  const perMonthRef = useRef<HTMLDivElement>(null);
+  const sessionsPerMonthRef = useRef<HTMLDivElement>(null);
+  const starsRef = useRef<HTMLDivElement>(null);
+  const constRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!user) return;
     (async () => {
       setLoading(true);
-      const [{ data: o }, { data: s }, { data: se }] = await Promise.all([
-        supabase.from("observations").select("id,session_id,star_id,a,b,pasos_a,pasos_b,limit_value,note"),
-        supabase.from("stars").select("id,name,constellation").order("name"),
-        supabase.from("sessions").select("id,observed_at_utc"),
+      // Paginated fetch — PostgREST caps single requests at ~1000 rows.
+      const fetchAll = async <T,>(table: string, cols: string): Promise<T[]> => {
+        const pageSize = 1000;
+        const all: T[] = [];
+        for (let from = 0; ; from += pageSize) {
+          const { data, error } = await supabase
+            .from(table as any)
+            .select(cols)
+            .range(from, from + pageSize - 1);
+          if (error || !data) break;
+          all.push(...(data as T[]));
+          if (data.length < pageSize) break;
+        }
+        return all;
+      };
+      const [o, s, se] = await Promise.all([
+        fetchAll<ObsRow>("observations", "id,session_id,star_id,a,b,pasos_a,pasos_b,limit_value,note"),
+        fetchAll<StarRow>("stars", "id,name,constellation"),
+        fetchAll<SessionRow>("sessions", "id,observed_at_utc"),
       ]);
-      setObs((o ?? []) as ObsRow[]);
-      setStars((s ?? []) as StarRow[]);
-      setSessions((se ?? []) as SessionRow[]);
+      setObs(o);
+      setStars([...s].sort((x, y) => x.name.localeCompare(y.name)));
+      setSessions(se);
       setLoading(false);
     })();
   }, [user?.id]);
