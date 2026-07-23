@@ -6,6 +6,7 @@ import { AppHeader } from "@/components/app/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
   import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus, ScanLine, Printer, Search, PanelLeftClose, PanelLeftOpen, Table as TableIcon, Type, ArrowUp, ArrowDown, Sparkles, Minus } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
@@ -78,6 +79,9 @@ export default function SessionEditor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const paperInputRef = useRef<HTMLInputElement>(null);
   const [ocrBusy, setOcrBusy] = useState(false);
+  // JSON export: by default only rows with a UT time (actual observations), not every
+  // touched-but-empty row — exporting everything is effectively just the star catalog.
+  const [exportJsonOnlyFilled, setExportJsonOnlyFilled] = useState(true);
   const [leftAlign, setLeftAlign] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [rawMode, setRawMode] = useState(false);
@@ -827,6 +831,7 @@ export default function SessionEditor() {
   const exportSessionJSON = () => {
     const byId = new Map(stars.map((s) => [s.id, s]));
     const observations = Object.values(obsByStar)
+      .filter((o) => !exportJsonOnlyFilled || (o.ut_time && o.ut_time.trim()))
       .map((o) => {
         const s = byId.get(o.star_id);
         if (!s) return null;
@@ -1262,6 +1267,14 @@ export default function SessionEditor() {
                 {ocrBusy ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <ScanLine className="h-3.5 w-3.5 mr-1" />}
                 {t("editor.paperImport")}
               </Button>
+              <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground px-1" title={t("editor.exportJson.onlyFilledHint")}>
+                <Checkbox
+                  checked={exportJsonOnlyFilled}
+                  onCheckedChange={(v) => setExportJsonOnlyFilled(v === true)}
+                  className="h-3.5 w-3.5"
+                />
+                {t("editor.exportJson.onlyFilled")}
+              </label>
               <Button size="sm" variant="secondary" onClick={exportSessionJSON}>
                 <FileJson className="h-3.5 w-3.5 mr-1" /> {t("editor.exportJson")}
               </Button>
