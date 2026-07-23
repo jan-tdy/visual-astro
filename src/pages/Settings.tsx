@@ -344,7 +344,7 @@ export default function Settings() {
                 </li>
                 <li className="flex items-start gap-2">
                   <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span><strong>5</strong> AI skenov / mesiac</span>
+                  <span><strong>5</strong> {t("settings.plan.aiScansPerMonth")}</span>
                 </li>
               </ul>
             </Card>
@@ -364,7 +364,7 @@ export default function Settings() {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {t("settings.plan.month")}
-                    {billingCycle === "yearly" && <span className="ml-1 text-primary">· 31,80 €/rok</span>}
+                    {billingCycle === "yearly" && <span className="ml-1 text-primary">· 31,80 €{t("settings.plan.perYear")}</span>}
                   </div>
                 </div>
               </div>
@@ -376,14 +376,14 @@ export default function Settings() {
                     onClick={() => setBillingCycle("monthly")}
                     className={`px-3 py-1 rounded ${billingCycle === "monthly" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
                   >
-                    Mesačne
+                    {t("settings.plan.monthly")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setBillingCycle("yearly")}
                     className={`px-3 py-1 rounded ${billingCycle === "yearly" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
                   >
-                    Ročne · <span className="text-primary/90 font-semibold ml-1">−11 %</span>
+                    {t("settings.plan.yearly")} · <span className="text-primary/90 font-semibold ml-1">−11 %</span>
                   </button>
                 </div>
               )}
@@ -403,7 +403,7 @@ export default function Settings() {
                 </li>
                 <li className="flex items-start gap-2">
                   <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span><strong>40</strong> AI skenov / mesiac</span>
+                  <span><strong>40</strong> {t("settings.plan.aiScansPerMonth")}</span>
                 </li>
               </ul>
               {isPlusActive ? (

@@ -287,7 +287,7 @@ function PromDialog({
         <div className="space-y-3">
           <div>
             <Label>{t("prom.dialog.name")}</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="napr. AF Cyg" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("prom.dialog.namePh")} />
           </div>
           <div>
             <Label>{t("prom.dialog.pairs")}</Label>
