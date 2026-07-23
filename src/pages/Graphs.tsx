@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppHeader } from "@/components/app/AppHeader";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Download } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -40,19 +41,108 @@ export default function Graphs() {
   const [loading, setLoading] = useState(true);
   const [selectedStar, setSelectedStar] = useState<string>("");
   const [starPickerOpen, setStarPickerOpen] = useState(false);
+  const curveRef = useRef<HTMLDivElement>(null);
+  const perMonthRef = useRef<HTMLDivElement>(null);
+  const sessionsPerMonthRef = useRef<HTMLDivElement>(null);
+  const starsRef = useRef<HTMLDivElement>(null);
+  const constRef = useRef<HTMLDivElement>(null);
+
+  const exportChartPNG = async (ref: React.RefObject<HTMLDivElement>, filename: string) => {
+    const container = ref.current;
+    if (!container) return;
+    const svg = container.querySelector("svg");
+    if (!svg) { toast({ title: "Nothing to export" }); return; }
+    const clone = svg.cloneNode(true) as SVGSVGElement;
+    // Inline computed colors from CSS variables so exported PNG is readable
+    const rect = svg.getBoundingClientRect();
+    const w = Math.ceil(rect.width) || 800;
+    const h = Math.ceil(rect.height) || 400;
+    clone.setAttribute("width", String(w));
+    clone.setAttribute("height", String(h));
+    clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    // Resolve CSS vars in stroke/fill attributes and inline styles
+    const cs = getComputedStyle(document.documentElement);
+    const resolve = (v: string) =>
+      v.replace(/hsl\(var\(([^)]+)\)\)/g, (_, name) => `hsl(${cs.getPropertyValue(name.trim()).trim()})`);
+    clone.querySelectorAll<SVGElement>("*").forEach((el) => {
+      ["fill", "stroke"].forEach((attr) => {
+        const val = el.getAttribute(attr);
+        if (val && val.includes("var(")) el.setAttribute(attr, resolve(val));
+      });
+      const style = el.getAttribute("style");
+      if (style && style.includes("var(")) el.setAttribute("style", resolve(style));
+    });
+    const bg = `hsl(${cs.getPropertyValue("--background").trim()})`;
+    const fg = `hsl(${cs.getPropertyValue("--foreground").trim()})`;
+    clone.querySelectorAll<SVGElement>("text").forEach((el) => {
+      if (!el.getAttribute("fill")) el.setAttribute("fill", fg);
+    });
+    const xml = new XMLSerializer().serializeToString(clone);
+    const svgBlob = new Blob([`<?xml version="1.0"?>${xml}`], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = rej; img.src = url; });
+    const scale = 2;
+    const canvas = document.createElement("canvas");
+    canvas.width = w * scale;
+    canvas.height = h * scale;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    ctx.drawImage(img, 0, 0, w, h);
+    URL.revokeObjectURL(url);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }, "image/png");
+  };
+
+  const exportCurveCSV = () => {
+    if (lightCurve.length === 0) return;
+    const starName = starById[selectedStar]?.name ?? "star";
+    const rows = [["JD", "date", "mag"], ...lightCurve.map((p) => [p.jd, p.date, p.mag])];
+    const csv = rows.map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${starName.replace(/\s+/g, "_")}_lightcurve.csv`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
 
   useEffect(() => {
     if (!user) return;
     (async () => {
       setLoading(true);
-      const [{ data: o }, { data: s }, { data: se }] = await Promise.all([
-        supabase.from("observations").select("id,session_id,star_id,a,b,pasos_a,pasos_b,limit_value,note"),
-        supabase.from("stars").select("id,name,constellation").order("name"),
-        supabase.from("sessions").select("id,observed_at_utc"),
+      // Paginated fetch — PostgREST caps single requests at ~1000 rows.
+      const fetchAll = async <T,>(table: string, cols: string): Promise<T[]> => {
+        const pageSize = 1000;
+        const all: T[] = [];
+        for (let from = 0; ; from += pageSize) {
+          const { data, error } = await supabase
+            .from(table as any)
+            .select(cols)
+            .range(from, from + pageSize - 1);
+          if (error || !data) break;
+          all.push(...(data as T[]));
+          if (data.length < pageSize) break;
+        }
+        return all;
+      };
+      const [o, s, se] = await Promise.all([
+        fetchAll<ObsRow>("observations", "id,session_id,star_id,a,b,pasos_a,pasos_b,limit_value,note"),
+        fetchAll<StarRow>("stars", "id,name,constellation"),
+        fetchAll<SessionRow>("sessions", "id,observed_at_utc"),
       ]);
-      setObs((o ?? []) as ObsRow[]);
-      setStars((s ?? []) as StarRow[]);
-      setSessions((se ?? []) as SessionRow[]);
+      setObs(o);
+      setStars([...s].sort((x, y) => x.name.localeCompare(y.name)));
+      setSessions(se);
       setLoading(false);
     })();
   }, [user?.id]);
@@ -194,6 +284,7 @@ export default function Graphs() {
                 <Card className="p-4">
                   <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
                     <h3 className="font-semibold">{t("graphs.curve.title")}</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
                     <Popover open={starPickerOpen} onOpenChange={setStarPickerOpen}>
                       <PopoverTrigger asChild>
                         <Button variant="outline" role="combobox" className="w-64 justify-between">
@@ -225,13 +316,20 @@ export default function Graphs() {
                         </Command>
                       </PopoverContent>
                     </Popover>
+                    <Button variant="outline" size="sm" onClick={() => exportChartPNG(curveRef, `${starById[selectedStar]?.name ?? "star"}_lightcurve.png`)} disabled={lightCurve.length === 0}>
+                      <Download className="h-4 w-4 mr-1" /> PNG
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={exportCurveCSV} disabled={lightCurve.length === 0}>
+                      <Download className="h-4 w-4 mr-1" /> CSV
+                    </Button>
+                    </div>
                   </div>
                   {lightCurve.length === 0 ? (
                     <p className="text-sm text-muted-foreground p-6 text-center">
                       {t("graphs.curve.empty")}
                     </p>
                   ) : (
-                    <div className="w-full h-80">
+                    <div ref={curveRef} className="w-full h-80">
                       <ResponsiveContainer>
                         <LineChart data={lightCurve} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -266,8 +364,13 @@ export default function Graphs() {
 
               <TabsContent value="time">
                 <Card className="p-4">
-                  <h3 className="font-semibold mb-3">{t("graphs.time.obsPerMonth")}</h3>
-                  <div className="w-full h-72">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold">{t("graphs.time.obsPerMonth")}</h3>
+                    <Button variant="outline" size="sm" onClick={() => exportChartPNG(perMonthRef, "obs_per_month.png")}>
+                      <Download className="h-4 w-4 mr-1" /> PNG
+                    </Button>
+                  </div>
+                  <div ref={perMonthRef} className="w-full h-72">
                     <ResponsiveContainer>
                       <BarChart data={perMonth} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -280,8 +383,13 @@ export default function Graphs() {
                   </div>
                 </Card>
                 <Card className="p-4 mt-4">
-                  <h3 className="font-semibold mb-3">{t("graphs.time.sessionsPerMonth")}</h3>
-                  <div className="w-full h-72">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold">{t("graphs.time.sessionsPerMonth")}</h3>
+                    <Button variant="outline" size="sm" onClick={() => exportChartPNG(sessionsPerMonthRef, "sessions_per_month.png")}>
+                      <Download className="h-4 w-4 mr-1" /> PNG
+                    </Button>
+                  </div>
+                  <div ref={sessionsPerMonthRef} className="w-full h-72">
                     <ResponsiveContainer>
                       <BarChart data={sessionsPerMonth} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -297,8 +405,13 @@ export default function Graphs() {
 
               <TabsContent value="stars">
                 <Card className="p-4">
-                  <h3 className="font-semibold mb-3">{t("graphs.stars.top")}</h3>
-                  <div className="w-full" style={{ height: Math.max(240, perStar.length * 22) }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold">{t("graphs.stars.top")}</h3>
+                    <Button variant="outline" size="sm" onClick={() => exportChartPNG(starsRef, "stars_top.png")}>
+                      <Download className="h-4 w-4 mr-1" /> PNG
+                    </Button>
+                  </div>
+                  <div ref={starsRef} className="w-full" style={{ height: Math.max(240, perStar.length * 22) }}>
                     <ResponsiveContainer>
                       <BarChart data={perStar.slice(0, 30)} layout="vertical" margin={{ top: 5, right: 20, left: 60, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -314,8 +427,13 @@ export default function Graphs() {
 
               <TabsContent value="const">
                 <Card className="p-4">
-                  <h3 className="font-semibold mb-3">{t("graphs.const.title")}</h3>
-                  <div className="w-full" style={{ height: Math.max(240, perConstellation.length * 24) }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold">{t("graphs.const.title")}</h3>
+                    <Button variant="outline" size="sm" onClick={() => exportChartPNG(constRef, "constellations.png")}>
+                      <Download className="h-4 w-4 mr-1" /> PNG
+                    </Button>
+                  </div>
+                  <div ref={constRef} className="w-full" style={{ height: Math.max(240, perConstellation.length * 24) }}>
                     <ResponsiveContainer>
                       <BarChart data={perConstellation} layout="vertical" margin={{ top: 5, right: 20, left: 40, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
