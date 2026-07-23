@@ -284,6 +284,7 @@ export default function Graphs() {
                 <Card className="p-4">
                   <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
                     <h3 className="font-semibold">{t("graphs.curve.title")}</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
                     <Popover open={starPickerOpen} onOpenChange={setStarPickerOpen}>
                       <PopoverTrigger asChild>
                         <Button variant="outline" role="combobox" className="w-64 justify-between">
@@ -315,13 +316,20 @@ export default function Graphs() {
                         </Command>
                       </PopoverContent>
                     </Popover>
+                    <Button variant="outline" size="sm" onClick={() => exportChartPNG(curveRef, `${starById[selectedStar]?.name ?? "star"}_lightcurve.png`)} disabled={lightCurve.length === 0}>
+                      <Download className="h-4 w-4 mr-1" /> PNG
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={exportCurveCSV} disabled={lightCurve.length === 0}>
+                      <Download className="h-4 w-4 mr-1" /> CSV
+                    </Button>
+                    </div>
                   </div>
                   {lightCurve.length === 0 ? (
                     <p className="text-sm text-muted-foreground p-6 text-center">
                       {t("graphs.curve.empty")}
                     </p>
                   ) : (
-                    <div className="w-full h-80">
+                    <div ref={curveRef} className="w-full h-80">
                       <ResponsiveContainer>
                         <LineChart data={lightCurve} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -356,8 +364,13 @@ export default function Graphs() {
 
               <TabsContent value="time">
                 <Card className="p-4">
-                  <h3 className="font-semibold mb-3">{t("graphs.time.obsPerMonth")}</h3>
-                  <div className="w-full h-72">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold">{t("graphs.time.obsPerMonth")}</h3>
+                    <Button variant="outline" size="sm" onClick={() => exportChartPNG(perMonthRef, "obs_per_month.png")}>
+                      <Download className="h-4 w-4 mr-1" /> PNG
+                    </Button>
+                  </div>
+                  <div ref={perMonthRef} className="w-full h-72">
                     <ResponsiveContainer>
                       <BarChart data={perMonth} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -370,8 +383,13 @@ export default function Graphs() {
                   </div>
                 </Card>
                 <Card className="p-4 mt-4">
-                  <h3 className="font-semibold mb-3">{t("graphs.time.sessionsPerMonth")}</h3>
-                  <div className="w-full h-72">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold">{t("graphs.time.sessionsPerMonth")}</h3>
+                    <Button variant="outline" size="sm" onClick={() => exportChartPNG(sessionsPerMonthRef, "sessions_per_month.png")}>
+                      <Download className="h-4 w-4 mr-1" /> PNG
+                    </Button>
+                  </div>
+                  <div ref={sessionsPerMonthRef} className="w-full h-72">
                     <ResponsiveContainer>
                       <BarChart data={sessionsPerMonth} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -387,8 +405,13 @@ export default function Graphs() {
 
               <TabsContent value="stars">
                 <Card className="p-4">
-                  <h3 className="font-semibold mb-3">{t("graphs.stars.top")}</h3>
-                  <div className="w-full" style={{ height: Math.max(240, perStar.length * 22) }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold">{t("graphs.stars.top")}</h3>
+                    <Button variant="outline" size="sm" onClick={() => exportChartPNG(starsRef, "stars_top.png")}>
+                      <Download className="h-4 w-4 mr-1" /> PNG
+                    </Button>
+                  </div>
+                  <div ref={starsRef} className="w-full" style={{ height: Math.max(240, perStar.length * 22) }}>
                     <ResponsiveContainer>
                       <BarChart data={perStar.slice(0, 30)} layout="vertical" margin={{ top: 5, right: 20, left: 60, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -404,8 +427,13 @@ export default function Graphs() {
 
               <TabsContent value="const">
                 <Card className="p-4">
-                  <h3 className="font-semibold mb-3">{t("graphs.const.title")}</h3>
-                  <div className="w-full" style={{ height: Math.max(240, perConstellation.length * 24) }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold">{t("graphs.const.title")}</h3>
+                    <Button variant="outline" size="sm" onClick={() => exportChartPNG(constRef, "constellations.png")}>
+                      <Download className="h-4 w-4 mr-1" /> PNG
+                    </Button>
+                  </div>
+                  <div ref={constRef} className="w-full" style={{ height: Math.max(240, perConstellation.length * 24) }}>
                     <ResponsiveContainer>
                       <BarChart data={perConstellation} layout="vertical" margin={{ top: 5, right: 20, left: 40, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
