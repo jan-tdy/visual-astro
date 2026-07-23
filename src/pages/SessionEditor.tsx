@@ -6,6 +6,7 @@ import { AppHeader } from "@/components/app/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
   import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus, ScanLine, Printer, Search, PanelLeftClose, PanelLeftOpen, Table as TableIcon, Type, ArrowUp, ArrowDown, Sparkles, Minus } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
@@ -78,6 +79,9 @@ export default function SessionEditor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const paperInputRef = useRef<HTMLInputElement>(null);
   const [ocrBusy, setOcrBusy] = useState(false);
+  // JSON export: by default only rows with a UT time (actual observations), not every
+  // touched-but-empty row — exporting everything is effectively just the star catalog.
+  const [exportJsonOnlyFilled, setExportJsonOnlyFilled] = useState(true);
   const [leftAlign, setLeftAlign] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [rawMode, setRawMode] = useState(false);
@@ -371,6 +375,11 @@ export default function SessionEditor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawMode]);
 
+  // Current UT time as "HH:MM" (Plus: autofill on opening a new row).
+  const nowUt = () => {
+    const now = new Date();
+    return `${String(now.getUTCHours()).padStart(2, "0")}:${String(now.getUTCMinutes()).padStart(2, "0")}`;
+  };
   // Helpers: auto-format UT — always strip non-digits then reinsert ":" based on length
   const formatUt = (raw: string) => {
     const d = raw.replace(/\D/g, "").slice(0, 4);
@@ -612,7 +621,7 @@ export default function SessionEditor() {
           toast.error(error.message);
         }
       }
-    }, 600);
+    }, getPrefs().autosaveDelayMs);
   };
 
   const extraTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -653,7 +662,7 @@ export default function SessionEditor() {
           toast.error(error.message);
         }
       }
-    }, 600);
+    }, getPrefs().autosaveDelayMs);
   };
 
   const scrollTo = (constellation: string) => {
@@ -822,6 +831,7 @@ export default function SessionEditor() {
   const exportSessionJSON = () => {
     const byId = new Map(stars.map((s) => [s.id, s]));
     const observations = Object.values(obsByStar)
+      .filter((o) => !exportJsonOnlyFilled || (o.ut_time && o.ut_time.trim()))
       .map((o) => {
         const s = byId.get(o.star_id);
         if (!s) return null;
@@ -1257,6 +1267,14 @@ export default function SessionEditor() {
                 {ocrBusy ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <ScanLine className="h-3.5 w-3.5 mr-1" />}
                 {t("editor.paperImport")}
               </Button>
+              <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground px-1" title={t("editor.exportJson.onlyFilledHint")}>
+                <Checkbox
+                  checked={exportJsonOnlyFilled}
+                  onCheckedChange={(v) => setExportJsonOnlyFilled(v === true)}
+                  className="h-3.5 w-3.5"
+                />
+                {t("editor.exportJson.onlyFilled")}
+              </label>
               <Button size="sm" variant="secondary" onClick={exportSessionJSON}>
                 <FileJson className="h-3.5 w-3.5 mr-1" /> {t("editor.exportJson")}
               </Button>
@@ -1517,7 +1535,18 @@ export default function SessionEditor() {
                         <tr className="border-b border-border/40 hover:bg-secondary/20">
                           <td className="px-2 py-1 font-medium sticky left-0 bg-card">{s.name}</td>
                           <td className="px-1 py-1">
-                            <Input data-cell={`${r}-0`} onKeyDown={handleCellKey} value={o?.a ?? ""} onChange={(e) => updateObs(s.id, { a: formatAB(e.target.value) || null })} className="h-7 text-xs rounded-sm" />
+                            <Input
+                              data-cell={`${r}-0`}
+                              onKeyDown={handleCellKey}
+                              onFocus={() => {
+                                if (isPlusActive && getPrefs().autofillUtNow && !o?.ut_time) {
+                                  updateObs(s.id, { ut_time: nowUt() });
+                                }
+                              }}
+                              value={o?.a ?? ""}
+                              onChange={(e) => updateObs(s.id, { a: formatAB(e.target.value) || null })}
+                              className="h-7 text-xs rounded-sm"
+                            />
                           </td>
                           <td className="px-1 py-1">
                             <Input data-cell={`${r}-1`} onKeyDown={handleCellKey} type="number" step={1} min={0} value={o?.pasos_a ?? ""} onChange={(e) => updateObs(s.id, { pasos_a: e.target.value === "" ? null : parseInt(e.target.value, 10) })} className="h-7 text-xs rounded-sm" />

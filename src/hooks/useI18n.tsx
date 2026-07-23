@@ -25,7 +25,7 @@ export const SUPPORTED_LANGS = [
 
 type Lang = (typeof SUPPORTED_LANGS)[number]["code"];
 
-const dict = {
+export const dict = {
   sk: {
     "about.howItWorks": "Ako to funguje",
     "about.howToUse": "Návod — ako používať",
@@ -175,6 +175,8 @@ const dict = {
     "editor.date": "Dátum (UT, večer)",
     "editor.download": "Stiahnuť",
     "editor.exportJson": "Export JSON",
+    "editor.exportJson.onlyFilled": "iba s UT časom",
+    "editor.exportJson.onlyFilledHint": "Zapnuté: exportujú sa len riadky s vyplneným UT časom (reálne pozorovania). Vypnuté: exportujú sa všetky dotknuté riadky, aj prázdne — v podstate výpis katalógu.",
     "editor.filled": "Vyplnené",
     "editor.importDone": "Importovaných {matched} pozorovaní",
     "editor.importErr": "Chyba pri importe",
@@ -533,11 +535,19 @@ const dict = {
     "editor.col.limit": "Limit",
     "editor.col.ut": "UT",
     "editor.col.star": "Star",
+    "editor.exportSort": "Export order",
+    "editor.sort.catalog": "By catalog",
+    "editor.sort.name": "By name",
+    "editor.sort.constellation": "By constellation",
+    "editor.sort.ut": "By UT time",
+    "editor.sort.aavso": "By AAVSO code",
     "editor.copied": "Copied",
     "editor.copy": "Copy",
     "editor.date": "Date (UT, evening)",
     "editor.download": "Download",
     "editor.exportJson": "Export JSON",
+    "editor.exportJson.onlyFilled": "only with UT time",
+    "editor.exportJson.onlyFilledHint": "On: only rows with a UT time (real observations) are exported. Off: every touched row is exported, even empty ones — effectively just a catalog dump.",
     "editor.filled": "Filled",
     "editor.importDone": "Imported {matched} observations",
     "editor.importErr": "Import error",
@@ -847,8 +857,11 @@ function InnerProvider({ children }: { children: ReactNode }) {
         const v = tTrans(k as string);
         const normalized = v?.replace(/[\u200B-\u200D\uFEFF]/g, "") ?? "";
         if (v && normalized !== k && !normalized.includes(k as string)) return v;
-        // fallback to static dict
-        const base = lang === "en" ? dict.en : dict.sk;
+        // Fallback to the static dict — only the sk/en text is bundled locally, everything
+        // else comes live from Tolgee. If a key isn't published yet for one of the other
+        // 10 languages, fall back to English (far more widely understood than Slovak) and
+        // only use Slovak as the last resort for the app's own native language.
+        const base = lang === "sk" ? dict.sk : dict.en;
         return (
           (base as Record<string, string>)[k as string] ??
           (dict.sk as Record<string, string>)[k as string] ??
