@@ -112,6 +112,19 @@ export function computeMagnitude(o: ObsInput, starName?: string): { value: strin
   return { value: null, numeric: null };
 }
 
+/**
+ * Extract the numeric threshold from a "fainter-than" limit string (e.g. "<14.9").
+ * The star was not seen even at this comparison magnitude, so the true magnitude
+ * is fainter (numerically greater) than the returned value. Returns null if unparseable.
+ */
+export function parseLimitMagnitude(raw: string | null | undefined): number | null {
+  if (!raw) return null;
+  const m = String(raw).match(/-?\d+(\.\d+)?/);
+  if (!m) return null;
+  const v = parseFloat(m[0]);
+  return Number.isFinite(v) ? v : null;
+}
+
 /** Build the AAVSO comment field "A-paV-pb-B" matching the ODS column. */
 export function aavsoEstima(o: ObsInput): string {
   if (o.limit_value && o.limit_value.trim()) return o.limit_value.trim();
