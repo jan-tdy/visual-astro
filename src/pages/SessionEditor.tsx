@@ -1117,10 +1117,10 @@ export default function SessionEditor() {
             variant={rawMode ? "default" : "ghost"}
             size="sm"
             onClick={() => setRawMode((v) => !v)}
-            title="Raw mód (rýchly textový zápis)"
+            title={t("editor.rawModeTooltip")}
           >
             {rawMode ? <TableIcon className="h-4 w-4 mr-1" /> : <Type className="h-4 w-4 mr-1" />}
-            {rawMode ? "Tabuľka" : "Raw"}
+            {rawMode ? t("editor.rawToggle.table") : t("editor.rawToggle.raw")}
           </Button>
           </div>
         </div>
@@ -1331,22 +1331,21 @@ export default function SessionEditor() {
               <div>
             <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
               <div>
-                <div className="font-semibold text-sm">Raw zápis</div>
+                <div className="font-semibold text-sm">{t("editor.raw.title")}</div>
                 <div className="text-xs text-muted-foreground">
-                  Jeden riadok = jedno pozorovanie. Formát:{" "}
+                  {t("editor.raw.formatIntro")}{" "}
                   <code className="font-mono">hviezdaA{`{pasoA}`}v{`{pasoB}`}BUT</code>{" "}
-                  (napr. <code className="font-mono">agdraf3v1g2108</code> alebo{" "}
-                  <code className="font-mono">mvlyr12-51v312-92110</code> alebo{" "}
-                  <code className="font-mono">mvlyr12.51v312.92110</code>). Pomlčka
-                  aj bodka v A/B fungujú ako desatinný oddeľovač.
-                  Limit:{" "}
+                  ({t("editor.raw.eg")} <code className="font-mono">agdraf3v1g2108</code> {t("editor.raw.or")}{" "}
+                  <code className="font-mono">mvlyr12-51v312-92110</code> {t("editor.raw.or")}{" "}
+                  <code className="font-mono">mvlyr12.51v312.92110</code>). {t("editor.raw.decimalNote")}{" "}
+                  {t("editor.raw.limitLabel")}{" "}
                   <code className="font-mono">{`hviezda<13.5{UT}`}</code>{" "}
-                  (napr. <code className="font-mono">{`agdra<13-52108`}</code>).
-                  Poznámka na konci za <code className="font-mono">#</code>{" "}
-                  (napr. <code className="font-mono">agdraf3v1g2108#hmla</code>).
-                  {" "}Viac pozorovaní tej istej hviezdy: začni riadok
-                  {" "}<code className="font-mono">+</code> (2. zápis),
-                  {" "}<code className="font-mono">++</code> (3. zápis) atď.
+                  ({t("editor.raw.eg")} <code className="font-mono">{`agdra<13-52108`}</code>).
+                  {" "}{t("editor.raw.noteLabel")} <code className="font-mono">#</code>{" "}
+                  ({t("editor.raw.eg")} <code className="font-mono">agdraf3v1g2108#hmla</code>).
+                  {" "}{t("editor.raw.multiIntro")}
+                  {" "}<code className="font-mono">+</code> {t("editor.raw.entry2")}
+                  {" "}<code className="font-mono">++</code> {t("editor.raw.entry3")}
                 </div>
               </div>
               <Button size="sm" onClick={applyRaw} disabled={!rawText.trim()}>
@@ -1363,10 +1362,10 @@ export default function SessionEditor() {
             />
             {rawReport && (
               <div className="mt-3 text-xs">
-                <div className="text-primary">Uložené: {rawReport.matched}</div>
+                <div className="text-primary">{t("editor.raw.saved")} {rawReport.matched}</div>
                 {rawReport.unmatched.length > 0 && (
                   <div className="mt-1 text-destructive">
-                    Nerozpoznané ({rawReport.unmatched.length}):
+                    {t("editor.raw.unrecognized")} ({rawReport.unmatched.length}):
                     <ul className="list-disc pl-5 mt-1 space-y-0.5 font-mono">
                       {rawReport.unmatched.slice(0, 20).map((l, i) => (
                         <li key={i}>{l}</li>
