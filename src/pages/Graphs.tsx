@@ -27,6 +27,7 @@ type ObsRow = {
   pasos_b: number | null;
   limit_value: string | null;
   note: string | null;
+  ut_time: string | null;
 };
 
 type StarRow = { id: string; name: string; constellation: string };
@@ -136,7 +137,7 @@ export default function Graphs() {
         return all;
       };
       const [o, s, se] = await Promise.all([
-        fetchAll<ObsRow>("observations", "id,session_id,star_id,a,b,pasos_a,pasos_b,limit_value,note"),
+        fetchAll<ObsRow>("observations", "id,session_id,star_id,a,b,pasos_a,pasos_b,limit_value,note,ut_time"),
         fetchAll<StarRow>("stars", "id,name,constellation"),
         fetchAll<SessionRow>("sessions", "id,observed_at_utc"),
       ]);
@@ -231,10 +232,17 @@ export default function Graphs() {
         const { numeric } = computeMagnitude(o, starName);
         if (numeric == null) return;
         const d = new Date(dt);
+        if (isNaN(d.getTime())) return;
+        // Overlay UT time on the session date when available (session dt is often 18:00 placeholder).
+        if (o.ut_time && /^\d{1,2}:\d{2}$/.test(o.ut_time)) {
+          const [hh, mm] = o.ut_time.split(":").map(Number);
+          d.setUTCHours(hh, mm, 0, 0);
+        }
+        if (!Number.isFinite(numeric)) return;
         points.push({
-          jd: +dateToJD(d).toFixed(4),
-          date: d.toISOString().slice(0, 10),
-          mag: +numeric.toFixed(2),
+          jd: +dateToJD(d).toFixed(5),
+          date: d.toISOString().slice(0, 16).replace("T", " "),
+          mag: +numeric.toFixed(3),
         });
       });
     return points.sort((a, b) => a.jd - b.jd);
@@ -337,12 +345,15 @@ export default function Graphs() {
                             dataKey="jd"
                             type="number"
                             domain={["dataMin", "dataMax"]}
+                            tickFormatter={(v: number) => v.toFixed(2)}
                             tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                             label={{ value: "JD", position: "insideBottom", offset: -5, fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                           />
                           <YAxis
                             reversed
-                            domain={["dataMin - 0.2", "dataMax + 0.2"]}
+                            domain={[(min: number) => +(min - 0.2).toFixed(2), (max: number) => +(max + 0.2).toFixed(2)]}
+                            tickFormatter={(v: number) => v.toFixed(2)}
+                            allowDecimals
                             tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                             label={{ value: "mag", angle: -90, position: "insideLeft", fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                           />
@@ -354,7 +365,7 @@ export default function Graphs() {
                               return p ? `JD ${jd} · ${p.date}` : `JD ${jd}`;
                             }}
                           />
-                          <Line type="monotone" dataKey="mag" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+                          <Line type="linear" dataKey="mag" stroke="hsl(var(--primary))" strokeWidth={1.5} dot={{ r: 2.5 }} isAnimationActive={false} connectNulls={false} />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
