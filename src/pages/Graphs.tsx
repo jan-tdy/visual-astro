@@ -10,7 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { computeMagnitude, dateToJD, parseLimitMagnitude } from "@/lib/astro";
+import { applyUtTimeToDate, computeMagnitude, dateToJD, parseLimitMagnitude } from "@/lib/astro";
 import { useI18n } from "@/hooks/useI18n";
 import {
   ResponsiveContainer, ComposedChart, Line, BarChart, Bar, Scatter,
@@ -248,10 +248,7 @@ export default function Graphs() {
         const d = new Date(dt);
         if (isNaN(d.getTime())) return;
         // Overlay UT time on the session date when available (session dt is often 18:00 placeholder).
-        if (o.ut_time && /^\d{1,2}:\d{2}$/.test(o.ut_time)) {
-          const [hh, mm] = o.ut_time.split(":").map(Number);
-          d.setUTCHours(hh, mm, 0, 0);
-        }
+        applyUtTimeToDate(d, o.ut_time);
         if (!Number.isFinite(numeric)) return;
         points.push({
           jd: +dateToJD(d).toFixed(5),
@@ -276,10 +273,7 @@ export default function Graphs() {
         if (mag == null) return;
         const d = new Date(dt);
         if (isNaN(d.getTime())) return;
-        if (o.ut_time && /^\d{1,2}:\d{2}$/.test(o.ut_time)) {
-          const [hh, mm] = o.ut_time.split(":").map(Number);
-          d.setUTCHours(hh, mm, 0, 0);
-        }
+        applyUtTimeToDate(d, o.ut_time);
         points.push({
           jd: +dateToJD(d).toFixed(5),
           date: d.toISOString().slice(0, 16).replace("T", " "),

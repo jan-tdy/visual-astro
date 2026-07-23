@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllRows } from "@/lib/supabaseFetchAll";
 import { AppHeader } from "@/components/app/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,13 +67,13 @@ export default function Catalog() {
 
   const reload = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("stars")
-      .select("*")
-      .order("constellation")
-      .order("sort_order");
+    // Paginated fetch — PostgREST caps single requests at ~1000 rows, and a growing
+    // custom catalog can exceed that, silently hiding stars past the cap otherwise.
+    const { data, error } = await fetchAllRows<Star>((from, to) =>
+      supabase.from("stars").select("*").order("constellation").order("sort_order").range(from, to),
+    );
     if (error) toast.error(error.message);
-    else setStars(sortStars((data ?? []) as Star[]));
+    setStars(sortStars(data));
     setLoading(false);
   };
   useEffect(() => {
