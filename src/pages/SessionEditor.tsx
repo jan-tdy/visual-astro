@@ -13,6 +13,7 @@ import { buildAAVSO, buildMEDUZA, buildVSNET, downloadText, type ExportRow } fro
 import { getPrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useI18n } from "@/hooks/useI18n";
+import { fetchAllRows } from "@/lib/supabaseFetchAll";
 
 type StarType = "VISUAL" | "BINAR" | "ECL faint" | "ECL bright";
 type Star = {
@@ -414,10 +415,14 @@ export default function SessionEditor() {
     if (!user || !id) return;
     (async () => {
       setLoading(true);
-      const [{ data: session }, { data: starList }, { data: obsList }, { data: profile }] =
+      // Stars catalog paginated — PostgREST caps a single request at ~1000 rows, and a
+      // growing custom catalog can exceed that, silently hiding stars past the cap otherwise.
+      const [{ data: session }, starsResult, { data: obsList }, { data: profile }] =
         await Promise.all([
           supabase.from("sessions").select("*").eq("id", id).maybeSingle(),
-          supabase.from("stars").select("*").order("constellation").order("sort_order"),
+          fetchAllRows<Star>((from, to) =>
+            supabase.from("stars").select("*").order("constellation").order("sort_order").range(from, to),
+          ),
           supabase.from("observations").select("*").eq("session_id", id),
           supabase.from("profiles").select("obs_code").eq("user_id", user.id).maybeSingle(),
         ]);
@@ -428,7 +433,7 @@ export default function SessionEditor() {
       }
       setObservedAt(new Date(session.observed_at_utc));
       setSessionName(session.name ?? "");
-      setStars((starList ?? []) as Star[]);
+      setStars(starsResult.data);
       const map: Record<string, Obs> = {};
       const extras: Record<string, Obs[]> = {};
       const sorted = (obsList ?? []).slice().sort(

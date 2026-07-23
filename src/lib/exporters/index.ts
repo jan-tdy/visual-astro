@@ -1,4 +1,4 @@
-import { computeMagnitude, vsnetDate, meduzaDate, aavsoEstima, resolveCompValue, type ObsInput } from "@/lib/astro";
+import { applyUtTimeToDate, computeMagnitude, vsnetDate, meduzaDate, aavsoEstima, resolveCompValue, type ObsInput } from "@/lib/astro";
 
 export interface ExportRow extends ObsInput {
   star_name: string;
@@ -17,21 +17,23 @@ export interface ExportContext {
 
 function magOrLimit(r: ExportRow): string | null {
   const m = computeMagnitude(r, r.star_name);
-  return m.value;
+  // A "fainter-than" value is the user's raw limit_value text, so it needs the same
+  // CSV-delimiter guard as the other free-text fields below.
+  return m.value == null ? null : csvSafe(m.value);
+}
+
+/**
+ * Guard user free text (notes, star names) against the CSV delimiter — AAVSO/MEDUZA
+ * exports are unquoted comma-separated, so a stray comma would silently shift columns.
+ */
+function csvSafe(s: string): string {
+  return s.replace(/[,\r\n]/g, " ").trim();
 }
 
 function rowDate(row: ExportRow, ctx: ExportContext): Date {
   if (!row.ut_time) return ctx.observedAt;
-  const m = String(row.ut_time).trim().match(/^(\d{1,2})[:.\s]+(\d{1,2})/);
-  if (!m) return ctx.observedAt;
-  const h = parseInt(m[1]), mm = parseInt(m[2]);
   const d = new Date(ctx.observedAt);
-  d.setUTCHours(h, mm, 0, 0);
-  // Časy 00:00–11:59 UT patria do nasledujúceho kalendárneho dňa
-  // (pozorovanie cez polnoc), keďže session má dátum večera.
-  if (h < 12) {
-    d.setUTCDate(d.getUTCDate() + 1);
-  }
+  applyUtTimeToDate(d, row.ut_time);
   return d;
 }
 
@@ -69,11 +71,11 @@ export function buildAAVSO(rows: ExportRow[], ctx: ExportContext): string {
     const aVal = resolveCompValue(r.star_name, r.a ?? null);
     const bVal = resolveCompValue(r.star_name, r.b ?? null);
     const comp1 = isLimit
-      ? (Number.isFinite(bVal) ? bVal.toFixed(2) : (r.limit_value ?? "").replace("<", ""))
-      : (Number.isFinite(aVal) ? aVal.toFixed(2) : (r.a ?? ""));
-    const comp2 = isLimit ? "na" : (Number.isFinite(bVal) ? bVal.toFixed(2) : (r.b ?? ""));
+      ? (Number.isFinite(bVal) ? bVal.toFixed(2) : csvSafe((r.limit_value ?? "").replace("<", "")))
+      : (Number.isFinite(aVal) ? aVal.toFixed(2) : csvSafe(r.a ?? ""));
+    const comp2 = isLimit ? "na" : (Number.isFinite(bVal) ? bVal.toFixed(2) : csvSafe(r.b ?? ""));
     const jd = ctx.jd + (rowDate(r, ctx).getTime() - ctx.observedAt.getTime()) / 86400000;
-    const rawNote = (r.note ?? "").trim().replace(/:/g, "Z");
+    const rawNote = csvSafe((r.note ?? "").trim().replace(/:/g, "Z"));
     const upper = rawNote.toUpperCase();
     const noteOut = upper === "OUTBURST" || upper === "ACTIVE" ? "Y" : (rawNote || "na");
     body.push(
@@ -99,7 +101,7 @@ export function buildMEDUZA(rows: ExportRow[], ctx: ExportContext): string {
     const mag = magOrLimit(r);
     if (!mag) continue;
     lines.push(
-      [r.star_name, ctx.jd.toFixed(3), mag, dateStr, ctx.obsCode, aavsoEstima(r)].join(","),
+      [csvSafe(r.star_name), ctx.jd.toFixed(3), mag, dateStr, ctx.obsCode, csvSafe(aavsoEstima(r))].join(","),
     );
   }
   return lines.join("\n") + "\n";

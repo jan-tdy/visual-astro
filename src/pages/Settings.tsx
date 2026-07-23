@@ -23,6 +23,7 @@ import { usePrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
 import { DEV_PLUS_KEY } from "@/hooks/useSubscription";
 import { Zap } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
+import { fetchAllRows } from "@/lib/supabaseFetchAll";
 
 export default function Settings() {
   const { user } = useAuth();
@@ -71,10 +72,12 @@ export default function Settings() {
   const computeUsage = async () => {
     if (!user) return;
     setUsage((u) => ({ ...u, loading: true }));
+    // Paginated fetch — PostgREST caps a single request at ~1000 rows, so an active
+    // observer's stars/sessions/observations were silently undercounted without this.
     const [stars, sessions, observations, profile] = await Promise.all([
-      supabase.from("stars").select("*").eq("user_id", user.id),
-      supabase.from("sessions").select("*").eq("user_id", user.id),
-      supabase.from("observations").select("*").eq("user_id", user.id),
+      fetchAllRows<Record<string, unknown>>((from, to) => supabase.from("stars").select("*").eq("user_id", user.id).range(from, to)),
+      fetchAllRows<Record<string, unknown>>((from, to) => supabase.from("sessions").select("*").eq("user_id", user.id).range(from, to)),
+      fetchAllRows<Record<string, unknown>>((from, to) => supabase.from("observations").select("*").eq("user_id", user.id).range(from, to)),
       supabase.from("profiles").select("*").eq("user_id", user.id),
     ]);
     const enc = new TextEncoder();
@@ -94,9 +97,9 @@ export default function Settings() {
     setUsage({
       bytes,
       counts: {
-        stars: stars.data?.length ?? 0,
-        sessions: sessions.data?.length ?? 0,
-        observations: observations.data?.length ?? 0,
+        stars: stars.data.length,
+        sessions: sessions.data.length,
+        observations: observations.data.length,
         promOverrides: promCount,
       },
       loading: false,

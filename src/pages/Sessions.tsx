@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2, Plus, Trash2, Copy, Star, StarOff, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
-import { dateToJD } from "@/lib/astro";
+import { computeMagnitude, dateToJD } from "@/lib/astro";
 import { seedCatalogIfNeeded } from "@/lib/seed";
 import { useI18n } from "@/hooks/useI18n";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -53,16 +53,22 @@ export default function Sessions() {
     setLoading(true);
     const { data, error } = await supabase
       .from("sessions")
-      .select("id, observed_at_utc, jd, notes, name, is_favorite, observations(ut_time)")
+      .select("id, observed_at_utc, jd, notes, name, is_favorite, observations(ut_time, star_id, a, pasos_a, pasos_b, b, limit_value)")
       .order("observed_at_utc", { ascending: false });
     if (error) {
       toast.error(error.message);
     } else {
+      const { data: starRows } = await supabase.from("stars").select("id, name");
+      const starNameById = new Map((starRows ?? []).map((s) => [s.id, s.name]));
       setSessions(
         (data ?? []).map((s: any) => ({
           ...s,
+          // Matches the editor's own "filled" definition: a UT time alone isn't enough,
+          // the magnitude has to be computable too, or the export/graphs skip the row anyway.
           obs_count: (s.observations ?? []).filter(
-            (o: any) => o.ut_time && String(o.ut_time).trim(),
+            (o: any) =>
+              o.ut_time && String(o.ut_time).trim() &&
+              computeMagnitude(o, starNameById.get(o.star_id)).value !== null,
           ).length,
         })),
       );

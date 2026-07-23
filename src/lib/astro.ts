@@ -113,6 +113,22 @@ export function computeMagnitude(o: ObsInput, starName?: string): { value: strin
 }
 
 /**
+ * Overlay a "HH:MM" UT time onto a session's (evening) date, mutating `d` in place.
+ * Times 00:00–11:59 UT are the post-midnight continuation of the observing night
+ * that started the previous UTC evening, so they roll onto the next calendar day —
+ * the session itself is always dated by the evening it started.
+ */
+export function applyUtTimeToDate(d: Date, utTime: string | null | undefined): void {
+  if (!utTime) return;
+  const m = /^(\d{1,2})[:.\s]+(\d{1,2})/.exec(String(utTime).trim());
+  if (!m) return;
+  const hh = parseInt(m[1], 10);
+  const mm = parseInt(m[2], 10);
+  d.setUTCHours(hh, mm, 0, 0);
+  if (hh < 12) d.setUTCDate(d.getUTCDate() + 1);
+}
+
+/**
  * Extract the numeric threshold from a "fainter-than" limit string (e.g. "<14.9").
  * The star was not seen even at this comparison magnitude, so the true magnitude
  * is fainter (numerically greater) than the returned value. Returns null if unparseable.
