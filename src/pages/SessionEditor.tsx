@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-  import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus, ScanLine, Printer, Search, PanelLeftClose, PanelLeftOpen, Table as TableIcon, Type, ArrowUp, ArrowDown, Sparkles, Minus } from "lucide-react";
+  import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus, ScanLine, Printer, Search, PanelLeftClose, PanelLeftOpen, Table as TableIcon, Type, ArrowUp, ArrowDown, Sparkles, Minus, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
-import { buildAAVSO, buildMEDUZA, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
+import { buildAAVSO, buildExportSummary, buildMEDUZA, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
 import { getPrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useI18n } from "@/hooks/useI18n";
@@ -71,6 +71,9 @@ export default function SessionEditor() {
   const [observedAt, setObservedAt] = useState<Date>(new Date());
   const [sessionName, setSessionName] = useState<string>("");
   const [obsCode, setObsCode] = useState("DPV");
+  // 1-based position of this session among the user's sessions ordered by date,
+  // used only as the "-NN" suffix in the export summary string.
+  const [sessionNumber, setSessionNumber] = useState(1);
   const [typeFilter, setTypeFilter] = useState<(typeof TYPE_FILTERS)[number]>("ALL");
   const [starSearch, setStarSearch] = useState("");
   const [activeConst, setActiveConst] = useState<string | null>(null);
@@ -442,6 +445,12 @@ export default function SessionEditor() {
       }
       setObservedAt(new Date(session.observed_at_utc));
       setSessionName(session.name ?? "");
+      const { count } = await supabase
+        .from("sessions")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .lte("observed_at_utc", session.observed_at_utc);
+      setSessionNumber(count ?? 1);
       setStars(starsResult.data);
       const map: Record<string, Obs> = {};
       const extras: Record<string, Obs[]> = {};
@@ -798,6 +807,12 @@ export default function SessionEditor() {
     });
     return decorated.map((d) => d.r);
   };
+
+  const exportSummary = useMemo(
+    () => buildExportSummary(buildExportRows(), { obsCode, sessionNumber }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [obsByStar, extraByStar, obsCode, sessionNumber, stars],
+  );
 
   const exportFile = (kind: "vsnet" | "aavso" | "meduza", preview = false) => {
     const rows = buildExportRows();
@@ -1173,6 +1188,20 @@ export default function SessionEditor() {
               <div className="text-xs text-muted-foreground">{t("editor.filled")}</div>
               <div className="text-2xl font-semibold text-primary">{filledCount}</div>
             </div>
+          </div>
+
+          <div className="mt-3 flex items-center gap-2">
+            <label className="text-xs text-muted-foreground shrink-0">{t("editor.exportSummary")}</label>
+            <code className="flex-1 min-w-0 truncate rounded-md border border-input bg-muted/40 px-2 py-1.5 font-mono text-xs">
+              {exportSummary}
+            </code>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => { navigator.clipboard.writeText(exportSummary); toast.success(t("editor.copied")); }}
+            >
+              <Copy className="h-3.5 w-3.5 mr-1" /> {t("editor.copy")}
+            </Button>
           </div>
 
           {incompleteWarnings.length > 0 && (
