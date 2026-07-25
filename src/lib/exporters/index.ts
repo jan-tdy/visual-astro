@@ -107,6 +107,63 @@ export function buildMEDUZA(rows: ExportRow[], ctx: ExportContext): string {
   return lines.join("\n") + "\n";
 }
 
+function padNum(n: number, width: number): string {
+  return String(Math.max(0, Math.trunc(n))).padStart(width, "0");
+}
+
+function utClock(v: string): { h: number; m: number } | null {
+  const m = String(v).match(/(\d{1,2})[:.\s]+(\d{1,2})/);
+  if (!m) return null;
+  return { h: parseInt(m[1], 10), m: parseInt(m[2], 10) };
+}
+
+export interface SessionSummaryContext {
+  obsCode: string;
+  sessionNumber: number;
+}
+
+/**
+ * A copyable one-line recap of the session: observer code + session #, start/end UT
+ * (crossing midnight is flagged "nxtday" since a night's rows only carry a clock time,
+ * not a date), and counts of rows noted OUTBURST / ACTIVE.
+ */
+export function buildExportSummary(rows: ExportRow[], ctx: SessionSummaryContext): string {
+  const clocks = rows
+    .map((r) => (r.ut_time ? utClock(r.ut_time) : null))
+    .filter((c): c is { h: number; m: number } => c !== null);
+
+  let startStr = "0000";
+  let endStr = "0000";
+  let nextDay = false;
+  if (clocks.length > 0) {
+    // Same "post-midnight rolls to next day" convention as the export row sort in
+    // SessionEditor: hours before noon belong to the tail end of the observing night.
+    const withKey = clocks.map((c) => ({ c, key: (c.h < 12 ? c.h + 24 : c.h) * 60 + c.m }));
+    withKey.sort((a, b) => a.key - b.key);
+    const start = withKey[0].c;
+    const end = withKey[withKey.length - 1].c;
+    startStr = `${padNum(start.h, 2)}${padNum(start.m, 2)}`;
+    endStr = `${padNum(end.h, 2)}${padNum(end.m, 2)}`;
+    nextDay = end.h < start.h;
+  }
+
+  let outburst = 0;
+  let active = 0;
+  for (const r of rows) {
+    const note = (r.note ?? "").trim().toUpperCase();
+    if (note === "OUTBURST") outburst++;
+    else if (note === "ACTIVE") active++;
+  }
+
+  return [
+    `${ctx.obsCode}-${padNum(ctx.sessionNumber, 2)}`,
+    `start${startStr}ut`,
+    `end-${endStr}ut${nextDay ? "nxtday" : ""}`,
+    `outburst-${padNum(outburst, 4)}`,
+    `active-${padNum(active, 4)}`,
+  ].join(", ");
+}
+
 export function downloadText(filename: string, text: string) {
   const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
