@@ -12,7 +12,7 @@ import { useCcdTargets, usePozorSettings } from "@/components/pozor/shared";
 export default function Pozor() {
   const { t } = useI18n();
   const { targets } = useCcdTargets();
-  const [settings, setSettings] = usePozorSettings();
+  const { settings, setSettings } = usePozorSettings();
 
   return (
     <div className="min-h-screen bg-background">
