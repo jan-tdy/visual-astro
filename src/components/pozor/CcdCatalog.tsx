@@ -173,7 +173,7 @@ export function CcdCatalog() {
       if (!payload.length) throw new Error("empty");
       const { error } = await supabase.from("ccd_targets").insert(payload);
       if (error) throw error;
-      toast.success(t("pozor.cat.imported", { n: payload.length }));
+      toast.success(t("pozor.cat.imported").replace("{n}", String(payload.length)));
       reload();
     } catch (e: any) {
       toast.error(e?.message ?? String(e));
@@ -359,7 +359,7 @@ export function CcdCatalog() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("pozor.cat.delete.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("pozor.cat.delete.desc", { name: confirmDelete?.name ?? "" })}
+              {t("pozor.cat.delete.desc").replace("{name}", confirmDelete?.name ?? "")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
