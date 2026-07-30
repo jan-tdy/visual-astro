@@ -13,7 +13,7 @@ import {
 import { ArrowDown, ArrowUp, Download, Loader2, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
 import { formatDMS, formatHMS } from "@/lib/pozor";
-import { CcdTarget, downloadText, sortTargets, useCcdTargets } from "./shared";
+import { CcdTarget, downloadText, sortTargets } from "./shared";
 
 /** Accepts "7.19056", "07 11 26.0" or "07h11m26.0s" → hours. */
 export function parseSexagesimal(raw: string): number | null {
@@ -30,9 +30,16 @@ export function parseSexagesimal(raw: string): number | null {
 const num = (v: number | null | undefined, digits = 5) =>
   v == null || !Number.isFinite(v) ? "—" : v.toFixed(digits);
 
-export function CcdCatalog() {
+export function CcdCatalog({
+  targets,
+  loading,
+  reload,
+}: {
+  targets: CcdTarget[];
+  loading: boolean;
+  reload: () => void;
+}) {
   const { t } = useI18n();
-  const { targets, loading, reload } = useCcdTargets();
   const [filter, setFilter] = useState("");
   const [editing, setEditing] = useState<Partial<CcdTarget> | null>(null);
   const [raText, setRaText] = useState("");

@@ -11,7 +11,7 @@ import { useCcdTargets, usePozorSettings } from "@/components/pozor/shared";
 
 export default function Pozor() {
   const { t } = useI18n();
-  const { targets } = useCcdTargets();
+  const { targets, loading: targetsLoading, reload: reloadTargets } = useCcdTargets();
   const { settings, setSettings } = usePozorSettings();
 
   return (
@@ -19,7 +19,7 @@ export default function Pozor() {
       <AppHeader />
       <main className="container mx-auto px-4 py-6 space-y-4">
         <header>
-          <h1 className="text-2xl font-semibold">POZOR</h1>
+          <h1 className="text-2xl font-semibold">{t("nav.pozor")}</h1>
           <p className="text-sm text-muted-foreground">{t("pozor.subtitle")}</p>
         </header>
         <Tabs defaultValue="chart">
@@ -47,7 +47,7 @@ export default function Pozor() {
             <JdTab />
           </TabsContent>
           <TabsContent value="catalog" className="mt-4">
-            <CcdCatalog />
+            <CcdCatalog targets={targets} loading={targetsLoading} reload={reloadTargets} />
           </TabsContent>
         </Tabs>
       </main>
