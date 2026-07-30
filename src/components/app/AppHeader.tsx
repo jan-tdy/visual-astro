@@ -76,8 +76,7 @@ export function AppHeader() {
           {link("/catalog", t("nav.catalog"), BookOpen)}
           {link("/prom", t("nav.prom"), Sparkles)}
           {link("/pozor", t("nav.pozor"), Telescope)}
-                {link("/pozor", t("nav.pozor"), Telescope)}
-                {link("/graphs", t("nav.graphs"), BarChart3)}
+          {link("/graphs", t("nav.graphs"), BarChart3)}
           {link("/tools", t("nav.tools"), Wrench)}
           {link("/settings", t("nav.settings"), SettingsIcon)}
           {link("/about", t("nav.info"), Info)}
