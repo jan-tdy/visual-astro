@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      ccd_targets: {
+        Row: {
+          constellation: string
+          created_at: string
+          dec_deg: number
+          epoch_jd: number | null
+          filters: string | null
+          id: string
+          name: string
+          notes: string | null
+          period_days: number | null
+          ra_hours: number
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          constellation?: string
+          created_at?: string
+          dec_deg?: number
+          epoch_jd?: number | null
+          filters?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          period_days?: number | null
+          ra_hours?: number
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          constellation?: string
+          created_at?: string
+          dec_deg?: number
+          epoch_jd?: number | null
+          filters?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          period_days?: number | null
+          ra_hours?: number
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       observations: {
         Row: {
           a: string | null
