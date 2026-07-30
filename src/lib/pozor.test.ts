@@ -85,6 +85,6 @@ describe("precession is applied", () => {
   it("shifts J2000 coordinates to the equinox of date", () => {
     const pos = altAz(V2104AQL.raHours, V2104AQL.decDeg, EPOCH, piconcillo);
     expect(pos.raOfDate).toBeGreaterThan(V2104AQL.raHours);
-    expect(pos.raOfDate - V2104AQL.raHours).toBeLessThan 0.05;
+    expect(pos.raOfDate - V2104AQL.raHours).toBeLessThan(0.05);
   });
 });
