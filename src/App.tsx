@@ -11,6 +11,7 @@ import Sessions from "./pages/Sessions.tsx";
 import SessionEditor from "./pages/SessionEditor.tsx";
 import Catalog from "./pages/Catalog.tsx";
 import Prom from "./pages/Prom.tsx";
+import Pozor from "./pages/Pozor.tsx";
 import Graphs from "./pages/Graphs.tsx";
 import Settings from "./pages/Settings.tsx";
 import Tools from "./pages/Tools.tsx";
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/session/:id" element={<ProtectedRoute><SessionEditor /></ProtectedRoute>} />
             <Route path="/catalog" element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
             <Route path="/prom" element={<ProtectedRoute><Prom /></ProtectedRoute>} />
+            <Route path="/pozor" element={<ProtectedRoute><Pozor /></ProtectedRoute>} />
             <Route path="/graphs" element={<ProtectedRoute><Graphs /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/tools" element={<ProtectedRoute><Tools /></ProtectedRoute>} />
