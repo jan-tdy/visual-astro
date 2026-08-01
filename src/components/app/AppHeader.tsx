@@ -92,7 +92,7 @@ export function AppHeader() {
         key={to}
         to={to}
         onClick={() => setOpen(false)}
-        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-colors ${
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm whitespace-nowrap shrink-0 transition-colors ${
           active ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
         }`}
       >
@@ -157,7 +157,7 @@ export function AppHeader() {
             </span>
           </span>
         </a>
-        <nav className="hidden sm:flex items-center gap-1">
+        <nav className="hidden sm:flex items-center gap-1 min-w-0 flex-1 overflow-x-auto">
           {navLinks.map((l) => link(l.to, l.label, l.icon, l.locked))}
         </nav>
         <ModeToggle
