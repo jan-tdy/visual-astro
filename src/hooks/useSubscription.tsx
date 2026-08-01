@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,12 +15,35 @@ export const DEV_PLUS_EMAIL = "var@kozmos.sk";
 /** @deprecated kept for backwards compatibility with old localStorage flag */
 export const DEV_PLUS_KEY = "dev_plus_override_v1";
 
-export function useSubscription() {
+interface ActiveBonus { id: string; reason: string; expires_at: string; seen: boolean }
+
+interface SubscriptionContextValue {
+  sub: SubscriptionRow | null;
+  loading: boolean;
+  isPlusActive: boolean;
+  refetch: () => Promise<void>;
+  isDevUser: boolean;
+  devOverride: boolean;
+  setDevOverride: (next: boolean) => Promise<void>;
+  activeBonus: ActiveBonus | null;
+  isBonusActive: boolean;
+  markBonusSeen: () => Promise<void>;
+}
+
+const SubscriptionContext = createContext<SubscriptionContextValue | null>(null);
+
+// A single provider owns the Supabase query + realtime channel for the whole app.
+// Multiple independent useSubscription() callers used to each open their own
+// `sub-${userId}` realtime channel; Supabase dedupes channels by topic, so the
+// second `.channel(...).on(...)` call landed on an already-subscribed channel
+// and threw "cannot add postgres_changes callbacks ... after subscribe()",
+// crashing the whole render tree.
+export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [sub, setSub] = useState<SubscriptionRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [devOverride, setDevOverrideState] = useState<boolean>(false);
-  const [activeBonus, setActiveBonus] = useState<{ id: string; reason: string; expires_at: string; seen: boolean } | null>(null);
+  const [activeBonus, setActiveBonus] = useState<ActiveBonus | null>(null);
 
   useEffect(() => {
     if (!user) { setDevOverrideState(false); return; }
@@ -104,5 +127,17 @@ export function useSubscription() {
     setActiveBonus({ ...activeBonus, seen: true });
   };
 
-  return { sub, loading, isPlusActive, refetch, isDevUser, devOverride, setDevOverride, activeBonus, isBonusActive, markBonusSeen };
+  return (
+    <SubscriptionContext.Provider
+      value={{ sub, loading, isPlusActive, refetch, isDevUser, devOverride, setDevOverride, activeBonus, isBonusActive, markBonusSeen }}
+    >
+      {children}
+    </SubscriptionContext.Provider>
+  );
+}
+
+export function useSubscription() {
+  const c = useContext(SubscriptionContext);
+  if (!c) throw new Error("useSubscription must be used within SubscriptionProvider");
+  return c;
 }
