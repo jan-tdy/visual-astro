@@ -9,7 +9,7 @@ import { downloadText } from "@/lib/exporters";
 import { usePrefs } from "@/hooks/usePrefs";
 import { useI18n } from "@/hooks/useI18n";
 import { JdConverter } from "@/components/tools/JdConverter";
-import { parseSIPS, buildVSNETFromSIPS, buildAAVSOFromSIPS } from "@/lib/sips";
+import { parseSIPS, buildVSNETFromSIPS, buildAAVSOFromSIPS, aavsoFilter } from "@/lib/sips";
 
 export default function Tools() {
   const { prefs } = usePrefs();
