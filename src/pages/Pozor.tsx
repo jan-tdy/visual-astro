@@ -7,7 +7,6 @@ import { NightChart } from "@/components/pozor/NightChart";
 import { Journal } from "@/components/pozor/Journal";
 import { Minima } from "@/components/pozor/Minima";
 import { InstantInfo } from "@/components/pozor/InstantInfo";
-import { JdTab } from "@/components/pozor/JdTab";
 import { useCcdCatalogs, useCcdTargets, usePozorSettings } from "@/components/pozor/shared";
 
 export default function Pozor() {
@@ -45,7 +44,6 @@ export default function Pozor() {
             <TabsTrigger value="journal">{t("pozor.tab.journal")}</TabsTrigger>
             <TabsTrigger value="minima">{t("pozor.tab.minima")}</TabsTrigger>
             <TabsTrigger value="instant">{t("pozor.tab.instant")}</TabsTrigger>
-            <TabsTrigger value="jd">{t("pozor.tab.jd")}</TabsTrigger>
             <TabsTrigger value="catalog">{t("pozor.tab.catalog")}</TabsTrigger>
           </TabsList>
           <TabsContent value="chart" className="mt-4">
@@ -59,9 +57,6 @@ export default function Pozor() {
           </TabsContent>
           <TabsContent value="instant" className="mt-4">
             <InstantInfo targets={targets} settings={settings} setSettings={setSettings} />
-          </TabsContent>
-          <TabsContent value="jd" className="mt-4">
-            <JdTab />
           </TabsContent>
           <TabsContent value="catalog" className="mt-4">
             <CcdCatalog targets={targets} loading={targetsLoading} reload={reloadTargets} catalogId={catalogId} />
