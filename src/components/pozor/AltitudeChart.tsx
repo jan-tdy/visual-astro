@@ -154,7 +154,7 @@ export function AltitudeChart({
     <div>
       <div style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={rows} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+          <LineChart data={rows} margin={{ top: compact ? 8 : 20, right: 16, bottom: 8, left: 0 }}>
             <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
             {darkFrom != null && darkTo != null && (
               <ReferenceArea x1={darkFrom} x2={darkTo} fill="hsl(var(--primary))" fillOpacity={0.06} />
