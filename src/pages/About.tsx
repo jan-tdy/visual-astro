@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { AppHeader } from "@/components/app/AppHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Telescope, Star, Clock, Download, BookOpen, Settings as SettingsIcon, Layers, Sparkles, ScanLine, HelpCircle, Cpu, Languages, Heart, CreditCard, BarChart3, Wrench, Moon, Table2 } from "lucide-react";
+import { Telescope, Star, Clock, Download, BookOpen, Settings as SettingsIcon, Layers, Sparkles, ScanLine, HelpCircle, Cpu, Languages, Heart, CreditCard, BarChart3, Wrench, Moon, Table2, ToggleLeft } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
 
 const FEATURE_KEYS = [
@@ -114,6 +114,18 @@ export default function About() {
             <div>
               <h2 className="text-xl font-semibold mb-1">{t("about.pozorTitle")}</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">{t("about.pozorDesc")}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 mt-6 border-accent/40 bg-accent/5">
+          <div className="flex items-start gap-3">
+            <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-accent/15 text-accent shrink-0">
+              <ToggleLeft className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold mb-1">{t("about.modeTitle")}</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">{t("about.modeDesc")}</p>
             </div>
           </div>
         </Card>

@@ -202,9 +202,12 @@ export function downloadText(filename: string, text: string, mime = "text/plain"
 
 /** Chart palette for multi-target curves — semantic tokens only. */
 export const CURVE_COLORS = [
-  "hsl(var(--primary))",
-  "hsl(var(--accent))",
-  "hsl(var(--destructive))",
-  "hsl(var(--chart-4, var(--primary)))",
-  "hsl(var(--chart-5, var(--accent)))",
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+  "hsl(var(--chart-6))",
+  "hsl(var(--chart-7))",
+  "hsl(var(--chart-8))",
 ];

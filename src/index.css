@@ -33,6 +33,16 @@ All colors MUST be HSL.
     --destructive: 0 78% 55%;
     --destructive-foreground: 0 0% 100%;
 
+    /* Categorical chart palette (validated for CVD-safety + contrast on this surface) */
+    --chart-1: 213 68% 50%;
+    --chart-2: 17 82% 56%;
+    --chart-3: 159 73% 40%;
+    --chart-4: 41 100% 46%;
+    --chart-5: 337 70% 70%;
+    --chart-6: 120 100% 26%;
+    --chart-7: 249 48% 44%;
+    --chart-8: 0 73% 59%;
+
     --border: 270 20% 88%;
     --input: 270 20% 92%;
     --ring: 262 70% 52%;
@@ -88,6 +98,16 @@ All colors MUST be HSL.
 
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
+
+    /* Categorical chart palette (validated for CVD-safety + contrast on this surface) */
+    --chart-1: 213 77% 56%;
+    --chart-2: 17 70% 50%;
+    --chart-3: 159 73% 36%;
+    --chart-4: 40 100% 39%;
+    --chart-5: 338 61% 58%;
+    --chart-6: 120 100% 26%;
+    --chart-7: 247 69% 72%;
+    --chart-8: 0 72% 65%;
 
     --border: 260 22% 20%;
     --input: 260 25% 16%;
