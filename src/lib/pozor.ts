@@ -7,7 +7,7 @@
  * what the original Fortran POZOR program did.
  */
 import * as Astronomy from "astronomy-engine";
-import { dateToJD } from "@/lib/astro";
+import { dateToJD } from "./astro";
 
 export const AU_KM = 1.495978707e8;
 /** Light travel time for 1 AU, in seconds. */
