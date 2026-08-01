@@ -151,98 +151,113 @@ export function AltitudeChart({
   }, [targets, fromDate, toDate, location]);
 
   return (
-    <div style={{ height }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={rows} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-          <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
-          {darkFrom != null && darkTo != null && (
-            <ReferenceArea x1={darkFrom} x2={darkTo} fill="hsl(var(--primary))" fillOpacity={0.06} />
-          )}
-          <ReferenceLine
-            y={minAltitude}
-            stroke="hsl(var(--destructive))"
-            strokeDasharray="4 4"
-            label={
-              compact
-                ? undefined
-                : { value: `${minAltitude}°`, fill: "hsl(var(--muted-foreground))", fontSize: 11 }
-            }
-          />
-          {twilightLines.map((l) => (
+    <div>
+      <div style={{ height }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={rows} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+            <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
+            {darkFrom != null && darkTo != null && (
+              <ReferenceArea x1={darkFrom} x2={darkTo} fill="hsl(var(--primary))" fillOpacity={0.06} />
+            )}
             <ReferenceLine
-              key={l.key}
-              x={l.minutes}
-              stroke="hsl(var(--muted-foreground))"
-              strokeDasharray="2 2"
-              strokeOpacity={0.6}
+              y={minAltitude}
+              stroke="hsl(var(--destructive))"
+              strokeDasharray="4 4"
               label={
                 compact
                   ? undefined
-                  : { value: l.label, position: "top", fill: "hsl(var(--muted-foreground))", fontSize: 9 }
+                  : { value: `${minAltitude}°`, fill: "hsl(var(--muted-foreground))", fontSize: 11 }
               }
             />
-          ))}
-          {minimaMarks.map((m) => (
-            <ReferenceDot
-              key={m.key}
-              x={m.minutes}
-              y={m.alt}
-              r={compact ? 3 : 4}
-              fill={m.kind === "primary" ? m.color : "hsl(var(--card))"}
-              stroke={m.color}
-              strokeWidth={1.5}
-              isFront
+            {twilightLines.map((l) => (
+              <ReferenceLine
+                key={l.key}
+                x={l.minutes}
+                stroke="hsl(var(--muted-foreground))"
+                strokeDasharray="2 2"
+                strokeOpacity={0.6}
+                label={
+                  compact
+                    ? undefined
+                    : { value: l.label, position: "top", fill: "hsl(var(--muted-foreground))", fontSize: 9 }
+                }
+              />
+            ))}
+            {minimaMarks.map((m) => (
+              <ReferenceDot
+                key={m.key}
+                x={m.minutes}
+                y={m.alt}
+                r={compact ? 3 : 4}
+                fill={m.kind === "primary" ? m.color : "hsl(var(--card))"}
+                stroke={m.color}
+                strokeWidth={1.5}
+                isFront
+              />
+            ))}
+            <XAxis
+              dataKey="minutes"
+              type="number"
+              domain={["dataMin", "dataMax"]}
+              ticks={hourTicks.ticks}
+              tickFormatter={(v) => hourTicks.labels.get(Number(v)) ?? ""}
+              stroke="hsl(var(--muted-foreground))"
+              fontSize={compact ? 9 : 11}
             />
-          ))}
-          <XAxis
-            dataKey="minutes"
-            type="number"
-            domain={["dataMin", "dataMax"]}
-            ticks={hourTicks.ticks}
-            tickFormatter={(v) => hourTicks.labels.get(Number(v)) ?? ""}
-            stroke="hsl(var(--muted-foreground))"
-            fontSize={compact ? 9 : 11}
-          />
-          <YAxis
-            domain={[0, 90]}
-            allowDataOverflow
-            tickFormatter={(v) => `${Math.round(Number(v))}°`}
-            stroke="hsl(var(--muted-foreground))"
-            fontSize={compact ? 9 : 11}
-            width={compact ? 26 : 32}
-          />
-          <Tooltip content={<ChartTooltip />} wrapperStyle={{ zIndex: 30 }} />
-          <Line
-            dataKey="sun"
-            name={t("pozor.sun")}
-            stroke="hsl(var(--muted-foreground))"
-            strokeDasharray="2 3"
-            dot={false}
-            strokeWidth={1}
-            isAnimationActive={false}
-          />
-          <Line
-            dataKey="moon"
-            name={t("pozor.moon")}
-            stroke="hsl(var(--accent))"
-            strokeDasharray="6 3"
-            dot={false}
-            strokeWidth={1.5}
-            isAnimationActive={false}
-          />
-          {targets.map((x, i) => (
+            <YAxis
+              domain={[0, 90]}
+              allowDataOverflow
+              tickFormatter={(v) => `${Math.round(Number(v))}°`}
+              stroke="hsl(var(--muted-foreground))"
+              fontSize={compact ? 9 : 11}
+              width={compact ? 26 : 32}
+            />
+            <Tooltip content={<ChartTooltip />} wrapperStyle={{ zIndex: 30 }} />
             <Line
-              key={x.id}
-              dataKey={x.id}
-              name={x.name}
-              stroke={CURVE_COLORS[i % CURVE_COLORS.length]}
+              dataKey="sun"
+              name={t("pozor.sun")}
+              stroke="hsl(var(--muted-foreground))"
+              strokeDasharray="2 3"
               dot={false}
-              strokeWidth={2}
+              strokeWidth={1}
               isAnimationActive={false}
             />
+            <Line
+              dataKey="moon"
+              name={t("pozor.moon")}
+              stroke="hsl(var(--accent))"
+              strokeDasharray="6 3"
+              dot={false}
+              strokeWidth={1.5}
+              isAnimationActive={false}
+            />
+            {targets.map((x, i) => (
+              <Line
+                key={x.id}
+                dataKey={x.id}
+                name={x.name}
+                stroke={CURVE_COLORS[i % CURVE_COLORS.length]}
+                dot={false}
+                strokeWidth={2}
+                isAnimationActive={false}
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      {!compact && targets.length > 1 && (
+        <div className="flex flex-wrap gap-x-3 gap-y-1 pt-2 text-xs">
+          {targets.map((x, i) => (
+            <span key={x.id} className="inline-flex items-center gap-1.5">
+              <span
+                className="inline-block h-2 w-2 shrink-0 rounded-full"
+                style={{ background: CURVE_COLORS[i % CURVE_COLORS.length] }}
+              />
+              <span className="text-muted-foreground">{x.name}</span>
+            </span>
           ))}
-        </LineChart>
-      </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 }
