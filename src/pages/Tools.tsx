@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { downloadText } from "@/lib/exporters";
 import { usePrefs } from "@/hooks/usePrefs";
 import { useI18n } from "@/hooks/useI18n";
+import { JdConverter } from "@/components/tools/JdConverter";
 
 /** Convert Julian Date to UTC Date (Meeus). */
 function jdToDate(jd: number): Date {
@@ -228,6 +229,10 @@ export default function Tools() {
       <main className="container mx-auto px-4 py-6 max-w-3xl">
         <h1 className="text-2xl font-semibold mb-1">{t("tools.title")}</h1>
         <p className="text-sm text-muted-foreground mb-6">{t("tools.subtitle")}</p>
+
+        <div className="mb-6">
+          <JdConverter />
+        </div>
 
         <Card>
           <CardHeader>

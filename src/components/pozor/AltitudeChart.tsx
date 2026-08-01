@@ -27,10 +27,13 @@ interface TooltipPayloadEntry {
 }
 
 function ChartTooltip({ active, payload }: { active?: boolean; payload?: TooltipPayloadEntry[] }) {
-  if (!active || !payload?.length) return null;
+  // Sun/Moon are context curves, not observation targets — the tooltip should only
+  // call out the name and altitude of the target(s) actually being planned for.
+  const targetsOnly = payload?.filter((p) => p.dataKey !== "sun" && p.dataKey !== "moon");
+  if (!active || !targetsOnly?.length) return null;
   return (
     <div className="rounded-md border border-border bg-card px-2 py-1.5 shadow-sm">
-      {payload.map((p) => (
+      {targetsOnly.map((p) => (
         <div key={String(p.dataKey)} className="flex items-center gap-1.5 text-xs whitespace-nowrap">
           <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ background: p.color }} />
           <span className="text-muted-foreground">{p.name}</span>
