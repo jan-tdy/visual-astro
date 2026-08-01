@@ -1,6 +1,7 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { supabaseForUser, unauthenticated } from "../supabase";
 import { ok, fail } from "../helpers";
+import { isPlusActive, plusRequired } from "../subscription";
 
 export default defineTool({
   name: "list_ccd_catalogs",
@@ -10,6 +11,7 @@ export default defineTool({
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (_input, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
+    if (!(await isPlusActive(ctx))) return plusRequired();
     const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase
       .from("ccd_catalogs")

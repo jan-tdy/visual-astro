@@ -2,6 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { unauthenticated } from "../supabase";
 import { LOCATION_KEYS, MIN_ALT_DEFAULT, fail, iso, ok, resolveLocation } from "../helpers";
+import { isPlusActive, plusRequired } from "../subscription";
 import { minimaInRange } from "../../pozor";
 import { resolveTarget } from "./pozor-target";
 
@@ -29,6 +30,7 @@ export default defineTool({
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (input, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
+    if (!(await isPlusActive(ctx))) return plusRequired();
     const { target, error } = await resolveTarget(ctx, input);
     if (error || !target) return fail(error ?? "Target not resolved.");
     if (!target.epochJd || !target.periodDays) return fail("This target has no epoch/period ephemeris.");

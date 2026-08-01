@@ -2,6 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { unauthenticated } from "../supabase";
 import { LOCATION_KEYS, fail, iso, ok, resolveLocation } from "../helpers";
+import { isPlusActive, plusRequired } from "../subscription";
 import { formatDMS, formatHMS, heliocentricPhase, instantInfo } from "../../pozor";
 import { resolveTarget } from "./pozor-target";
 
@@ -26,6 +27,7 @@ export default defineTool({
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (input, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
+    if (!(await isPlusActive(ctx))) return plusRequired();
     const { target, error } = await resolveTarget(ctx, input);
     if (error || !target) return fail(error ?? "Target not resolved.");
     const when = new Date(input.datetime_utc);

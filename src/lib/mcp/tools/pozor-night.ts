@@ -2,6 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { unauthenticated } from "../supabase";
 import { LOCATION_KEYS, iso, ok, resolveLocation } from "../helpers";
+import { isPlusActive, plusRequired } from "../subscription";
 import { moonAltitude, nightInfo, twilightTimes, utcDate } from "../../pozor";
 import * as Astronomy from "astronomy-engine";
 
@@ -20,6 +21,7 @@ export default defineTool({
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ date, ...loc }, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
+    if (!(await isPlusActive(ctx))) return plusRequired();
     const site = resolveLocation(loc);
     const night = nightInfo(date, site);
     const tw = twilightTimes(date, site);

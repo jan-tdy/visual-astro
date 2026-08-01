@@ -15,6 +15,7 @@ export interface PozorOutletContext {
   catalogId: string;
   catalogName: string;
   isOwnCatalog: boolean;
+  ownCatalogsCount: number;
   setCatalogId: (id: string) => void;
   reloadCatalogs: () => void;
   settings: PozorSettings;
@@ -37,6 +38,7 @@ export default function PozorLayout() {
   const { locations } = usePozorLocations();
   const activeCatalog = catalogs.find((c) => c.id === catalogId);
   const isOwnCatalog = !activeCatalog || activeCatalog.user_id === user?.id;
+  const ownCatalogsCount = catalogs.filter((c) => c.user_id === user?.id).length;
 
   const context: PozorOutletContext = {
     targets,
@@ -45,6 +47,7 @@ export default function PozorLayout() {
     catalogId,
     catalogName: activeCatalog?.name ?? "",
     isOwnCatalog,
+    ownCatalogsCount,
     setCatalogId,
     reloadCatalogs,
     settings,

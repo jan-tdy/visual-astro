@@ -1,6 +1,7 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser, unauthenticated } from "../supabase";
+import { isPlusActive, plusRequired } from "../subscription";
 
 export default defineTool({
   name: "list_ccd_targets",
@@ -13,6 +14,7 @@ export default defineTool({
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ search, limit }, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
+    if (!(await isPlusActive(ctx))) return plusRequired();
     const supabase = supabaseForUser(ctx);
     let query = supabase
       .from("ccd_targets")
