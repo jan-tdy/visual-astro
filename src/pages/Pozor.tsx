@@ -2,25 +2,42 @@ import { AppHeader } from "@/components/app/AppHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useI18n } from "@/hooks/useI18n";
 import { CcdCatalog } from "@/components/pozor/CcdCatalog";
+import { CatalogSwitcher } from "@/components/pozor/CatalogSwitcher";
 import { NightChart } from "@/components/pozor/NightChart";
 import { Journal } from "@/components/pozor/Journal";
 import { Minima } from "@/components/pozor/Minima";
 import { InstantInfo } from "@/components/pozor/InstantInfo";
 import { JdTab } from "@/components/pozor/JdTab";
-import { useCcdTargets, usePozorSettings } from "@/components/pozor/shared";
+import { useCcdCatalogs, useCcdTargets, usePozorSettings } from "@/components/pozor/shared";
 
 export default function Pozor() {
   const { t } = useI18n();
-  const { targets, loading: targetsLoading, reload: reloadTargets } = useCcdTargets();
+  const {
+    catalogs,
+    loading: catalogsLoading,
+    reload: reloadCatalogs,
+    activeId: catalogId,
+    setActiveId: setCatalogId,
+  } = useCcdCatalogs();
+  const { targets, loading: targetsLoading, reload: reloadTargets } = useCcdTargets(catalogId);
   const { settings, setSettings } = usePozorSettings();
 
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
       <main className="container mx-auto px-4 py-6 space-y-4">
-        <header>
-          <h1 className="text-2xl font-semibold">{t("nav.pozor")}</h1>
-          <p className="text-sm text-muted-foreground">{t("pozor.subtitle")}</p>
+        <header className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold">{t("nav.pozor")}</h1>
+            <p className="text-sm text-muted-foreground">{t("pozor.subtitle")}</p>
+          </div>
+          <CatalogSwitcher
+            catalogs={catalogs}
+            activeId={catalogId}
+            setActiveId={setCatalogId}
+            loading={catalogsLoading}
+            reload={reloadCatalogs}
+          />
         </header>
         <Tabs defaultValue="chart">
           <TabsList className="flex-wrap h-auto">
@@ -47,7 +64,7 @@ export default function Pozor() {
             <JdTab />
           </TabsContent>
           <TabsContent value="catalog" className="mt-4">
-            <CcdCatalog targets={targets} loading={targetsLoading} reload={reloadTargets} />
+            <CcdCatalog targets={targets} loading={targetsLoading} reload={reloadTargets} catalogId={catalogId} />
           </TabsContent>
         </Tabs>
       </main>

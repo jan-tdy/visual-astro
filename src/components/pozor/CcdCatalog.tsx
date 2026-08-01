@@ -34,10 +34,12 @@ export function CcdCatalog({
   targets,
   loading,
   reload,
+  catalogId,
 }: {
   targets: CcdTarget[];
   loading: boolean;
   reload: () => void;
+  catalogId: string;
 }) {
   const { t } = useI18n();
   const [filter, setFilter] = useState("");
@@ -60,7 +62,14 @@ export function CcdCatalog({
   );
 
   const openNew = () => {
-    setEditing({ name: "", constellation: "", ra_hours: 0, dec_deg: 0, sort_order: (targets.length + 1) * 10 });
+    setEditing({
+      catalog_id: catalogId,
+      name: "",
+      constellation: "",
+      ra_hours: 0,
+      dec_deg: 0,
+      sort_order: (targets.length + 1) * 10,
+    });
     setRaText("");
     setDecText("");
   };
@@ -90,6 +99,7 @@ export function CcdCatalog({
     }
     setBusy(true);
     const payload = {
+      catalog_id: editing.catalog_id ?? catalogId,
       name,
       constellation: (editing.constellation ?? "").trim().toUpperCase(),
       ra_hours: ra,
@@ -151,7 +161,7 @@ export function CcdCatalog({
     downloadText(
       `ccd_katalog_${date}.json`,
       JSON.stringify(
-        targets.map(({ id, ...rest }) => rest),
+        targets.map(({ id, catalog_id, ...rest }) => rest),
         null,
         2,
       ),
@@ -167,6 +177,7 @@ export function CcdCatalog({
       const payload = rows
         .filter((r: any) => r && typeof r.name === "string")
         .map((r: any, i: number) => ({
+          catalog_id: catalogId,
           name: String(r.name),
           constellation: String(r.constellation ?? "").toUpperCase(),
           ra_hours: Number(r.ra_hours) || 0,

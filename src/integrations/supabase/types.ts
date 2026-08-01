@@ -14,8 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      ccd_catalogs: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ccd_targets: {
         Row: {
+          catalog_id: string
           constellation: string
           created_at: string
           dec_deg: number
@@ -31,6 +59,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          catalog_id: string
           constellation?: string
           created_at?: string
           dec_deg?: number
@@ -46,6 +75,7 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          catalog_id?: string
           constellation?: string
           created_at?: string
           dec_deg?: number
@@ -60,7 +90,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ccd_targets_catalog_id_fkey"
+            columns: ["catalog_id"]
+            isOneToOne: false
+            referencedRelation: "ccd_catalogs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       observations: {
         Row: {

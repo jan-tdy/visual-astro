@@ -11,6 +11,7 @@ import {
 
 export interface CcdTarget {
   id: string;
+  catalog_id: string;
   name: string;
   constellation: string;
   ra_hours: number;
@@ -23,6 +24,7 @@ export interface CcdTarget {
 }
 
 export const EMPTY_TARGET: Omit<CcdTarget, "id"> = {
+  catalog_id: "",
   name: "",
   constellation: "",
   ra_hours: 0,
@@ -42,17 +44,23 @@ export const sortTargets = (items: CcdTarget[]) =>
       a.name.localeCompare(b.name),
   );
 
-/** Load the user's CCD target catalogue (independent of the visual `stars` table). */
-export function useCcdTargets() {
+/** Load the active CCD catalogue's targets (independent of the visual `stars` table). */
+export function useCcdTargets(catalogId: string) {
   const [targets, setTargets] = useState<CcdTarget[]>([]);
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
+    if (!catalogId) {
+      setTargets([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const { data, error } = await fetchAllRows<CcdTarget>((from, to) =>
       supabase
         .from("ccd_targets")
-        .select("id,name,constellation,ra_hours,dec_deg,epoch_jd,period_days,filters,notes,sort_order")
+        .select("id,catalog_id,name,constellation,ra_hours,dec_deg,epoch_jd,period_days,filters,notes,sort_order")
+        .eq("catalog_id", catalogId)
         .order("constellation")
         .order("sort_order")
         .range(from, to),
@@ -60,13 +68,80 @@ export function useCcdTargets() {
     if (error) toast.error(error.message);
     setTargets(sortTargets(data));
     setLoading(false);
-  }, []);
+  }, [catalogId]);
 
   useEffect(() => {
     reload();
   }, [reload]);
 
   return { targets, loading, reload, setTargets };
+}
+
+export interface CcdCatalogInfo {
+  id: string;
+  name: string;
+  sort_order: number;
+}
+
+const ACTIVE_CATALOG_KEY = "pozor_active_catalog_v1";
+
+/** Load the user's CCD catalogues, auto-creating a first one if none exist yet. */
+export function useCcdCatalogs() {
+  const [catalogs, setCatalogs] = useState<CcdCatalogInfo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeId, setActiveId] = useState<string>(() => {
+    try {
+      return localStorage.getItem(ACTIVE_CATALOG_KEY) ?? "";
+    } catch {
+      return "";
+    }
+  });
+
+  const reload = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("ccd_catalogs")
+      .select("id,name,sort_order")
+      .order("sort_order")
+      .order("name");
+    if (error) {
+      toast.error(error.message);
+      setLoading(false);
+      return;
+    }
+    let list = data ?? [];
+    if (list.length === 0) {
+      const { data: created, error: createErr } = await supabase
+        .from("ccd_catalogs")
+        .insert({ name: "Katalóg 1", sort_order: 0 })
+        .select("id,name,sort_order")
+        .single();
+      if (createErr) {
+        toast.error(createErr.message);
+        setLoading(false);
+        return;
+      }
+      if (created) list = [created];
+    }
+    setCatalogs(list);
+    setActiveId((prev) => (prev && list.some((c) => c.id === prev) ? prev : (list[0]?.id ?? "")));
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
+
+  useEffect(() => {
+    if (!activeId) return;
+    try {
+      localStorage.setItem(ACTIVE_CATALOG_KEY, activeId);
+    } catch {
+      /* ignore */
+    }
+  }, [activeId]);
+
+  return { catalogs, loading, reload, activeId, setActiveId };
 }
 
 const SETTINGS_KEY = "pozor_settings_v1";
