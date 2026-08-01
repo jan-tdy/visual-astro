@@ -1,0 +1,174 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.1",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://tbmyxbratepxomskzzsq.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "visual-astro",
+      "version": "0.1.0",
+      "title": "Visual Astro"
+    },
+    "tools": [
+      {
+        "name": "list_sessions",
+        "title": "List observing sessions",
+        "description": "List the signed-in observer's visual observing sessions, newest first.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "description": "Maximum number of sessions to return."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_observations",
+        "title": "List observations",
+        "description": "List observations for one session (or the most recent ones across all sessions) with star name, comparison stars, steps, limit and UT time.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "session_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Session id to read; omit to read the latest observations."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100,
+              "description": "Maximum number of observations to return."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_stars",
+        "title": "List catalog stars",
+        "description": "List the observer's visual star catalog, optionally filtered by constellation or a name search.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "constellation": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Filter by constellation code, e.g. 'Dra'."
+            },
+            "search": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Case-insensitive star name search."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 200,
+              "description": "Maximum number of stars to return."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_ccd_targets",
+        "title": "List POZOR CCD targets",
+        "description": "List the observer's CCD/photometry targets with coordinates, epoch and period.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Case-insensitive target name search."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 200,
+              "description": "Maximum number of targets to return."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_session",
+        "title": "Create observing session",
+        "description": "Create a new visual observing session for the signed-in observer.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "Session name."
+            },
+            "observed_at_utc": {
+              "type": "string",
+              "description": "Observation date/time in UTC ISO format; defaults to now."
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 2000,
+              "description": "Free-form session notes."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
