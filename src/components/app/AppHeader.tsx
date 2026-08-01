@@ -16,7 +16,7 @@ import {
   Sparkles, BarChart3, Wrench, Clock, Star,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GlobalSearch } from "@/components/app/GlobalSearch";
 import logoUrl from "@/assets/visual-astro-logo.png";
 
@@ -59,6 +59,23 @@ export function AppHeader() {
   const { mode, setMode } = useAppMode();
   const loc = useLocation();
   const [open, setOpen] = useState(false);
+
+  // Keep the switch in sync when a Pozor/Tools (CCD) or Sessions/Catalog/Prom/Graphs
+  // (Visual) URL is opened directly — e.g. a bookmark or link — instead of via the
+  // switch itself. Settings/Info belong to both modes, so they don't force a change.
+  useEffect(() => {
+    const isCcdPath = loc.pathname.startsWith("/pozor") || loc.pathname === "/tools";
+    const isVisualPath =
+      loc.pathname === "/" ||
+      loc.pathname.startsWith("/session") ||
+      loc.pathname === "/catalog" ||
+      loc.pathname === "/prom" ||
+      loc.pathname === "/graphs";
+    if (isCcdPath && mode !== "ccd") setMode("ccd");
+    else if (isVisualPath && mode !== "visual") setMode("visual");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loc.pathname]);
+
   const link = (to: string, label: string, Icon: any) => {
     const active = loc.pathname === to || (to === "/" && loc.pathname.startsWith("/session"));
     return (
