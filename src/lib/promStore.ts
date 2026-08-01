@@ -1,4 +1,4 @@
-import bundled from "@/data/prom.json";
+import bundled from "../data/prom.json";
 
 export type PromTable = Record<string, Record<string, number>>;
 
