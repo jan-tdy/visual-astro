@@ -1188,28 +1188,26 @@ function InnerProvider({ children }: { children: ReactNode }) {
         tg.changeLanguage(toTolgee(l));
       },
       t: (k) => {
-        // sk/en are the app's own fully-owned languages -- always bundled locally and
-        // guaranteed to be complete and current. Use them directly rather than asking
-        // Tolgee, whose remote sk-SK/en namespaces can drift (e.g. auto-created keys
-        // holding a stale English default) and would otherwise shadow the correct text.
-        if (lang === "sk" || lang === "en") {
-          const base = lang === "sk" ? dict.sk : dict.en;
-          return (
-            (base as Record<string, string>)[k as string] ??
-            (dict.en as Record<string, string>)[k as string] ??
-            (k as string)
-          );
-        }
-        const v = tTrans(k as string);
+        const key = k as string;
+        const v = tTrans(key);
         const normalized = v?.replace(/[\u200B-\u200D\uFEFF]/g, "") ?? "";
-        if (v && normalized !== k && !normalized.includes(k as string)) return v;
-        // Fallback for the other 10 languages when a key isn't published there yet:
+        const skText = (dict.sk as Record<string, string>)[key];
+        const enText = (dict.en as Record<string, string>)[key];
+        if (v && normalized !== key && !normalized.includes(key)) {
+          // Tolgee can silently fall back to a *different* language's static data
+          // when a key has no translation yet for the current one (e.g. a brand
+          // new sk-SK key falls through to our own "en" staticData). Catch that
+          // specific case and prefer our own dict for the current language
+          // instead -- but otherwise trust Tolgee's result, since sk/en labels
+          // are user-editable there (e.g. renamed nav tab labels).
+          if (lang === "sk" && v === enText && skText) return skText;
+          if (lang === "en" && v === skText && enText) return enText;
+          return v;
+        }
+        // Fallback when a key isn't published for the current language yet:
         // English is far more widely understood than Slovak as a second-best guess.
-        return (
-          (dict.en as Record<string, string>)[k as string] ??
-          (dict.sk as Record<string, string>)[k as string] ??
-          (k as string)
-        );
+        const base = lang === "sk" ? skText : lang === "en" ? enText : undefined;
+        return base ?? enText ?? skText ?? key;
       },
     }),
     [lang, tg, tTrans],
