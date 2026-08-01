@@ -3,9 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { fetchAllRows } from "@/lib/supabaseFetchAll";
 import { toast } from "sonner";
 import {
-  DEFAULT_LOCATION_KEY,
   DEFAULT_MIN_ALTITUDE,
-  getLocation,
+  POZOR_LOCATIONS,
   type PozorLocation,
 } from "@/lib/pozor";
 
@@ -149,10 +148,79 @@ export function useCcdCatalogs() {
   return { catalogs, loading, reload, activeId, setActiveId };
 }
 
+export interface PozorLocationRow {
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  elevation: number;
+  sort_order: number;
+}
+
+/** Seed data for a brand-new user's location list (mirrors the old hardcoded defaults). */
+const LOCATION_SEEDS = POZOR_LOCATIONS.map((l, i) => ({
+  name: l.label,
+  lat: l.lat,
+  lon: l.lon,
+  elevation: l.elevation,
+  sort_order: (i + 1) * 10,
+}));
+
+const sortLocations = (items: PozorLocationRow[]) =>
+  [...items].sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
+
+/** Load the user's saved observing locations, auto-seeding the built-in defaults if none exist yet. */
+export function usePozorLocations() {
+  const [locations, setLocations] = useState<PozorLocationRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const reload = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("pozor_locations")
+      .select("id,name,lat,lon,elevation,sort_order")
+      .order("sort_order")
+      .order("name");
+    if (error) {
+      toast.error(error.message);
+      setLoading(false);
+      return;
+    }
+    let list = data ?? [];
+    if (list.length === 0) {
+      const { data: created, error: seedErr } = await supabase
+        .from("pozor_locations")
+        .insert(LOCATION_SEEDS)
+        .select("id,name,lat,lon,elevation,sort_order");
+      if (seedErr) {
+        toast.error(seedErr.message);
+        setLoading(false);
+        return;
+      }
+      list = created ?? [];
+    }
+    setLocations(sortLocations(list));
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
+
+  return { locations, loading, reload };
+}
+
+/** Resolve a saved location by id into the shape the astronomy lib expects, with safe fallbacks. */
+export function resolveLocation(locations: PozorLocationRow[], id: string): PozorLocation {
+  const found = locations.find((l) => l.id === id) ?? locations[0];
+  if (found) return { key: found.id, label: found.name, lat: found.lat, lon: found.lon, elevation: found.elevation };
+  return POZOR_LOCATIONS[0];
+}
+
 const SETTINGS_KEY = "pozor_settings_v1";
 
 export interface PozorSettings {
-  locationKey: string;
+  locationId: string;
   minAltitude: number;
 }
 
@@ -162,17 +230,17 @@ function readSettings(): PozorSettings {
     if (raw) {
       const p = JSON.parse(raw);
       return {
-        locationKey: typeof p.locationKey === "string" ? p.locationKey : DEFAULT_LOCATION_KEY,
+        locationId: typeof p.locationId === "string" ? p.locationId : "",
         minAltitude: Number.isFinite(p.minAltitude) ? p.minAltitude : DEFAULT_MIN_ALTITUDE,
       };
     }
   } catch {
     /* ignore */
   }
-  return { locationKey: DEFAULT_LOCATION_KEY, minAltitude: DEFAULT_MIN_ALTITUDE };
+  return { locationId: "", minAltitude: DEFAULT_MIN_ALTITUDE };
 }
 
-/** Location + minimum altitude, persisted per browser. */
+/** Active location id + minimum altitude, persisted per browser. */
 export function usePozorSettings() {
   const [settings, setSettings] = useState<PozorSettings>(readSettings);
   useEffect(() => {
@@ -182,8 +250,7 @@ export function usePozorSettings() {
       /* ignore */
     }
   }, [settings]);
-  const location: PozorLocation = getLocation(settings.locationKey);
-  return { settings, setSettings, location };
+  return { settings, setSettings };
 }
 
 export function todayIso(): string {

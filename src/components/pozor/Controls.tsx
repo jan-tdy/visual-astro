@@ -12,32 +12,35 @@ import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useI18n } from "@/hooks/useI18n";
-import { POZOR_LOCATIONS } from "@/lib/pozor";
-import type { CcdTarget, PozorSettings } from "./shared";
+import type { CcdTarget, PozorLocationRow, PozorSettings } from "./shared";
 
 export function LocationPicker({
   settings,
   setSettings,
+  locations,
 }: {
   settings: PozorSettings;
   setSettings: (s: PozorSettings) => void;
+  locations: PozorLocationRow[];
 }) {
   const { t } = useI18n();
+  const value = settings.locationId || locations[0]?.id || "";
   return (
     <div className="flex flex-wrap items-end gap-3">
       <div className="space-y-1">
         <Label className="text-xs">{t("pozor.location")}</Label>
         <Select
-          value={settings.locationKey}
-          onValueChange={(v) => setSettings({ ...settings, locationKey: v })}
+          value={value}
+          onValueChange={(v) => setSettings({ ...settings, locationId: v })}
+          disabled={!locations.length}
         >
           <SelectTrigger className="w-[180px] h-9">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {POZOR_LOCATIONS.map((l) => (
-              <SelectItem key={l.key} value={l.key}>
-                {l.label}
+            {locations.map((l) => (
+              <SelectItem key={l.id} value={l.id}>
+                {l.name}
               </SelectItem>
             ))}
           </SelectContent>

@@ -4,25 +4,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/hooks/useI18n";
 import {
-  formatDMS, formatHMS, getLocation, instantInfo, parseUtHours, utcDate,
+  formatDMS, formatHMS, instantInfo, parseUtHours, utcDate,
 } from "@/lib/pozor";
-import { todayIso, type CcdTarget, type PozorSettings } from "./shared";
+import { resolveLocation, todayIso, type CcdTarget, type PozorLocationRow, type PozorSettings } from "./shared";
 import { DateField, LocationPicker, TargetPicker } from "./Controls";
 
 export function InstantInfo({
   targets,
   settings,
   setSettings,
+  locations,
 }: {
   targets: CcdTarget[];
   settings: PozorSettings;
   setSettings: (s: PozorSettings) => void;
+  locations: PozorLocationRow[];
 }) {
   const { t } = useI18n();
   const [targetId, setTargetId] = useState("");
   const [date, setDate] = useState(todayIso());
   const [ut, setUt] = useState("22:00:00");
-  const location = getLocation(settings.locationKey);
+  const location = resolveLocation(locations, settings.locationId);
   const target = targets.find((x) => x.id === targetId);
 
   const info = useMemo(() => {
@@ -47,7 +49,7 @@ export function InstantInfo({
           <Label className="text-xs">{t("pozor.utTime")}</Label>
           <Input className="w-[130px] h-9" value={ut} onChange={(e) => setUt(e.target.value)} placeholder="22:00:00" />
         </div>
-        <LocationPicker settings={settings} setSettings={setSettings} />
+        <LocationPicker settings={settings} setSettings={setSettings} locations={locations} />
       </Card>
 
       <Card className="p-4">

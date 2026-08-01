@@ -3,24 +3,26 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
-import { formatUT, getLocation, minimaInRange, toIsoDate } from "@/lib/pozor";
-import { downloadText, todayIso, type CcdTarget, type PozorSettings } from "./shared";
+import { formatUT, minimaInRange, toIsoDate } from "@/lib/pozor";
+import { downloadText, resolveLocation, todayIso, type CcdTarget, type PozorLocationRow, type PozorSettings } from "./shared";
 import { DateField, LocationPicker, TargetPicker } from "./Controls";
 
 export function Minima({
   targets,
   settings,
   setSettings,
+  locations,
 }: {
   targets: CcdTarget[];
   settings: PozorSettings;
   setSettings: (s: PozorSettings) => void;
+  locations: PozorLocationRow[];
 }) {
   const { t } = useI18n();
   const [targetId, setTargetId] = useState("");
   const [from, setFrom] = useState(todayIso());
   const [to, setTo] = useState(() => new Date(Date.now() + 29 * 86400e3).toISOString().slice(0, 10));
-  const location = getLocation(settings.locationKey);
+  const location = resolveLocation(locations, settings.locationId);
   const target = targets.find((x) => x.id === targetId);
   const usable = !!target?.epoch_jd && !!target?.period_days;
 
@@ -64,7 +66,7 @@ export function Minima({
         <TargetPicker targets={targets} value={targetId} onChange={setTargetId} />
         <DateField label={t("pozor.from")} value={from} onChange={setFrom} />
         <DateField label={t("pozor.to")} value={to} onChange={setTo} />
-        <LocationPicker settings={settings} setSettings={setSettings} />
+        <LocationPicker settings={settings} setSettings={setSettings} locations={locations} />
         <div className="flex-1" />
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={csv} disabled={!rows.length}>
