@@ -35,11 +35,19 @@ export function CcdCatalog({
   loading,
   reload,
   catalogId,
+  catalogName,
+  isOwnCatalog,
+  setCatalogId,
+  reloadCatalogs,
 }: {
   targets: CcdTarget[];
   loading: boolean;
   reload: () => void;
   catalogId: string;
+  catalogName: string;
+  isOwnCatalog: boolean;
+  setCatalogId: (id: string) => void;
+  reloadCatalogs: () => void;
 }) {
   const { t } = useI18n();
   const [filter, setFilter] = useState("");
@@ -48,6 +56,43 @@ export function CcdCatalog({
   const [decText, setDecText] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<CcdTarget | null>(null);
   const [busy, setBusy] = useState(false);
+
+  /**
+   * The active catalog may be the shared default (not owned by this user). Any write
+   * forks a personal copy first — the default itself is never mutated — and switches
+   * the active catalog to it. Returns the catalog id new writes should target, or null
+   * if forking failed / there's genuinely no catalog to write to yet.
+   */
+  const ensureOwnCatalog = async (): Promise<string | null> => {
+    if (isOwnCatalog) {
+      if (!catalogId) {
+        toast.error(t("pozor.cat.err.noCatalog"));
+        return null;
+      }
+      return catalogId;
+    }
+    const { data: created, error: createErr } = await supabase
+      .from("ccd_catalogs")
+      .insert({ name: catalogName || "Katalóg", sort_order: 0 })
+      .select("id")
+      .single();
+    if (createErr || !created) {
+      toast.error(createErr?.message ?? t("pozor.cat.err.noCatalog"));
+      return null;
+    }
+    if (targets.length) {
+      const clones = targets.map(({ id, catalog_id, ...rest }) => ({ ...rest, catalog_id: created.id }));
+      const { error: cloneErr } = await supabase.from("ccd_targets").insert(clones);
+      if (cloneErr) {
+        toast.error(cloneErr.message);
+        return null;
+      }
+    }
+    toast.success(t("pozor.catalog.forked"));
+    reloadCatalogs();
+    setCatalogId(created.id);
+    return created.id;
+  };
 
   const filtered = useMemo(
     () =>
@@ -61,13 +106,11 @@ export function CcdCatalog({
     [targets, filter],
   );
 
-  const openNew = () => {
-    if (!catalogId) {
-      toast.error(t("pozor.cat.err.noCatalog"));
-      return;
-    }
+  const openNew = async () => {
+    const cid = await ensureOwnCatalog();
+    if (!cid) return;
     setEditing({
-      catalog_id: catalogId,
+      catalog_id: cid,
       name: "",
       constellation: "",
       ra_hours: 0,
@@ -86,7 +129,7 @@ export function CcdCatalog({
 
   const save = async () => {
     if (!editing) return;
-    if (!editing.catalog_id && !catalogId) {
+    if (!editing.catalog_id) {
       toast.error(t("pozor.cat.err.noCatalog"));
       return;
     }
@@ -107,7 +150,7 @@ export function CcdCatalog({
     }
     setBusy(true);
     const payload = {
-      catalog_id: editing.catalog_id ?? catalogId,
+      catalog_id: editing.catalog_id,
       name,
       constellation: (editing.constellation ?? "").trim().toUpperCase(),
       ra_hours: ra,
@@ -132,6 +175,7 @@ export function CcdCatalog({
   };
 
   const remove = async (x: CcdTarget) => {
+    if (!isOwnCatalog) return;
     const { error } = await supabase.from("ccd_targets").delete().eq("id", x.id);
     if (error) toast.error(error.message);
     else {
@@ -142,6 +186,7 @@ export function CcdCatalog({
   };
 
   const move = async (x: CcdTarget, dir: -1 | 1) => {
+    if (!isOwnCatalog) return;
     const siblings = targets
       .filter((s) => s.constellation === x.constellation)
       .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
@@ -179,17 +224,15 @@ export function CcdCatalog({
   };
 
   const importJson = async (file: File) => {
-    if (!catalogId) {
-      toast.error(t("pozor.cat.err.noCatalog"));
-      return;
-    }
+    const cid = await ensureOwnCatalog();
+    if (!cid) return;
     try {
       const rows = JSON.parse(await file.text());
       if (!Array.isArray(rows)) throw new Error("not an array");
       const payload = rows
         .filter((r: any) => r && typeof r.name === "string")
         .map((r: any, i: number) => ({
-          catalog_id: catalogId,
+          catalog_id: cid,
           name: String(r.name),
           constellation: String(r.constellation ?? "").toUpperCase(),
           ra_hours: Number(r.ra_hours) || 0,
@@ -212,6 +255,7 @@ export function CcdCatalog({
 
   return (
     <Card className="p-4 space-y-4">
+      {!isOwnCatalog && <p className="text-xs text-muted-foreground">{t("pozor.catalog.sharedHint")}</p>}
       <div className="flex flex-wrap items-center gap-2">
         <Input
           value={filter}
@@ -276,20 +320,39 @@ export function CcdCatalog({
                   <td className="py-1.5 pr-2 tabular-nums">{num(x.period_days, 6)}</td>
                   <td className="py-1.5 pr-2 text-muted-foreground">{x.filters ?? "—"}</td>
                   <td className="py-1.5 text-right whitespace-nowrap">
-                    <Button variant="ghost" size="icon" onClick={() => move(x, -1)} title={t("pozor.cat.up")}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => move(x, -1)}
+                      disabled={!isOwnCatalog}
+                      title={isOwnCatalog ? t("pozor.cat.up") : t("pozor.catalog.sharedHint")}
+                    >
                       <ArrowUp className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => move(x, 1)} title={t("pozor.cat.down")}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => move(x, 1)}
+                      disabled={!isOwnCatalog}
+                      title={isOwnCatalog ? t("pozor.cat.down") : t("pozor.catalog.sharedHint")}
+                    >
                       <ArrowDown className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(x)} title={t("pozor.cat.edit")}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openEdit(x)}
+                      disabled={!isOwnCatalog}
+                      title={isOwnCatalog ? t("pozor.cat.edit") : t("pozor.catalog.sharedHint")}
+                    >
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => setConfirmDelete(x)}
-                      title={t("pozor.cat.delete")}
+                      disabled={!isOwnCatalog}
+                      title={isOwnCatalog ? t("pozor.cat.delete") : t("pozor.catalog.sharedHint")}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>

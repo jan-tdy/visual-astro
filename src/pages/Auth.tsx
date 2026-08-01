@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -89,6 +89,12 @@ export default function Auth() {
         >
           {mode === "signin" ? t("auth.toSignup") : t("auth.toSignin")}
         </button>
+        <Link
+          to="/about"
+          className="block text-center text-xs text-muted-foreground hover:text-foreground"
+        >
+          {t("auth.about")}
+        </Link>
       </Card>
     </div>
   );
