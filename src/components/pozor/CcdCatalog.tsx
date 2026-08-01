@@ -62,6 +62,10 @@ export function CcdCatalog({
   );
 
   const openNew = () => {
+    if (!catalogId) {
+      toast.error(t("pozor.cat.err.noCatalog"));
+      return;
+    }
     setEditing({
       catalog_id: catalogId,
       name: "",
@@ -82,6 +86,10 @@ export function CcdCatalog({
 
   const save = async () => {
     if (!editing) return;
+    if (!editing.catalog_id && !catalogId) {
+      toast.error(t("pozor.cat.err.noCatalog"));
+      return;
+    }
     const name = (editing.name ?? "").trim();
     if (!name) {
       toast.error(t("pozor.cat.err.name"));
@@ -171,6 +179,10 @@ export function CcdCatalog({
   };
 
   const importJson = async (file: File) => {
+    if (!catalogId) {
+      toast.error(t("pozor.cat.err.noCatalog"));
+      return;
+    }
     try {
       const rows = JSON.parse(await file.text());
       if (!Array.isArray(rows)) throw new Error("not an array");
@@ -208,19 +220,20 @@ export function CcdCatalog({
           className="max-w-xs"
         />
         <div className="flex-1" />
-        <Button size="sm" onClick={openNew}>
+        <Button size="sm" onClick={openNew} disabled={!catalogId}>
           <Plus className="h-4 w-4 mr-1" /> {t("pozor.cat.add")}
         </Button>
         <Button size="sm" variant="outline" onClick={exportJson}>
           <Download className="h-4 w-4 mr-1" /> {t("pozor.cat.export")}
         </Button>
-        <Button size="sm" variant="outline" asChild>
-          <label className="cursor-pointer">
+        <Button size="sm" variant="outline" asChild disabled={!catalogId}>
+          <label className={catalogId ? "cursor-pointer" : "cursor-not-allowed opacity-50"}>
             <Upload className="h-4 w-4 mr-1" /> {t("pozor.cat.import")}
             <input
               type="file"
               accept="application/json"
               className="hidden"
+              disabled={!catalogId}
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) importJson(f);
