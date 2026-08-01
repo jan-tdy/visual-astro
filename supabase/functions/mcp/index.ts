@@ -195,18 +195,904 @@ var create_session_default = defineTool5({
   }
 });
 
+// src/lib/mcp/tools/get-session.ts
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z6 } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/helpers.ts
+import {
+  DEFAULT_MIN_ALTITUDE,
+  POZOR_LOCATIONS,
+  getLocation
+} from "npm:@/lib/pozor";
+function ok(payload, structured) {
+  return {
+    content: [{ type: "text", text: JSON.stringify(payload) }],
+    ...structured ? { structuredContent: structured } : {}
+  };
+}
+function fail(message) {
+  return { content: [{ type: "text", text: message }], isError: true };
+}
+var MIN_ALT_DEFAULT = DEFAULT_MIN_ALTITUDE;
+var LOCATION_KEYS = POZOR_LOCATIONS.map((l) => l.key);
+function resolveLocation(input) {
+  if (typeof input.lat === "number" && typeof input.lon === "number") {
+    return {
+      key: "custom",
+      label: "Custom",
+      lat: input.lat,
+      lon: input.lon,
+      elevation: input.elevation ?? 0
+    };
+  }
+  return getLocation(input.location ?? "");
+}
+var iso = (d) => d ? d.toISOString() : null;
+
+// src/lib/mcp/tools/get-session.ts
+import { computeMagnitude } from "npm:@/lib/astro";
+var get_session_default = defineTool6({
+  name: "get_session",
+  title: "Get session with observations",
+  description: "Read one observing session together with all of its observations, including the computed Argelander magnitude for each row.",
+  inputSchema: { session_id: z6.string().uuid().describe("Session id.") },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ session_id }, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const supabase = supabaseForUser(ctx);
+    const { data: session, error } = await supabase.from("sessions").select("id,name,observed_at_utc,jd,notes,is_favorite").eq("id", session_id).maybeSingle();
+    if (error) return fail(error.message);
+    if (!session) return fail("Session not found.");
+    const { data: obs, error: obsErr } = await supabase.from("observations").select("id,row_index,ut_time,a,b,pasos_a,pasos_b,limit_value,note,star_id,stars(name,constellation,vsnet_code,aavso_code,chart_id)").eq("session_id", session_id).order("row_index");
+    if (obsErr) return fail(obsErr.message);
+    const observations = (obs ?? []).map((o) => {
+      const star = o.stars;
+      return { ...o, magnitude: computeMagnitude(o, star?.name).value };
+    });
+    return ok({ session, observations }, { session, observations });
+  }
+});
+
+// src/lib/mcp/tools/update-session.ts
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z7 } from "npm:zod@^3.25.76";
+var update_session_default = defineTool7({
+  name: "update_session",
+  title: "Update observing session",
+  description: "Rename an observing session or change its notes, UTC date/time or favourite flag.",
+  inputSchema: {
+    session_id: z7.string().uuid().describe("Session id."),
+    name: z7.string().trim().max(200).optional().describe("New session name."),
+    notes: z7.string().trim().max(2e3).optional().describe("New session notes."),
+    observed_at_utc: z7.string().trim().optional().describe("New observation date/time in UTC ISO format."),
+    is_favorite: z7.boolean().optional().describe("Mark or unmark as favourite.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ session_id, ...patch }, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const fields = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== void 0));
+    if (Object.keys(fields).length === 0) return fail("Nothing to update.");
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.from("sessions").update(fields).eq("id", session_id).select("id,name,observed_at_utc,jd,notes,is_favorite").maybeSingle();
+    if (error) return fail(error.message);
+    if (!data) return fail("Session not found.");
+    return ok(data, { session: data });
+  }
+});
+
+// src/lib/mcp/tools/delete-session.ts
+import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z8 } from "npm:zod@^3.25.76";
+var delete_session_default = defineTool8({
+  name: "delete_session",
+  title: "Delete observing session",
+  description: "Permanently delete an observing session and all observations that belong to it.",
+  inputSchema: { session_id: z8.string().uuid().describe("Session id to delete.") },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ session_id }, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const supabase = supabaseForUser(ctx);
+    const { error: obsErr } = await supabase.from("observations").delete().eq("session_id", session_id);
+    if (obsErr) return fail(obsErr.message);
+    const { error } = await supabase.from("sessions").delete().eq("id", session_id);
+    if (error) return fail(error.message);
+    return ok({ deleted: session_id }, { deleted: session_id });
+  }
+});
+
+// src/lib/mcp/tools/add-observation.ts
+import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z9 } from "npm:zod@^3.25.76";
+import { computeMagnitude as computeMagnitude2 } from "npm:@/lib/astro";
+var add_observation_default = defineTool9({
+  name: "add_observation",
+  title: "Add observation",
+  description: "Add an observation row to a session. Identify the star either by id or by catalog name; comparison values A/B accept magnitudes or comparator letters.",
+  inputSchema: {
+    session_id: z9.string().uuid().describe("Session the observation belongs to."),
+    star_id: z9.string().uuid().optional().describe("Catalog star id."),
+    star_name: z9.string().trim().min(1).optional().describe("Catalog star name (used when star_id is omitted)."),
+    a: z9.string().trim().optional().describe("Brighter comparison star (magnitude or comparator letter)."),
+    b: z9.string().trim().optional().describe("Fainter comparison star (magnitude or comparator letter)."),
+    pasos_a: z9.number().int().min(0).max(99).optional().describe("Argelander steps to A."),
+    pasos_b: z9.number().int().min(0).max(99).optional().describe("Argelander steps to B."),
+    limit_value: z9.string().trim().optional().describe("Fainter-than limit, e.g. '<14.2'."),
+    ut_time: z9.string().trim().optional().describe("UT time as HH:MM."),
+    note: z9.string().trim().max(500).optional().describe("Row note, e.g. OUTBURST.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ session_id, star_id, star_name, ...row }, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const supabase = supabaseForUser(ctx);
+    let starId = star_id ?? null;
+    let resolvedName = star_name ?? null;
+    if (!starId) {
+      if (!star_name) return fail("Provide star_id or star_name.");
+      const { data: matches, error: error2 } = await supabase.from("stars").select("id,name").ilike("name", star_name).limit(5);
+      if (error2) return fail(error2.message);
+      if (!matches || matches.length === 0) return fail(`Star '${star_name}' not found in the catalog.`);
+      if (matches.length > 1) return fail(`Ambiguous star name: ${matches.map((m) => m.name).join(", ")}`);
+      starId = matches[0].id;
+      resolvedName = matches[0].name;
+    }
+    const { data: last } = await supabase.from("observations").select("row_index").eq("session_id", session_id).order("row_index", { ascending: false }).limit(1);
+    const rowIndex = (last?.[0]?.row_index ?? -1) + 1;
+    const { data, error } = await supabase.from("observations").insert({
+      session_id,
+      star_id: starId,
+      user_id: ctx.getUserId(),
+      row_index: rowIndex,
+      a: row.a ?? null,
+      b: row.b ?? null,
+      pasos_a: row.pasos_a ?? null,
+      pasos_b: row.pasos_b ?? null,
+      limit_value: row.limit_value ?? null,
+      ut_time: row.ut_time ?? null,
+      note: row.note ?? null
+    }).select("id,session_id,star_id,row_index,a,b,pasos_a,pasos_b,limit_value,ut_time,note").single();
+    if (error) return fail(error.message);
+    const magnitude = computeMagnitude2(data, resolvedName ?? void 0).value;
+    return ok({ ...data, magnitude }, { observation: { ...data, magnitude } });
+  }
+});
+
+// src/lib/mcp/tools/update-observation.ts
+import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z10 } from "npm:zod@^3.25.76";
+var update_observation_default = defineTool10({
+  name: "update_observation",
+  title: "Update observation",
+  description: "Change the comparison stars, steps, limit, UT time or note of an existing observation row.",
+  inputSchema: {
+    observation_id: z10.string().uuid().describe("Observation id."),
+    a: z10.string().trim().nullable().optional().describe("Brighter comparison star."),
+    b: z10.string().trim().nullable().optional().describe("Fainter comparison star."),
+    pasos_a: z10.number().int().min(0).max(99).nullable().optional().describe("Argelander steps to A."),
+    pasos_b: z10.number().int().min(0).max(99).nullable().optional().describe("Argelander steps to B."),
+    limit_value: z10.string().trim().nullable().optional().describe("Fainter-than limit."),
+    ut_time: z10.string().trim().nullable().optional().describe("UT time as HH:MM."),
+    note: z10.string().trim().max(500).nullable().optional().describe("Row note.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ observation_id, ...patch }, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const fields = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== void 0));
+    if (Object.keys(fields).length === 0) return fail("Nothing to update.");
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.from("observations").update(fields).eq("id", observation_id).select("id,session_id,star_id,row_index,a,b,pasos_a,pasos_b,limit_value,ut_time,note").maybeSingle();
+    if (error) return fail(error.message);
+    if (!data) return fail("Observation not found.");
+    return ok(data, { observation: data });
+  }
+});
+
+// src/lib/mcp/tools/delete-observation.ts
+import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z11 } from "npm:zod@^3.25.76";
+var delete_observation_default = defineTool11({
+  name: "delete_observation",
+  title: "Delete observation",
+  description: "Delete a single observation row from a session.",
+  inputSchema: { observation_id: z11.string().uuid().describe("Observation id to delete.") },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ observation_id }, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const supabase = supabaseForUser(ctx);
+    const { error } = await supabase.from("observations").delete().eq("id", observation_id);
+    if (error) return fail(error.message);
+    return ok({ deleted: observation_id }, { deleted: observation_id });
+  }
+});
+
+// src/lib/mcp/tools/export-session.ts
+import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z12 } from "npm:zod@^3.25.76";
+import { buildAAVSO, buildMEDUZA, buildVSNET } from "npm:@/lib/exporters";
+import { dateToJD } from "npm:@/lib/astro";
+var export_session_default = defineTool12({
+  name: "export_session",
+  title: "Export session",
+  description: "Build the VSNET, AAVSO Visual or MEDUZA export text for a session, exactly as the app's export dialog does.",
+  inputSchema: {
+    session_id: z12.string().uuid().describe("Session to export."),
+    format: z12.enum(["vsnet", "aavso", "meduza"]).describe("Export format."),
+    obs_code: z12.string().trim().min(1).max(10).optional().describe("Observer code; defaults to the profile setting.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ session_id, format, obs_code }, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const supabase = supabaseForUser(ctx);
+    const { data: session, error } = await supabase.from("sessions").select("id,observed_at_utc,jd").eq("id", session_id).maybeSingle();
+    if (error) return fail(error.message);
+    if (!session) return fail("Session not found.");
+    const { data: obs, error: obsErr } = await supabase.from("observations").select("a,b,pasos_a,pasos_b,limit_value,ut_time,note,row_index,stars(name,vsnet_code,aavso_code,chart_id)").eq("session_id", session_id).order("row_index");
+    if (obsErr) return fail(obsErr.message);
+    let code = obs_code?.trim();
+    if (!code) {
+      const { data: profile } = await supabase.from("profiles").select("obs_code").maybeSingle();
+      code = profile?.obs_code ?? "DPV";
+    }
+    const observedAt = new Date(session.observed_at_utc);
+    const rows = (obs ?? []).map((o) => {
+      const star = o.stars;
+      return {
+        a: o.a,
+        b: o.b,
+        pasos_a: o.pasos_a,
+        pasos_b: o.pasos_b,
+        limit_value: o.limit_value,
+        ut_time: o.ut_time,
+        note: o.note,
+        star_name: star?.name ?? "",
+        vsnet_code: star?.vsnet_code ?? null,
+        aavso_code: star?.aavso_code ?? null,
+        chart_id: star?.chart_id ?? null
+      };
+    });
+    const exportCtx = {
+      observedAt,
+      jd: session.jd != null ? Number(session.jd) : dateToJD(observedAt),
+      obsCode: code
+    };
+    const text = format === "vsnet" ? buildVSNET(rows, exportCtx) : format === "aavso" ? buildAAVSO(rows, exportCtx) : buildMEDUZA(rows, exportCtx);
+    return {
+      content: [{ type: "text", text }],
+      structuredContent: { format, obs_code: code, rows: rows.length, text }
+    };
+  }
+});
+
+// src/lib/mcp/tools/create-star.ts
+import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z13 } from "npm:zod@^3.25.76";
+var create_star_default = defineTool13({
+  name: "create_star",
+  title: "Add catalog star",
+  description: "Add a star to the observer's visual catalog.",
+  inputSchema: {
+    name: z13.string().trim().min(1).max(120).describe("Star name, e.g. 'SS Cyg'."),
+    constellation: z13.string().trim().min(1).max(20).describe("Constellation code, e.g. 'Cyg'."),
+    type: z13.enum(["VISUAL", "BINAR", "ECL faint", "ECL bright"]).default("VISUAL").describe("Star type."),
+    vsnet_code: z13.string().trim().max(20).optional().describe("VSNET code."),
+    aavso_code: z13.string().trim().max(20).optional().describe("AAVSO designation."),
+    chart_id: z13.string().trim().max(40).optional().describe("AAVSO chart id."),
+    notes: z13.string().trim().max(1e3).optional().describe("Notes."),
+    sort_order: z13.number().int().min(0).optional().describe("Position within the constellation.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const supabase = supabaseForUser(ctx);
+    let sortOrder = input.sort_order;
+    if (sortOrder === void 0) {
+      const { data: last } = await supabase.from("stars").select("sort_order").eq("constellation", input.constellation).order("sort_order", { ascending: false }).limit(1);
+      sortOrder = (last?.[0]?.sort_order ?? -1) + 1;
+    }
+    const { data, error } = await supabase.from("stars").insert({
+      user_id: ctx.getUserId(),
+      name: input.name,
+      constellation: input.constellation,
+      type: input.type ?? "VISUAL",
+      vsnet_code: input.vsnet_code ?? null,
+      aavso_code: input.aavso_code ?? null,
+      chart_id: input.chart_id ?? null,
+      notes: input.notes ?? null,
+      sort_order: sortOrder
+    }).select("id,name,constellation,type,vsnet_code,aavso_code,chart_id,notes,sort_order").single();
+    if (error) return fail(error.message);
+    return ok(data, { star: data });
+  }
+});
+
+// src/lib/mcp/tools/update-star.ts
+import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z14 } from "npm:zod@^3.25.76";
+var update_star_default = defineTool14({
+  name: "update_star",
+  title: "Update catalog star",
+  description: "Edit a star in the visual catalog, including its display order inside the constellation.",
+  inputSchema: {
+    star_id: z14.string().uuid().describe("Star id."),
+    name: z14.string().trim().min(1).max(120).optional().describe("Star name."),
+    constellation: z14.string().trim().min(1).max(20).optional().describe("Constellation code."),
+    type: z14.enum(["VISUAL", "BINAR", "ECL faint", "ECL bright"]).optional().describe("Star type."),
+    vsnet_code: z14.string().trim().nullable().optional().describe("VSNET code."),
+    aavso_code: z14.string().trim().nullable().optional().describe("AAVSO designation."),
+    chart_id: z14.string().trim().nullable().optional().describe("AAVSO chart id."),
+    notes: z14.string().trim().nullable().optional().describe("Notes."),
+    sort_order: z14.number().int().min(0).optional().describe("Position within the constellation.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ star_id, ...patch }, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const fields = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== void 0));
+    if (Object.keys(fields).length === 0) return fail("Nothing to update.");
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.from("stars").update(fields).eq("id", star_id).select("id,name,constellation,type,vsnet_code,aavso_code,chart_id,notes,sort_order").maybeSingle();
+    if (error) return fail(error.message);
+    if (!data) return fail("Star not found.");
+    return ok(data, { star: data });
+  }
+});
+
+// src/lib/mcp/tools/delete-star.ts
+import { defineTool as defineTool15 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z15 } from "npm:zod@^3.25.76";
+var delete_star_default = defineTool15({
+  name: "delete_star",
+  title: "Delete catalog star",
+  description: "Remove a star from the visual catalog. Fails if observations still reference it.",
+  inputSchema: { star_id: z15.string().uuid().describe("Star id to delete.") },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ star_id }, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const supabase = supabaseForUser(ctx);
+    const { error } = await supabase.from("stars").delete().eq("id", star_id);
+    if (error) return fail(error.message);
+    return ok({ deleted: star_id }, { deleted: star_id });
+  }
+});
+
+// src/lib/mcp/tools/list-ccd-catalogs.ts
+import { defineTool as defineTool16 } from "npm:@lovable.dev/mcp-js@0.26.1";
+var list_ccd_catalogs_default = defineTool16({
+  name: "list_ccd_catalogs",
+  title: "List POZOR catalogs",
+  description: "List the observer's POZOR CCD target catalogs (groups of targets).",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (_input, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.from("ccd_catalogs").select("id,name,sort_order,created_at").order("sort_order");
+    if (error) return fail(error.message);
+    return ok(data ?? [], { catalogs: data ?? [] });
+  }
+});
+
+// src/lib/mcp/tools/create-ccd-target.ts
+import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z16 } from "npm:zod@^3.25.76";
+var create_ccd_target_default = defineTool17({
+  name: "create_ccd_target",
+  title: "Add POZOR CCD target",
+  description: "Add a CCD/photometry target to a POZOR catalog. Coordinates are J2000 (RA in hours, Dec in degrees).",
+  inputSchema: {
+    name: z16.string().trim().min(1).max(120).describe("Target name."),
+    ra_hours: z16.number().min(0).max(24).describe("J2000 right ascension in hours."),
+    dec_deg: z16.number().min(-90).max(90).describe("J2000 declination in degrees."),
+    constellation: z16.string().trim().max(20).optional().describe("Constellation code."),
+    catalog_id: z16.string().uuid().optional().describe("Target catalog id; defaults to the first catalog."),
+    catalog_name: z16.string().trim().min(1).max(120).optional().describe("Catalog name; created if it does not exist."),
+    epoch_jd: z16.number().optional().describe("Epoch of primary minimum (JD)."),
+    period_days: z16.number().positive().optional().describe("Orbital/pulsation period in days."),
+    filters: z16.string().trim().max(60).optional().describe("Filters used, e.g. 'V, R'."),
+    notes: z16.string().trim().max(1e3).optional().describe("Notes.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const supabase = supabaseForUser(ctx);
+    let catalogId = input.catalog_id ?? null;
+    if (!catalogId) {
+      const { data: cats, error: catErr } = await supabase.from("ccd_catalogs").select("id,name").order("sort_order");
+      if (catErr) return fail(catErr.message);
+      const wanted = input.catalog_name?.trim().toLowerCase();
+      const found = wanted ? cats?.find((c) => c.name.toLowerCase() === wanted) : cats?.[0];
+      if (found) catalogId = found.id;
+      else {
+        const { data: created, error: createErr } = await supabase.from("ccd_catalogs").insert({ user_id: ctx.getUserId(), name: input.catalog_name?.trim() || "POZOR", sort_order: cats?.length ?? 0 }).select("id").single();
+        if (createErr) return fail(createErr.message);
+        catalogId = created.id;
+      }
+    }
+    const { data, error } = await supabase.from("ccd_targets").insert({
+      user_id: ctx.getUserId(),
+      catalog_id: catalogId,
+      name: input.name,
+      constellation: input.constellation ?? "",
+      ra_hours: input.ra_hours,
+      dec_deg: input.dec_deg,
+      epoch_jd: input.epoch_jd ?? null,
+      period_days: input.period_days ?? null,
+      filters: input.filters ?? null,
+      notes: input.notes ?? null
+    }).select("id,catalog_id,name,constellation,ra_hours,dec_deg,epoch_jd,period_days,filters,notes").single();
+    if (error) return fail(error.message);
+    return ok(data, { target: data });
+  }
+});
+
+// src/lib/mcp/tools/update-ccd-target.ts
+import { defineTool as defineTool18 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z17 } from "npm:zod@^3.25.76";
+var update_ccd_target_default = defineTool18({
+  name: "update_ccd_target",
+  title: "Update POZOR CCD target",
+  description: "Edit a CCD/photometry target's coordinates, ephemeris, filters or notes.",
+  inputSchema: {
+    target_id: z17.string().uuid().describe("Target id."),
+    name: z17.string().trim().min(1).max(120).optional().describe("Target name."),
+    constellation: z17.string().trim().max(20).optional().describe("Constellation code."),
+    ra_hours: z17.number().min(0).max(24).optional().describe("J2000 right ascension in hours."),
+    dec_deg: z17.number().min(-90).max(90).optional().describe("J2000 declination in degrees."),
+    epoch_jd: z17.number().nullable().optional().describe("Epoch of primary minimum (JD)."),
+    period_days: z17.number().positive().nullable().optional().describe("Period in days."),
+    filters: z17.string().trim().nullable().optional().describe("Filters used."),
+    notes: z17.string().trim().nullable().optional().describe("Notes."),
+    sort_order: z17.number().int().min(0).optional().describe("Position within the catalog.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ target_id, ...patch }, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const fields = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== void 0));
+    if (Object.keys(fields).length === 0) return fail("Nothing to update.");
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.from("ccd_targets").update(fields).eq("id", target_id).select("id,catalog_id,name,constellation,ra_hours,dec_deg,epoch_jd,period_days,filters,notes,sort_order").maybeSingle();
+    if (error) return fail(error.message);
+    if (!data) return fail("Target not found.");
+    return ok(data, { target: data });
+  }
+});
+
+// src/lib/mcp/tools/delete-ccd-target.ts
+import { defineTool as defineTool19 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z18 } from "npm:zod@^3.25.76";
+var delete_ccd_target_default = defineTool19({
+  name: "delete_ccd_target",
+  title: "Delete POZOR CCD target",
+  description: "Remove a CCD/photometry target from a POZOR catalog.",
+  inputSchema: { target_id: z18.string().uuid().describe("Target id to delete.") },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ target_id }, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const supabase = supabaseForUser(ctx);
+    const { error } = await supabase.from("ccd_targets").delete().eq("id", target_id);
+    if (error) return fail(error.message);
+    return ok({ deleted: target_id }, { deleted: target_id });
+  }
+});
+
+// src/lib/mcp/tools/pozor-night.ts
+import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z19 } from "npm:zod@^3.25.76";
+import { moonAltitude, nightInfo, twilightTimes, utcDate } from "npm:@/lib/pozor";
+import * as Astronomy from "npm:astronomy-engine@^2.1.19";
+var pozor_night_default = defineTool20({
+  name: "pozor_night",
+  title: "POZOR night conditions",
+  description: "Astronomical night boundaries, twilight times, Moon phase/illumination and Moon altitude for a given date and observing site.",
+  inputSchema: {
+    date: z19.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).describe("Evening date of the night, YYYY-MM-DD (UTC)."),
+    location: z19.string().trim().optional().describe(`Site key: ${LOCATION_KEYS.join(", ")}.`),
+    lat: z19.number().min(-90).max(90).optional().describe("Custom latitude (degrees north)."),
+    lon: z19.number().min(-180).max(180).optional().describe("Custom longitude (degrees east)."),
+    elevation: z19.number().optional().describe("Custom elevation in metres.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ date, ...loc }, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const site = resolveLocation(loc);
+    const night = nightInfo(date, site);
+    const tw = twilightTimes(date, site);
+    const mid = night.start && night.end ? new Date((night.start.getTime() + night.end.getTime()) / 2) : utcDate(date, 0);
+    const illum = Astronomy.Illumination(Astronomy.Body.Moon, mid);
+    const payload = {
+      date,
+      site: { key: site.key, label: site.label, lat: site.lat, lon: site.lon, elevation: site.elevation },
+      night: {
+        start: iso(night.start),
+        end: iso(night.end),
+        durationHours: night.start && night.end ? Number(((night.end.getTime() - night.start.getTime()) / 36e5).toFixed(3)) : null,
+        moonRise: iso(night.moonRise),
+        moonSet: iso(night.moonSet),
+        moonPhasePercent: night.moonPhasePercent
+      },
+      twilight: {
+        sunset: iso(tw.sunset),
+        civilDusk: iso(tw.civilDusk),
+        nauticalDusk: iso(tw.nauticalDusk),
+        astroDusk: iso(tw.astroDusk),
+        astroDawn: iso(tw.astroDawn),
+        nauticalDawn: iso(tw.nauticalDawn),
+        civilDawn: iso(tw.civilDawn),
+        sunrise: iso(tw.sunrise)
+      },
+      moon: {
+        atUtc: iso(mid),
+        phaseAngleDeg: illum.phase_angle,
+        illuminatedFraction: illum.phase_fraction,
+        altitudeDeg: Number(moonAltitude(mid, site).toFixed(2))
+      }
+    };
+    return ok(payload, payload);
+  }
+});
+
+// src/lib/mcp/tools/pozor-instant.ts
+import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z20 } from "npm:zod@^3.25.76";
+import { formatDMS, formatHMS, heliocentricPhase, instantInfo } from "npm:@/lib/pozor";
+
+// src/lib/mcp/tools/pozor-target.ts
+async function resolveTarget(ctx, input) {
+  if (typeof input.ra_hours === "number" && typeof input.dec_deg === "number") {
+    return {
+      target: {
+        name: input.target_name ?? "custom",
+        raHours: input.ra_hours,
+        decDeg: input.dec_deg,
+        epochJd: input.epoch_jd ?? null,
+        periodDays: input.period_days ?? null
+      }
+    };
+  }
+  if (!input.target_id && !input.target_name) {
+    return { error: "Provide target_id, target_name, or ra_hours + dec_deg." };
+  }
+  const supabase = supabaseForUser(ctx);
+  let query = supabase.from("ccd_targets").select("id,name,ra_hours,dec_deg,epoch_jd,period_days").limit(5);
+  query = input.target_id ? query.eq("id", input.target_id) : query.ilike("name", `%${input.target_name}%`);
+  const { data, error } = await query;
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "CCD target not found." };
+  if (data.length > 1) return { error: `Ambiguous target: ${data.map((d) => d.name).join(", ")}` };
+  const row = data[0];
+  return {
+    target: {
+      name: row.name,
+      raHours: Number(row.ra_hours),
+      decDeg: Number(row.dec_deg),
+      epochJd: input.epoch_jd ?? (row.epoch_jd != null ? Number(row.epoch_jd) : null),
+      periodDays: input.period_days ?? (row.period_days != null ? Number(row.period_days) : null)
+    }
+  };
+}
+
+// src/lib/mcp/tools/pozor-instant.ts
+var pozor_instant_default = defineTool21({
+  name: "pozor_instant",
+  title: "POZOR position at an instant",
+  description: "Altitude, azimuth, hour angle, airmass, precessed coordinates, heliocentric JD correction and eclipsing phase for a target at a given UTC instant.",
+  inputSchema: {
+    datetime_utc: z20.string().trim().describe("UTC instant in ISO format, e.g. 2026-08-01T22:30:00Z."),
+    target_id: z20.string().uuid().optional().describe("CCD catalog target id."),
+    target_name: z20.string().trim().min(1).optional().describe("CCD catalog target name."),
+    ra_hours: z20.number().min(0).max(24).optional().describe("J2000 RA in hours (instead of a catalog target)."),
+    dec_deg: z20.number().min(-90).max(90).optional().describe("J2000 Dec in degrees."),
+    epoch_jd: z20.number().optional().describe("Epoch of minimum (JD) for phase."),
+    period_days: z20.number().positive().optional().describe("Period in days for phase."),
+    location: z20.string().trim().optional().describe(`Site key: ${LOCATION_KEYS.join(", ")}.`),
+    lat: z20.number().min(-90).max(90).optional().describe("Custom latitude."),
+    lon: z20.number().min(-180).max(180).optional().describe("Custom longitude."),
+    elevation: z20.number().optional().describe("Custom elevation in metres.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (input, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const { target, error } = await resolveTarget(ctx, input);
+    if (error || !target) return fail(error ?? "Target not resolved.");
+    const when = new Date(input.datetime_utc);
+    if (Number.isNaN(when.getTime())) return fail("Invalid datetime_utc.");
+    const site = resolveLocation(input);
+    const info = instantInfo(target.raHours, target.decDeg, when, site);
+    const payload = {
+      target: { name: target.name, raHoursJ2000: target.raHours, decDegJ2000: target.decDeg },
+      site: { key: site.key, label: site.label },
+      atUtc: iso(when),
+      raOfDate: formatHMS(info.raOfDate),
+      decOfDate: formatDMS(info.decOfDate),
+      altitudeDeg: Number(info.altDeg.toFixed(3)),
+      azimuthDeg: Number(info.azDeg.toFixed(3)),
+      hourAngleHours: Number(info.haHours.toFixed(4)),
+      lstHours: Number(info.lstHours.toFixed(4)),
+      airmass: info.airmass,
+      jd: info.jd,
+      jdHel: info.jdHel,
+      helCorrDays: info.helCorrDays,
+      phase: heliocentricPhase(when, target)
+    };
+    return ok(payload, payload);
+  }
+});
+
+// src/lib/mcp/tools/pozor-journal.ts
+import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z21 } from "npm:zod@^3.25.76";
+import { buildJournal } from "npm:@/lib/pozor";
+var pozor_journal_default = defineTool22({
+  name: "pozor_journal",
+  title: "POZOR observability journal",
+  description: "Night-by-night observability windows for a target between two dates: when it is above the minimum altitude during astronomical night, plus maximum altitude and eclipsing phase at the window edges.",
+  inputSchema: {
+    from: z21.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).describe("First evening date, YYYY-MM-DD."),
+    to: z21.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).describe("Last evening date, YYYY-MM-DD."),
+    target_id: z21.string().uuid().optional().describe("CCD catalog target id."),
+    target_name: z21.string().trim().min(1).optional().describe("CCD catalog target name."),
+    ra_hours: z21.number().min(0).max(24).optional().describe("J2000 RA in hours."),
+    dec_deg: z21.number().min(-90).max(90).optional().describe("J2000 Dec in degrees."),
+    epoch_jd: z21.number().optional().describe("Epoch of minimum (JD)."),
+    period_days: z21.number().positive().optional().describe("Period in days."),
+    min_altitude: z21.number().min(0).max(90).default(MIN_ALT_DEFAULT).describe("Minimum usable altitude in degrees."),
+    only_observable: z21.boolean().default(true).describe("Return only nights with at least one window."),
+    location: z21.string().trim().optional().describe(`Site key: ${LOCATION_KEYS.join(", ")}.`),
+    lat: z21.number().min(-90).max(90).optional().describe("Custom latitude."),
+    lon: z21.number().min(-180).max(180).optional().describe("Custom longitude."),
+    elevation: z21.number().optional().describe("Custom elevation in metres.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (input, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const { target, error } = await resolveTarget(ctx, input);
+    if (error || !target) return fail(error ?? "Target not resolved.");
+    const site = resolveLocation(input);
+    const minAlt = input.min_altitude ?? MIN_ALT_DEFAULT;
+    const rows = buildJournal(target, input.from, input.to, site, minAlt).filter((r) => input.only_observable === false ? true : r.windows.length > 0).map((r) => ({
+      date: r.isoDate,
+      jdMidnight: r.jdMidnight,
+      nightStart: iso(r.night.start),
+      nightEnd: iso(r.night.end),
+      maxAltitudeDeg: Number(r.altMax.toFixed(2)),
+      phaseFrom: r.phaseFrom,
+      phaseTo: r.phaseTo,
+      windows: r.windows.map((w) => ({ from: iso(w.from), to: iso(w.to) }))
+    }));
+    const payload = {
+      target: { name: target.name, raHoursJ2000: target.raHours, decDegJ2000: target.decDeg },
+      site: { key: site.key, label: site.label },
+      minAltitudeDeg: minAlt,
+      nights: rows
+    };
+    return ok(payload, payload);
+  }
+});
+
+// src/lib/mcp/tools/pozor-minima.ts
+import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z22 } from "npm:zod@^3.25.76";
+import { minimaInRange } from "npm:@/lib/pozor";
+var pozor_minima_default = defineTool23({
+  name: "pozor_minima",
+  title: "POZOR minima predictions",
+  description: "Predicted minima of an eclipsing target in a date range, with geocentric and heliocentric JD, altitude, airmass and whether the minimum falls inside the observable night.",
+  inputSchema: {
+    from: z22.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).describe("Range start date, YYYY-MM-DD."),
+    to: z22.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).describe("Range end date, YYYY-MM-DD."),
+    target_id: z22.string().uuid().optional().describe("CCD catalog target id."),
+    target_name: z22.string().trim().min(1).optional().describe("CCD catalog target name."),
+    ra_hours: z22.number().min(0).max(24).optional().describe("J2000 RA in hours."),
+    dec_deg: z22.number().min(-90).max(90).optional().describe("J2000 Dec in degrees."),
+    epoch_jd: z22.number().optional().describe("Epoch of primary minimum (JD)."),
+    period_days: z22.number().positive().optional().describe("Period in days."),
+    min_altitude: z22.number().min(0).max(90).default(MIN_ALT_DEFAULT).describe("Minimum usable altitude in degrees."),
+    only_observable: z22.boolean().default(true).describe("Keep only minima observable from the site."),
+    location: z22.string().trim().optional().describe(`Site key: ${LOCATION_KEYS.join(", ")}.`),
+    lat: z22.number().min(-90).max(90).optional().describe("Custom latitude."),
+    lon: z22.number().min(-180).max(180).optional().describe("Custom longitude."),
+    elevation: z22.number().optional().describe("Custom elevation in metres.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (input, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const { target, error } = await resolveTarget(ctx, input);
+    if (error || !target) return fail(error ?? "Target not resolved.");
+    if (!target.epochJd || !target.periodDays) return fail("This target has no epoch/period ephemeris.");
+    const site = resolveLocation(input);
+    const minAlt = input.min_altitude ?? MIN_ALT_DEFAULT;
+    const events = minimaInRange(
+      { raHours: target.raHours, decDeg: target.decDeg, epochJd: target.epochJd, periodDays: target.periodDays },
+      input.from,
+      input.to,
+      site,
+      minAlt,
+      input.only_observable !== false
+    ).map((e) => ({
+      epoch: e.epoch,
+      utc: iso(e.date),
+      jd: e.jd,
+      jdHel: e.jdHel,
+      helCorrDays: e.helCorrDays,
+      altitudeDeg: Number(e.altDeg.toFixed(2)),
+      airmass: e.airmass,
+      duringNight: e.duringNight,
+      aboveMinAltitude: e.aboveMinAlt
+    }));
+    const payload = {
+      target: { name: target.name, epochJd: target.epochJd, periodDays: target.periodDays },
+      site: { key: site.key, label: site.label },
+      minAltitudeDeg: minAlt,
+      minima: events
+    };
+    return ok(payload, payload);
+  }
+});
+
+// src/lib/mcp/tools/jd-convert.ts
+import { defineTool as defineTool24 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z23 } from "npm:zod@^3.25.76";
+import { dateToJD as dateToJD2 } from "npm:@/lib/astro";
+import { jdToDate } from "npm:@/lib/pozor";
+var jd_convert_default = defineTool24({
+  name: "jd_convert",
+  title: "Julian Date converter",
+  description: "Convert a UTC date/time to Julian Date, or a Julian Date back to UTC.",
+  inputSchema: {
+    jd: z23.number().optional().describe("Julian Date to convert to UTC."),
+    datetime_utc: z23.string().trim().optional().describe("UTC ISO date/time to convert to Julian Date.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: ({ jd, datetime_utc }) => {
+    if (typeof jd === "number") {
+      const d = jdToDate(jd);
+      return ok({ jd, datetime_utc: d.toISOString() }, { jd, datetime_utc: d.toISOString() });
+    }
+    if (datetime_utc) {
+      const d = new Date(datetime_utc);
+      if (Number.isNaN(d.getTime())) return fail("Invalid datetime_utc.");
+      const value = dateToJD2(d);
+      return ok({ jd: value, datetime_utc: d.toISOString() }, { jd: value, datetime_utc: d.toISOString() });
+    }
+    return fail("Provide jd or datetime_utc.");
+  }
+});
+
+// src/lib/mcp/tools/convert-sips.ts
+import { defineTool as defineTool25 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z24 } from "npm:zod@^3.25.76";
+import { buildAAVSOFromSIPS, buildVSNETFromSIPS, parseSIPS } from "npm:@/lib/sips";
+var convert_sips_default = defineTool25({
+  name: "convert_sips",
+  title: "Convert SIPS Standard to VSNET/AAVSO",
+  description: "Convert a SIPS Standard photometry file (JD, magnitude, error, with optional '#' header lines) into VSNET or AAVSO Extended CCD format.",
+  inputSchema: {
+    data: z24.string().min(1).describe("Raw SIPS Standard file content."),
+    format: z24.enum(["vsnet", "aavso"]).describe("Output format."),
+    star_code: z24.string().trim().min(1).max(40).describe("VSNET code or AAVSO designation of the star."),
+    obs_code: z24.string().trim().max(10).optional().describe("Observer code; defaults to the profile setting."),
+    filter: z24.string().trim().max(20).optional().describe("Override the filter detected in the file header."),
+    chart_id: z24.string().trim().max(40).optional().describe("AAVSO chart id (AAVSO format only).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ data, format, star_code, obs_code, filter, chart_id }, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const parsed = parseSIPS(data);
+    if (parsed.rows.length === 0) return fail(`No usable rows. ${parsed.errors.slice(0, 5).join("; ")}`);
+    let code = obs_code?.trim();
+    if (!code) {
+      const supabase = supabaseForUser(ctx);
+      const { data: profile } = await supabase.from("profiles").select("obs_code").maybeSingle();
+      code = profile?.obs_code ?? "DPV";
+    }
+    const filt = filter?.trim() || parsed.filter;
+    const text = format === "vsnet" ? buildVSNETFromSIPS(parsed.rows, star_code, code, filt) : buildAAVSOFromSIPS(parsed.rows, star_code, code, filt, chart_id ?? "");
+    return {
+      content: [{ type: "text", text }],
+      structuredContent: {
+        format,
+        rows: parsed.rows.length,
+        detectedStar: parsed.varName,
+        filter: filt,
+        warnings: parsed.errors,
+        text
+      }
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-profile.ts
+import { defineTool as defineTool26 } from "npm:@lovable.dev/mcp-js@0.26.1";
+var get_profile_default = defineTool26({
+  name: "get_profile",
+  title: "Get observer profile",
+  description: "Read the signed-in observer's profile: observer code, reference date, export portal preferences, plan status and counts of sessions, stars and CCD targets.",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (_input, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const supabase = supabaseForUser(ctx);
+    const { data: profile, error } = await supabase.from("profiles").select("obs_code,fecha_referencia,open_portal_after_export,portal_urls").maybeSingle();
+    if (error) return fail(error.message);
+    const counts = await Promise.all(
+      ["sessions", "observations", "stars", "ccd_targets"].map(async (table) => {
+        const { count } = await supabase.from(table).select("id", { count: "exact", head: true });
+        return [table, count ?? 0];
+      })
+    );
+    const payload = {
+      user_id: ctx.getUserId(),
+      email: ctx.getUserEmail(),
+      profile: profile ?? null,
+      counts: Object.fromEntries(counts)
+    };
+    return ok(payload, payload);
+  }
+});
+
+// src/lib/mcp/tools/update-profile.ts
+import { defineTool as defineTool27 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z25 } from "npm:zod@^3.25.76";
+var update_profile_default = defineTool27({
+  name: "update_profile",
+  title: "Update observer profile",
+  description: "Change the observer code or reference date used by exports.",
+  inputSchema: {
+    obs_code: z25.string().trim().min(1).max(10).optional().describe("Observer code, e.g. 'DPV'."),
+    fecha_referencia: z25.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Reference date, YYYY-MM-DD.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async (patch, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const fields = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== void 0));
+    if (Object.keys(fields).length === 0) return fail("Nothing to update.");
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.from("profiles").update(fields).eq("user_id", ctx.getUserId()).select("obs_code,fecha_referencia").maybeSingle();
+    if (error) return fail(error.message);
+    if (!data) return fail("Profile not found.");
+    return ok(data, { profile: data });
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "tbmyxbratepxomskzzsq";
 var mcp_default = defineMcp({
   name: "visual-astro",
   title: "Visual Astro",
   version: "0.1.0",
-  instructions: "Tools for Visual Astro, a variable-star observing logbook. Read observing sessions and their observations, browse the visual star catalog and POZOR CCD targets, and create new sessions. All data is scoped to the signed-in observer.",
+  instructions: "Full toolset for Visual Astro, a variable-star observing logbook. Read and edit observing sessions and their observations (with computed Argelander magnitudes), manage the visual star catalog, manage POZOR CCD/photometry catalogs and targets, run POZOR observability computations (night conditions, altitude/airmass at an instant, night-by-night journals, minima predictions), build VSNET/AAVSO/MEDUZA exports, convert SIPS Standard photometry files and Julian Dates, and read or update the observer profile. All data is scoped to the signed-in observer.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"
   }),
-  tools: [list_sessions_default, list_observations_default, list_stars_default, list_ccd_targets_default, create_session_default]
+  tools: [
+    get_profile_default,
+    update_profile_default,
+    list_sessions_default,
+    get_session_default,
+    create_session_default,
+    update_session_default,
+    delete_session_default,
+    list_observations_default,
+    add_observation_default,
+    update_observation_default,
+    delete_observation_default,
+    export_session_default,
+    list_stars_default,
+    create_star_default,
+    update_star_default,
+    delete_star_default,
+    list_ccd_catalogs_default,
+    list_ccd_targets_default,
+    create_ccd_target_default,
+    update_ccd_target_default,
+    delete_ccd_target_default,
+    pozor_night_default,
+    pozor_instant_default,
+    pozor_journal_default,
+    pozor_minima_default,
+    jd_convert_default,
+    convert_sips_default
+  ]
 });
 
 // lovable-mcp-supabase-entry.ts

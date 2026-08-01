@@ -17,6 +17,51 @@
     },
     "tools": [
       {
+        "name": "get_profile",
+        "title": "Get observer profile",
+        "description": "Read the signed-in observer's profile: observer code, reference date, export portal preferences, plan status and counts of sessions, stars and CCD targets.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_profile",
+        "title": "Update observer profile",
+        "description": "Change the observer code or reference date used by exports.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "obs_code": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 10,
+              "description": "Observer code, e.g. 'DPV'."
+            },
+            "fecha_referencia": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Reference date, YYYY-MM-DD."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
         "name": "list_sessions",
         "title": "List observing sessions",
         "description": "List the signed-in observer's visual observing sessions, newest first.",
@@ -36,6 +81,135 @@
               "description": "Maximum number of sessions to return."
             }
           },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_session",
+        "title": "Get session with observations",
+        "description": "Read one observing session together with all of its observations, including the computed Argelander magnitude for each row.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "session_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Session id."
+            }
+          },
+          "required": [
+            "session_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_session",
+        "title": "Create observing session",
+        "description": "Create a new visual observing session for the signed-in observer.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "Session name."
+            },
+            "observed_at_utc": {
+              "type": "string",
+              "description": "Observation date/time in UTC ISO format; defaults to now."
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 2000,
+              "description": "Free-form session notes."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_session",
+        "title": "Update observing session",
+        "description": "Rename an observing session or change its notes, UTC date/time or favourite flag.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "session_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Session id."
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 200,
+              "description": "New session name."
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 2000,
+              "description": "New session notes."
+            },
+            "observed_at_utc": {
+              "type": "string",
+              "description": "New observation date/time in UTC ISO format."
+            },
+            "is_favorite": {
+              "type": "boolean",
+              "description": "Mark or unmark as favourite."
+            }
+          },
+          "required": [
+            "session_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_session",
+        "title": "Delete observing session",
+        "description": "Permanently delete an observing session and all observations that belong to it.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "session_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Session id to delete."
+            }
+          },
+          "required": [
+            "session_id"
+          ],
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"
         },
@@ -66,6 +240,251 @@
               "description": "Maximum number of observations to return."
             }
           },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "add_observation",
+        "title": "Add observation",
+        "description": "Add an observation row to a session. Identify the star either by id or by catalog name; comparison values A/B accept magnitudes or comparator letters.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "session_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Session the observation belongs to."
+            },
+            "star_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Catalog star id."
+            },
+            "star_name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Catalog star name (used when star_id is omitted)."
+            },
+            "a": {
+              "type": "string",
+              "description": "Brighter comparison star (magnitude or comparator letter)."
+            },
+            "b": {
+              "type": "string",
+              "description": "Fainter comparison star (magnitude or comparator letter)."
+            },
+            "pasos_a": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 99,
+              "description": "Argelander steps to A."
+            },
+            "pasos_b": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 99,
+              "description": "Argelander steps to B."
+            },
+            "limit_value": {
+              "type": "string",
+              "description": "Fainter-than limit, e.g. '<14.2'."
+            },
+            "ut_time": {
+              "type": "string",
+              "description": "UT time as HH:MM."
+            },
+            "note": {
+              "type": "string",
+              "maxLength": 500,
+              "description": "Row note, e.g. OUTBURST."
+            }
+          },
+          "required": [
+            "session_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_observation",
+        "title": "Update observation",
+        "description": "Change the comparison stars, steps, limit, UT time or note of an existing observation row.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "observation_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Observation id."
+            },
+            "a": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Brighter comparison star."
+            },
+            "b": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Fainter comparison star."
+            },
+            "pasos_a": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 99
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Argelander steps to A."
+            },
+            "pasos_b": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 99
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Argelander steps to B."
+            },
+            "limit_value": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Fainter-than limit."
+            },
+            "ut_time": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "UT time as HH:MM."
+            },
+            "note": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Row note."
+            }
+          },
+          "required": [
+            "observation_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_observation",
+        "title": "Delete observation",
+        "description": "Delete a single observation row from a session.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "observation_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Observation id to delete."
+            }
+          },
+          "required": [
+            "observation_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "export_session",
+        "title": "Export session",
+        "description": "Build the VSNET, AAVSO Visual or MEDUZA export text for a session, exactly as the app's export dialog does.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "session_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Session to export."
+            },
+            "format": {
+              "type": "string",
+              "enum": [
+                "vsnet",
+                "aavso",
+                "meduza"
+              ],
+              "description": "Export format."
+            },
+            "obs_code": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 10,
+              "description": "Observer code; defaults to the profile setting."
+            }
+          },
+          "required": [
+            "session_id",
+            "format"
+          ],
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"
         },
@@ -107,6 +526,215 @@
         "outputSchema": null
       },
       {
+        "name": "create_star",
+        "title": "Add catalog star",
+        "description": "Add a star to the observer's visual catalog.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "description": "Star name, e.g. 'SS Cyg'."
+            },
+            "constellation": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20,
+              "description": "Constellation code, e.g. 'Cyg'."
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "VISUAL",
+                "BINAR",
+                "ECL faint",
+                "ECL bright"
+              ],
+              "default": "VISUAL",
+              "description": "Star type."
+            },
+            "vsnet_code": {
+              "type": "string",
+              "maxLength": 20,
+              "description": "VSNET code."
+            },
+            "aavso_code": {
+              "type": "string",
+              "maxLength": 20,
+              "description": "AAVSO designation."
+            },
+            "chart_id": {
+              "type": "string",
+              "maxLength": 40,
+              "description": "AAVSO chart id."
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 1000,
+              "description": "Notes."
+            },
+            "sort_order": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Position within the constellation."
+            }
+          },
+          "required": [
+            "name",
+            "constellation"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_star",
+        "title": "Update catalog star",
+        "description": "Edit a star in the visual catalog, including its display order inside the constellation.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "star_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Star id."
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "description": "Star name."
+            },
+            "constellation": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20,
+              "description": "Constellation code."
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "VISUAL",
+                "BINAR",
+                "ECL faint",
+                "ECL bright"
+              ],
+              "description": "Star type."
+            },
+            "vsnet_code": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "VSNET code."
+            },
+            "aavso_code": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "AAVSO designation."
+            },
+            "chart_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "AAVSO chart id."
+            },
+            "notes": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Notes."
+            },
+            "sort_order": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Position within the constellation."
+            }
+          },
+          "required": [
+            "star_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_star",
+        "title": "Delete catalog star",
+        "description": "Remove a star from the visual catalog. Fails if observations still reference it.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "star_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Star id to delete."
+            }
+          },
+          "required": [
+            "star_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_ccd_catalogs",
+        "title": "List POZOR catalogs",
+        "description": "List the observer's POZOR CCD target catalogs (groups of targets).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
         "name": "list_ccd_targets",
         "title": "List POZOR CCD targets",
         "description": "List the observer's CCD/photometry targets with coordinates, epoch and period.",
@@ -137,9 +765,9 @@
         "outputSchema": null
       },
       {
-        "name": "create_session",
-        "title": "Create observing session",
-        "description": "Create a new visual observing session for the signed-in observer.",
+        "name": "create_ccd_target",
+        "title": "Add POZOR CCD target",
+        "description": "Add a CCD/photometry target to a POZOR catalog. Coordinates are J2000 (RA in hours, Dec in degrees).",
         "annotations": {
           "readOnlyHint": false,
           "destructiveHint": false,
@@ -151,19 +779,578 @@
             "name": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 200,
-              "description": "Session name."
+              "maxLength": 120,
+              "description": "Target name."
             },
-            "observed_at_utc": {
+            "ra_hours": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 24,
+              "description": "J2000 right ascension in hours."
+            },
+            "dec_deg": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90,
+              "description": "J2000 declination in degrees."
+            },
+            "constellation": {
               "type": "string",
-              "description": "Observation date/time in UTC ISO format; defaults to now."
+              "maxLength": 20,
+              "description": "Constellation code."
+            },
+            "catalog_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Target catalog id; defaults to the first catalog."
+            },
+            "catalog_name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "description": "Catalog name; created if it does not exist."
+            },
+            "epoch_jd": {
+              "type": "number",
+              "description": "Epoch of primary minimum (JD)."
+            },
+            "period_days": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Orbital/pulsation period in days."
+            },
+            "filters": {
+              "type": "string",
+              "maxLength": 60,
+              "description": "Filters used, e.g. 'V, R'."
             },
             "notes": {
               "type": "string",
-              "maxLength": 2000,
-              "description": "Free-form session notes."
+              "maxLength": 1000,
+              "description": "Notes."
             }
           },
+          "required": [
+            "name",
+            "ra_hours",
+            "dec_deg"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_ccd_target",
+        "title": "Update POZOR CCD target",
+        "description": "Edit a CCD/photometry target's coordinates, ephemeris, filters or notes.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "target_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Target id."
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "description": "Target name."
+            },
+            "constellation": {
+              "type": "string",
+              "maxLength": 20,
+              "description": "Constellation code."
+            },
+            "ra_hours": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 24,
+              "description": "J2000 right ascension in hours."
+            },
+            "dec_deg": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90,
+              "description": "J2000 declination in degrees."
+            },
+            "epoch_jd": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Epoch of primary minimum (JD)."
+            },
+            "period_days": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Period in days."
+            },
+            "filters": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filters used."
+            },
+            "notes": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Notes."
+            },
+            "sort_order": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Position within the catalog."
+            }
+          },
+          "required": [
+            "target_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_ccd_target",
+        "title": "Delete POZOR CCD target",
+        "description": "Remove a CCD/photometry target from a POZOR catalog.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "target_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Target id to delete."
+            }
+          },
+          "required": [
+            "target_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "pozor_night",
+        "title": "POZOR night conditions",
+        "description": "Astronomical night boundaries, twilight times, Moon phase/illumination and Moon altitude for a given date and observing site.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "date": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Evening date of the night, YYYY-MM-DD (UTC)."
+            },
+            "location": {
+              "type": "string",
+              "description": "Site key: piconcillo, kolonica, hlohovec, madeira."
+            },
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90,
+              "description": "Custom latitude (degrees north)."
+            },
+            "lon": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180,
+              "description": "Custom longitude (degrees east)."
+            },
+            "elevation": {
+              "type": "number",
+              "description": "Custom elevation in metres."
+            }
+          },
+          "required": [
+            "date"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "pozor_instant",
+        "title": "POZOR position at an instant",
+        "description": "Altitude, azimuth, hour angle, airmass, precessed coordinates, heliocentric JD correction and eclipsing phase for a target at a given UTC instant.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "datetime_utc": {
+              "type": "string",
+              "description": "UTC instant in ISO format, e.g. 2026-08-01T22:30:00Z."
+            },
+            "target_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "CCD catalog target id."
+            },
+            "target_name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "CCD catalog target name."
+            },
+            "ra_hours": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 24,
+              "description": "J2000 RA in hours (instead of a catalog target)."
+            },
+            "dec_deg": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90,
+              "description": "J2000 Dec in degrees."
+            },
+            "epoch_jd": {
+              "type": "number",
+              "description": "Epoch of minimum (JD) for phase."
+            },
+            "period_days": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Period in days for phase."
+            },
+            "location": {
+              "type": "string",
+              "description": "Site key: piconcillo, kolonica, hlohovec, madeira."
+            },
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90,
+              "description": "Custom latitude."
+            },
+            "lon": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180,
+              "description": "Custom longitude."
+            },
+            "elevation": {
+              "type": "number",
+              "description": "Custom elevation in metres."
+            }
+          },
+          "required": [
+            "datetime_utc"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "pozor_journal",
+        "title": "POZOR observability journal",
+        "description": "Night-by-night observability windows for a target between two dates: when it is above the minimum altitude during astronomical night, plus maximum altitude and eclipsing phase at the window edges.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "description": "First evening date, YYYY-MM-DD."
+            },
+            "to": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Last evening date, YYYY-MM-DD."
+            },
+            "target_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "CCD catalog target id."
+            },
+            "target_name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "CCD catalog target name."
+            },
+            "ra_hours": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 24,
+              "description": "J2000 RA in hours."
+            },
+            "dec_deg": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90,
+              "description": "J2000 Dec in degrees."
+            },
+            "epoch_jd": {
+              "type": "number",
+              "description": "Epoch of minimum (JD)."
+            },
+            "period_days": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Period in days."
+            },
+            "min_altitude": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 90,
+              "default": 30,
+              "description": "Minimum usable altitude in degrees."
+            },
+            "only_observable": {
+              "type": "boolean",
+              "default": true,
+              "description": "Return only nights with at least one window."
+            },
+            "location": {
+              "type": "string",
+              "description": "Site key: piconcillo, kolonica, hlohovec, madeira."
+            },
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90,
+              "description": "Custom latitude."
+            },
+            "lon": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180,
+              "description": "Custom longitude."
+            },
+            "elevation": {
+              "type": "number",
+              "description": "Custom elevation in metres."
+            }
+          },
+          "required": [
+            "from",
+            "to"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "pozor_minima",
+        "title": "POZOR minima predictions",
+        "description": "Predicted minima of an eclipsing target in a date range, with geocentric and heliocentric JD, altitude, airmass and whether the minimum falls inside the observable night.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Range start date, YYYY-MM-DD."
+            },
+            "to": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Range end date, YYYY-MM-DD."
+            },
+            "target_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "CCD catalog target id."
+            },
+            "target_name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "CCD catalog target name."
+            },
+            "ra_hours": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 24,
+              "description": "J2000 RA in hours."
+            },
+            "dec_deg": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90,
+              "description": "J2000 Dec in degrees."
+            },
+            "epoch_jd": {
+              "type": "number",
+              "description": "Epoch of primary minimum (JD)."
+            },
+            "period_days": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Period in days."
+            },
+            "min_altitude": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 90,
+              "default": 30,
+              "description": "Minimum usable altitude in degrees."
+            },
+            "only_observable": {
+              "type": "boolean",
+              "default": true,
+              "description": "Keep only minima observable from the site."
+            },
+            "location": {
+              "type": "string",
+              "description": "Site key: piconcillo, kolonica, hlohovec, madeira."
+            },
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90,
+              "description": "Custom latitude."
+            },
+            "lon": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180,
+              "description": "Custom longitude."
+            },
+            "elevation": {
+              "type": "number",
+              "description": "Custom elevation in metres."
+            }
+          },
+          "required": [
+            "from",
+            "to"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "jd_convert",
+        "title": "Julian Date converter",
+        "description": "Convert a UTC date/time to Julian Date, or a Julian Date back to UTC.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "jd": {
+              "type": "number",
+              "description": "Julian Date to convert to UTC."
+            },
+            "datetime_utc": {
+              "type": "string",
+              "description": "UTC ISO date/time to convert to Julian Date."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "convert_sips",
+        "title": "Convert SIPS Standard to VSNET/AAVSO",
+        "description": "Convert a SIPS Standard photometry file (JD, magnitude, error, with optional '#' header lines) into VSNET or AAVSO Extended CCD format.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Raw SIPS Standard file content."
+            },
+            "format": {
+              "type": "string",
+              "enum": [
+                "vsnet",
+                "aavso"
+              ],
+              "description": "Output format."
+            },
+            "star_code": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40,
+              "description": "VSNET code or AAVSO designation of the star."
+            },
+            "obs_code": {
+              "type": "string",
+              "maxLength": 10,
+              "description": "Observer code; defaults to the profile setting."
+            },
+            "filter": {
+              "type": "string",
+              "maxLength": 20,
+              "description": "Override the filter detected in the file header."
+            },
+            "chart_id": {
+              "type": "string",
+              "maxLength": 40,
+              "description": "AAVSO chart id (AAVSO format only)."
+            }
+          },
+          "required": [
+            "data",
+            "format",
+            "star_code"
+          ],
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"
         },
