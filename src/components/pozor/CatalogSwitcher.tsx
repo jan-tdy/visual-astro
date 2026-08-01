@@ -20,15 +20,18 @@ export function CatalogSwitcher({
   setActiveId,
   loading,
   reload,
+  isOwnCatalog,
 }: {
   catalogs: CcdCatalogInfo[];
   activeId: string;
   setActiveId: (id: string) => void;
   loading: boolean;
   reload: () => void;
+  isOwnCatalog: boolean;
 }) {
   const { t } = useI18n();
   const active = catalogs.find((c) => c.id === activeId);
+  const ownCount = catalogs.filter((c) => c.user_id === active?.user_id).length;
   const [dialog, setDialog] = useState<"new" | "rename" | null>(null);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -70,7 +73,7 @@ export function CatalogSwitcher({
 
   const remove = async () => {
     setConfirmDelete(false);
-    if (!active || catalogs.length <= 1) return;
+    if (!active || !isOwnCatalog || ownCount <= 1) return;
     const { error } = await supabase.from("ccd_catalogs").delete().eq("id", active.id);
     if (error) {
       toast.error(error.message);
@@ -93,6 +96,7 @@ export function CatalogSwitcher({
             {catalogs.map((c) => (
               <SelectItem key={c.id} value={c.id}>
                 {c.name}
+                {c.is_default ? ` (${t("pozor.catalog.shared")})` : ""}
               </SelectItem>
             ))}
           </SelectContent>
@@ -119,8 +123,8 @@ export function CatalogSwitcher({
           setName(active.name);
           setDialog("rename");
         }}
-        disabled={!active}
-        title={t("pozor.catalog.rename")}
+        disabled={!active || !isOwnCatalog}
+        title={isOwnCatalog ? t("pozor.catalog.rename") : t("pozor.catalog.sharedHint")}
       >
         <Pencil className="h-4 w-4" />
       </Button>
@@ -129,8 +133,8 @@ export function CatalogSwitcher({
         variant="outline"
         className="h-9 w-9"
         onClick={() => setConfirmDelete(true)}
-        disabled={!active || catalogs.length <= 1}
-        title={t("pozor.catalog.delete")}
+        disabled={!active || !isOwnCatalog || ownCount <= 1}
+        title={isOwnCatalog ? t("pozor.catalog.delete") : t("pozor.catalog.sharedHint")}
       >
         <Trash2 className="h-4 w-4 text-destructive" />
       </Button>

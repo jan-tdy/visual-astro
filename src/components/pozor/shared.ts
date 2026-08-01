@@ -81,6 +81,8 @@ export interface CcdCatalogInfo {
   id: string;
   name: string;
   sort_order: number;
+  user_id: string;
+  is_default: boolean;
 }
 
 const ACTIVE_CATALOG_KEY = "pozor_active_catalog_v1";
@@ -99,9 +101,12 @@ export function useCcdCatalogs() {
 
   const reload = useCallback(async () => {
     setLoading(true);
+    // RLS also returns the shared default catalog here (see the ccd_catalogs_default_sharing
+    // migration), so a user without catalogs of their own sees it instead of getting a fresh
+    // empty duplicate below.
     const { data, error } = await supabase
       .from("ccd_catalogs")
-      .select("id,name,sort_order")
+      .select("id,name,sort_order,user_id,is_default")
       .order("sort_order")
       .order("name");
     if (error) {
@@ -114,7 +119,7 @@ export function useCcdCatalogs() {
       const { data: created, error: createErr } = await supabase
         .from("ccd_catalogs")
         .insert({ name: "Katalóg 1", sort_order: 0 })
-        .select("id,name,sort_order")
+        .select("id,name,sort_order,user_id,is_default")
         .single();
       if (createErr) {
         toast.error(createErr.message);

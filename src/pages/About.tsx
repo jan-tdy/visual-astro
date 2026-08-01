@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { AppHeader } from "@/components/app/AppHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Telescope, Star, Clock, Download, BookOpen, Settings as SettingsIcon, Layers, Sparkles, ScanLine, HelpCircle, Cpu, Languages, Heart, CreditCard } from "lucide-react";
+import { Telescope, Star, Clock, Download, BookOpen, Settings as SettingsIcon, Layers, Sparkles, ScanLine, HelpCircle, Cpu, Languages, Heart, CreditCard, BarChart3, Wrench, Moon, Table2 } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
 
 const FEATURE_KEYS = [
@@ -17,6 +17,10 @@ const FEATURE_KEYS = [
   { icon: ScanLine, key: "ocr" },
   { icon: Download, key: "json" },
   { icon: CreditCard, key: "plus" },
+  { icon: Moon, key: "pozor" },
+  { icon: Table2, key: "prom" },
+  { icon: BarChart3, key: "graphs" },
+  { icon: Wrench, key: "tools" },
 ];
 
 export default function About() {
@@ -46,6 +50,9 @@ export default function About() {
             </Button>
             <Button asChild size="lg" variant="outline">
               <Link to="/catalog"><BookOpen className="h-4 w-4 mr-1.5" /> {t("about.openCatalog")}</Link>
+            </Button>
+            <Button asChild size="lg" variant="outline">
+              <Link to="/pozor"><Moon className="h-4 w-4 mr-1.5" /> {t("about.openPozor")}</Link>
             </Button>
           </div>
         </div>
@@ -95,6 +102,18 @@ export default function About() {
             <div>
               <h2 className="text-xl font-semibold mb-1">{t("about.ocrTitle")}</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">{t("about.ocrDesc")}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 mt-6 border-primary/40 bg-primary/5">
+          <div className="flex items-start gap-3">
+            <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-primary/15 text-primary shrink-0">
+              <Moon className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold mb-1">{t("about.pozorTitle")}</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">{t("about.pozorDesc")}</p>
             </div>
           </div>
         </Card>

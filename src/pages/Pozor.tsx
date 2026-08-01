@@ -1,5 +1,6 @@
 import { AppHeader } from "@/components/app/AppHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
 import { CcdCatalog } from "@/components/pozor/CcdCatalog";
 import { CatalogSwitcher } from "@/components/pozor/CatalogSwitcher";
@@ -11,6 +12,7 @@ import { useCcdCatalogs, useCcdTargets, usePozorSettings } from "@/components/po
 
 export default function Pozor() {
   const { t } = useI18n();
+  const { user } = useAuth();
   const {
     catalogs,
     loading: catalogsLoading,
@@ -20,6 +22,8 @@ export default function Pozor() {
   } = useCcdCatalogs();
   const { targets, loading: targetsLoading, reload: reloadTargets } = useCcdTargets(catalogId);
   const { settings, setSettings } = usePozorSettings();
+  const activeCatalog = catalogs.find((c) => c.id === catalogId);
+  const isOwnCatalog = !activeCatalog || activeCatalog.user_id === user?.id;
 
   return (
     <div className="min-h-screen bg-background">
@@ -36,6 +40,7 @@ export default function Pozor() {
             setActiveId={setCatalogId}
             loading={catalogsLoading}
             reload={reloadCatalogs}
+            isOwnCatalog={isOwnCatalog}
           />
         </header>
         <Tabs defaultValue="chart">
@@ -59,7 +64,16 @@ export default function Pozor() {
             <InstantInfo targets={targets} settings={settings} setSettings={setSettings} />
           </TabsContent>
           <TabsContent value="catalog" className="mt-4">
-            <CcdCatalog targets={targets} loading={targetsLoading} reload={reloadTargets} catalogId={catalogId} />
+            <CcdCatalog
+              targets={targets}
+              loading={targetsLoading}
+              reload={reloadTargets}
+              catalogId={catalogId}
+              catalogName={activeCatalog?.name ?? ""}
+              isOwnCatalog={isOwnCatalog}
+              setCatalogId={setCatalogId}
+              reloadCatalogs={reloadCatalogs}
+            />
           </TabsContent>
         </Tabs>
       </main>
