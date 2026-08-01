@@ -28,15 +28,25 @@ export default defineTool({
     const payload = {
       date,
       site: { key: site.key, label: site.label, lat: site.lat, lon: site.lon, elevation: site.elevation },
-      night: { start: iso(night.start), end: iso(night.end), durationHours: night.durationHours ?? null },
+      night: {
+        start: iso(night.start),
+        end: iso(night.end),
+        durationHours:
+          night.start && night.end
+            ? Number(((night.end.getTime() - night.start.getTime()) / 3600e3).toFixed(3))
+            : null,
+        moonRise: iso(night.moonRise),
+        moonSet: iso(night.moonSet),
+        moonPhasePercent: night.moonPhasePercent,
+      },
       twilight: {
         sunset: iso(tw.sunset),
-        civilEnd: iso(tw.civilEnd),
-        nauticalEnd: iso(tw.nauticalEnd),
-        astroEnd: iso(tw.astroEnd),
-        astroStart: iso(tw.astroStart),
-        nauticalStart: iso(tw.nauticalStart),
-        civilStart: iso(tw.civilStart),
+        civilDusk: iso(tw.civilDusk),
+        nauticalDusk: iso(tw.nauticalDusk),
+        astroDusk: iso(tw.astroDusk),
+        astroDawn: iso(tw.astroDawn),
+        nauticalDawn: iso(tw.nauticalDawn),
+        civilDawn: iso(tw.civilDawn),
         sunrise: iso(tw.sunrise),
       },
       moon: {
