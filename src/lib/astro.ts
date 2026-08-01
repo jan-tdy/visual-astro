@@ -66,7 +66,7 @@ export interface ObsInput {
   limit_value?: string | null;
 }
 
-import { getPromStar } from "@/lib/promStore";
+import { getPromStar } from "./promStore";
 
 /**
  * Resolve a comparator value: either a numeric string ("4.02") or a single letter

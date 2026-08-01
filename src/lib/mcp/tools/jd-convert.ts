@@ -1,8 +1,8 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { ok, fail } from "../helpers";
-import { dateToJD } from "@/lib/astro";
-import { jdToDate } from "@/lib/pozor";
+import { dateToJD } from "../../astro";
+import { jdToDate } from "../../pozor";
 
 export default defineTool({
   name: "jd_convert",

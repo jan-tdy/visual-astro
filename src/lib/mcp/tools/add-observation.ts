@@ -2,7 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser, unauthenticated } from "../supabase";
 import { ok, fail } from "../helpers";
-import { computeMagnitude } from "@/lib/astro";
+import { computeMagnitude } from "../../astro";
 
 export default defineTool({
   name: "add_observation",

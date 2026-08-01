@@ -2,7 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { unauthenticated, supabaseForUser } from "../supabase";
 import { fail } from "../helpers";
-import { buildAAVSOFromSIPS, buildVSNETFromSIPS, parseSIPS } from "@/lib/sips";
+import { buildAAVSOFromSIPS, buildVSNETFromSIPS, parseSIPS } from "../../sips";
 
 export default defineTool({
   name: "convert_sips",

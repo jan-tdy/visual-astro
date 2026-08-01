@@ -3,7 +3,7 @@ import {
   POZOR_LOCATIONS,
   getLocation,
   type PozorLocation,
-} from "@/lib/pozor";
+} from "../pozor";
 
 export function ok(payload: unknown, structured?: Record<string, unknown>) {
   return {

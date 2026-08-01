@@ -199,12 +199,410 @@ var create_session_default = defineTool5({
 import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.1";
 import { z as z6 } from "npm:zod@^3.25.76";
 
+// src/lib/pozor.ts
+import * as Astronomy from "npm:astronomy-engine@^2.1.19";
+
+// src/lib/promStore.ts
+import bundled from "npm:@/data/prom.json";
+var KEY = "prom_overrides_v1";
+function readOverrides() {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+function getPromTable() {
+  const ov = readOverrides();
+  const out = {};
+  for (const [name, letters] of Object.entries(bundled)) {
+    if (name in ov) continue;
+    out[name] = { ...letters };
+  }
+  for (const [name, letters] of Object.entries(ov)) {
+    if (letters && Object.keys(letters).length === 0 && !(name in bundled)) continue;
+    if (letters && Object.keys(letters).length === 0) continue;
+    out[name] = { ...letters };
+  }
+  return out;
+}
+function getPromStar(name) {
+  return getPromTable()[name];
+}
+
+// src/lib/astro.ts
+function dateToJD(d) {
+  const year = d.getUTCFullYear();
+  const month = d.getUTCMonth() + 1;
+  const day = d.getUTCDate() + (d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600) / 24;
+  let Y = year;
+  let M = month;
+  if (M <= 2) {
+    Y -= 1;
+    M += 12;
+  }
+  const A = Math.floor(Y / 100);
+  const B = 2 - A + Math.floor(A / 4);
+  return Math.floor(365.25 * (Y + 4716)) + Math.floor(30.6001 * (M + 1)) + day + B - 1524.5;
+}
+function vsnetDate(d) {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = d.getUTCDate();
+  const frac = (d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600) / 24;
+  const dayWithFrac = (day + frac).toFixed(3).padStart(6, "0");
+  return `${y}${m}${dayWithFrac}`;
+}
+function meduzaDate(d) {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = d.getUTCDate();
+  const frac = (d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600) / 24;
+  const dayWithFrac = (day + frac).toFixed(3).padStart(6, "0");
+  return `${y}-${m}-${dayWithFrac}`;
+}
+function resolveCompValue(starName, raw) {
+  if (raw == null) return NaN;
+  const s = String(raw).trim();
+  if (!s) return NaN;
+  const direct = parseFloat(s);
+  if (Number.isFinite(direct) && /^-?\d/.test(s)) return direct;
+  if (!starName) return NaN;
+  const tbl = getPromStar(starName);
+  if (!tbl) return NaN;
+  const v = tbl[s.toLowerCase()];
+  return typeof v === "number" ? v : NaN;
+}
+function computeMagnitude(o, starName) {
+  if (o.limit_value && o.limit_value.trim()) {
+    return { value: o.limit_value.trim(), numeric: null };
+  }
+  const aNum = resolveCompValue(starName, o.a ?? null);
+  const bNum = resolveCompValue(starName, o.b ?? null);
+  const pa = o.pasos_a ?? null;
+  const pb = o.pasos_b ?? null;
+  if (Number.isFinite(aNum) && Number.isFinite(bNum) && pa !== null && pb !== null && pa + pb > 0) {
+    const mag = aNum + pa / (pa + pb) * (bNum - aNum);
+    return { value: mag.toFixed(2), numeric: mag };
+  }
+  return { value: null, numeric: null };
+}
+function applyUtTimeToDate(d, utTime) {
+  if (!utTime) return;
+  const m = /^(\d{1,2})[:.\s]+(\d{1,2})/.exec(String(utTime).trim());
+  if (!m) return;
+  const hh = parseInt(m[1], 10);
+  const mm = parseInt(m[2], 10);
+  d.setUTCHours(hh, mm, 0, 0);
+  if (hh < 12) d.setUTCDate(d.getUTCDate() + 1);
+}
+function aavsoEstima(o) {
+  if (o.limit_value && o.limit_value.trim()) return o.limit_value.trim();
+  if (o.a && o.b && o.pasos_a !== null && o.pasos_b !== null) {
+    return `${o.a}-${o.pasos_a}V${o.pasos_b}-${o.b}`;
+  }
+  return "";
+}
+
+// src/lib/pozor.ts
+var AU_KM = 1495978707e-1;
+var LIGHT_TIME_AU_SEC = 499.004784;
+var POZOR_LOCATIONS = [
+  { key: "piconcillo", label: "Piconcillo", lat: 38.181, lon: -5.4591, elevation: 0 },
+  { key: "kolonica", label: "Kolonica", lat: 48.935, lon: 22.2739, elevation: 0 },
+  { key: "hlohovec", label: "Hlohovec", lat: 48.4202, lon: 17.7969, elevation: 0 },
+  { key: "madeira", label: "Madeira", lat: 32.689, lon: -17.0919, elevation: 0 }
+];
+var DEFAULT_MIN_ALTITUDE = 30;
+function getLocation(key) {
+  return POZOR_LOCATIONS.find((l) => l.key === key) ?? POZOR_LOCATIONS[0];
+}
+function observerOf(loc) {
+  return new Astronomy.Observer(loc.lat, loc.lon, loc.elevation);
+}
+function formatHMS(hours) {
+  let total = Math.round((hours % 24 + 24) % 24 * 3600);
+  if (total >= 86400) total -= 86400;
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total - h * 3600) / 60);
+  const s = total - h * 3600 - m * 60;
+  return `${h}h${String(m).padStart(2, "0")}m${String(s).padStart(2, "0")}s`;
+}
+function formatDMS(deg) {
+  const sign = deg < 0 ? "\u2212" : "+";
+  const a = Math.abs(deg);
+  let total = Math.round(a * 3600);
+  const d = Math.floor(total / 3600);
+  const m = Math.floor((total - d * 3600) / 60);
+  const s = total - d * 3600 - m * 60;
+  return `${sign}${d}\xB0${String(m).padStart(2, "0")}\u2032${String(s).padStart(2, "0")}\u2033`;
+}
+function utcDate(isoDate, utHours = 0) {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  const ms = Math.round(utHours * 3600 * 1e3);
+  return new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1, 0, 0, 0, 0) + ms);
+}
+function toIsoDate(d) {
+  return d.toISOString().slice(0, 10);
+}
+function jdToDate(jd) {
+  const z26 = Math.floor(jd + 0.5);
+  const f = jd + 0.5 - z26;
+  let a = z26;
+  if (z26 >= 2299161) {
+    const alpha = Math.floor((z26 - 186721625e-2) / 36524.25);
+    a = z26 + 1 + alpha - Math.floor(alpha / 4);
+  }
+  const b = a + 1524;
+  const c = Math.floor((b - 122.1) / 365.25);
+  const d = Math.floor(365.25 * c);
+  const e = Math.floor((b - d) / 30.6001);
+  const dayF = b - d - Math.floor(30.6001 * e) + f;
+  const day = Math.floor(dayF);
+  const month = e < 14 ? e - 1 : e - 13;
+  const year = month > 2 ? c - 4716 : c - 4715;
+  const msOfDay = Math.round((dayF - day) * 86400 * 1e3);
+  return new Date(Date.UTC(year, month - 1, day) + msOfDay);
+}
+function unitVector(raHours, decDeg) {
+  const ra = raHours * 15 * Math.PI / 180;
+  const dec = decDeg * Math.PI / 180;
+  return [Math.cos(dec) * Math.cos(ra), Math.cos(dec) * Math.sin(ra), Math.sin(dec)];
+}
+function precessToDate(raHours, decDeg, date) {
+  const time = Astronomy.MakeTime(date);
+  const [x, y, z26] = unitVector(raHours, decDeg);
+  const rot = Astronomy.Rotation_EQJ_EQD(time);
+  const v = Astronomy.RotateVector(rot, new Astronomy.Vector(x, y, z26, time));
+  const r = Math.hypot(v.x, v.y, v.z);
+  const ra = Math.atan2(v.y, v.x) * 180 / Math.PI / 15;
+  const dec = Math.asin(v.z / r) * 180 / Math.PI;
+  return { raHours: (ra % 24 + 24) % 24, decDeg: dec };
+}
+function localSiderealTime(date, loc) {
+  const gast = Astronomy.SiderealTime(Astronomy.MakeTime(date));
+  return ((gast + loc.lon / 15) % 24 + 24) % 24;
+}
+function altAz(raHoursJ2000, decDegJ2000, date, loc) {
+  const { raHours, decDeg } = precessToDate(raHoursJ2000, decDegJ2000, date);
+  const lst = localSiderealTime(date, loc);
+  const ha = ((lst - raHours) % 24 + 24) % 24;
+  const H = ha * 15 * Math.PI / 180;
+  const dec = decDeg * Math.PI / 180;
+  const lat = loc.lat * Math.PI / 180;
+  const sinAlt = Math.sin(dec) * Math.sin(lat) + Math.cos(dec) * Math.cos(lat) * Math.cos(H);
+  const altDeg = Math.asin(Math.max(-1, Math.min(1, sinAlt))) * 180 / Math.PI;
+  const az = Math.atan2(
+    -Math.cos(dec) * Math.sin(H),
+    Math.sin(dec) * Math.cos(lat) - Math.cos(dec) * Math.sin(lat) * Math.cos(H)
+  ) * 180 / Math.PI;
+  return { altDeg, azDeg: (az + 360) % 360, haHours: ha, lstHours: lst, raOfDate: raHours, decOfDate: decDeg };
+}
+function airmass(altDeg) {
+  if (altDeg <= 0) return null;
+  return 1 / Math.sin(altDeg * Math.PI / 180);
+}
+function helioCorrection(raHoursJ2000, decDegJ2000, date) {
+  const time = Astronomy.MakeTime(date);
+  const state = Astronomy.HelioState(Astronomy.Body.Earth, time);
+  const s = unitVector(raHoursJ2000, decDegJ2000);
+  const dotAu = state.x * s[0] + state.y * s[1] + state.z * s[2];
+  const dotVel = state.vx * s[0] + state.vy * s[1] + state.vz * s[2];
+  return {
+    days: dotAu * LIGHT_TIME_AU_SEC / 86400,
+    rvKmS: dotVel * AU_KM / 86400
+  };
+}
+function instantInfo(raHoursJ2000, decDegJ2000, date, loc) {
+  const pos = altAz(raHoursJ2000, decDegJ2000, date, loc);
+  const jd = dateToJD(date);
+  const hc = helioCorrection(raHoursJ2000, decDegJ2000, date);
+  return {
+    date,
+    jd,
+    jdHel: jd + hc.days,
+    helCorrDays: hc.days,
+    rvKmS: hc.rvKmS,
+    lstHours: pos.lstHours,
+    haHours: pos.haHours,
+    altDeg: pos.altDeg,
+    azDeg: pos.azDeg,
+    airmass: airmass(pos.altDeg),
+    raOfDate: pos.raOfDate,
+    decOfDate: pos.decOfDate
+  };
+}
+function nightInfo(isoDate, loc, sunAltDeg = -18) {
+  const observer = observerOf(loc);
+  const noonLocal = utcDate(isoDate, 12 - loc.lon / 15);
+  let start = null;
+  let end = null;
+  try {
+    const s = Astronomy.SearchAltitude(Astronomy.Body.Sun, observer, -1, noonLocal, 1, sunAltDeg);
+    start = s ? s.date : null;
+    const e = Astronomy.SearchAltitude(
+      Astronomy.Body.Sun,
+      observer,
+      1,
+      start ?? noonLocal,
+      1,
+      sunAltDeg
+    );
+    end = e ? e.date : null;
+  } catch {
+    start = null;
+    end = null;
+  }
+  const midnight = utcDate(isoDate, 24 - loc.lon / 15);
+  let moonRise = null;
+  let moonSet = null;
+  try {
+    const r = Astronomy.SearchRiseSet(Astronomy.Body.Moon, observer, 1, noonLocal, 1);
+    moonRise = r ? r.date : null;
+    const st = Astronomy.SearchRiseSet(Astronomy.Body.Moon, observer, -1, noonLocal, 1);
+    moonSet = st ? st.date : null;
+  } catch {
+  }
+  const illum = Astronomy.Illumination(Astronomy.Body.Moon, midnight);
+  return {
+    isoDate,
+    start,
+    end,
+    moonRise,
+    moonSet,
+    moonPhasePercent: illum.phase_fraction * 100,
+    moonPhaseAngle: Astronomy.MoonPhase(midnight)
+  };
+}
+function moonAltitude(date, loc) {
+  const time = Astronomy.MakeTime(date);
+  const observer = observerOf(loc);
+  const eq = Astronomy.Equator(Astronomy.Body.Moon, time, observer, true, true);
+  const hor = Astronomy.Horizon(time, observer, eq.ra, eq.dec, "normal");
+  return hor.altitude;
+}
+function twilightTimes(isoDate, loc) {
+  const observer = observerOf(loc);
+  const noonLocal = utcDate(isoDate, 12 - loc.lon / 15);
+  const search = (dir, altDeg, start) => {
+    try {
+      const r = Astronomy.SearchAltitude(Astronomy.Body.Sun, observer, dir, start, 1, altDeg);
+      return r ? r.date : null;
+    } catch {
+      return null;
+    }
+  };
+  const sunset = search(-1, 0, noonLocal);
+  const civilDusk = search(-1, -6, sunset ?? noonLocal);
+  const nauticalDusk = search(-1, -12, civilDusk ?? noonLocal);
+  const astroDusk = search(-1, -18, nauticalDusk ?? noonLocal);
+  const astroDawn = search(1, -18, astroDusk ?? noonLocal);
+  const nauticalDawn = search(1, -12, astroDawn ?? noonLocal);
+  const civilDawn = search(1, -6, nauticalDawn ?? noonLocal);
+  const sunrise = search(1, 0, civilDawn ?? noonLocal);
+  return { sunset, civilDusk, nauticalDusk, astroDusk, astroDawn, nauticalDawn, civilDawn, sunrise };
+}
+function observabilityWindows(raHours, decDeg, night, loc, minAltDeg = DEFAULT_MIN_ALTITUDE) {
+  if (!night.start || !night.end) return [];
+  const step = 6e4;
+  const out = [];
+  let openFrom = null;
+  for (let t = night.start.getTime(); t <= night.end.getTime(); t += step) {
+    const d = new Date(t);
+    const above = altAz(raHours, decDeg, d, loc).altDeg >= minAltDeg;
+    if (above && !openFrom) openFrom = d;
+    if (!above && openFrom) {
+      out.push({ from: openFrom, to: new Date(t - step) });
+      openFrom = null;
+    }
+  }
+  if (openFrom) out.push({ from: openFrom, to: night.end });
+  return out;
+}
+function minimaInRange(target, fromIso, toIso, loc, minAltDeg = DEFAULT_MIN_ALTITUDE, onlyObservable = true) {
+  const { epochJd, periodDays } = target;
+  if (!periodDays || periodDays <= 0) return [];
+  const jdFrom = dateToJD(utcDate(fromIso, 0));
+  const jdTo = dateToJD(utcDate(toIso, 24));
+  const eStart = Math.ceil((jdFrom - epochJd) / periodDays);
+  const eEnd = Math.floor((jdTo - epochJd) / periodDays);
+  if (eEnd - eStart > 2e5) return [];
+  const nights = /* @__PURE__ */ new Map();
+  const nightFor = (d) => {
+    const localHours = d.getUTCHours() + d.getUTCMinutes() / 60 + loc.lon / 15;
+    const anchor = new Date(d.getTime());
+    if (localHours < 12) anchor.setUTCDate(anchor.getUTCDate() - 1);
+    const iso2 = toIsoDate(anchor);
+    let n = nights.get(iso2);
+    if (!n) {
+      n = nightInfo(iso2, loc);
+      nights.set(iso2, n);
+    }
+    return n;
+  };
+  const out = [];
+  for (let e = eStart; e <= eEnd; e++) {
+    const jd = epochJd + e * periodDays;
+    const date = jdToDate(jd);
+    const info = instantInfo(target.raHours, target.decDeg, date, loc);
+    const night = nightFor(date);
+    const duringNight = !!night.start && !!night.end && date >= night.start && date <= night.end;
+    const aboveMinAlt = info.altDeg >= minAltDeg;
+    if (onlyObservable && !(duringNight && aboveMinAlt)) continue;
+    out.push({
+      epoch: e,
+      jd,
+      jdHel: info.jdHel,
+      helCorrDays: info.helCorrDays,
+      date,
+      altDeg: info.altDeg,
+      airmass: info.airmass,
+      duringNight,
+      aboveMinAlt
+    });
+  }
+  return out;
+}
+function heliocentricPhase(date, target) {
+  if (!target.epochJd || !target.periodDays || target.periodDays <= 0) return null;
+  const jd = dateToJD(date);
+  const jdHel = jd + helioCorrection(target.raHours, target.decDeg, date).days;
+  const p = (jdHel - target.epochJd) / target.periodDays % 1;
+  return p < 0 ? p + 1 : p;
+}
+function buildJournal(target, fromIso, toIso, loc, minAltDeg = DEFAULT_MIN_ALTITUDE, maxNights = 400) {
+  const rows = [];
+  let cur = utcDate(fromIso, 0);
+  const end = utcDate(toIso, 0);
+  while (cur <= end && rows.length < maxNights) {
+    const iso2 = toIsoDate(cur);
+    const night = nightInfo(iso2, loc);
+    const windows = observabilityWindows(target.raHours, target.decDeg, night, loc, minAltDeg);
+    let altMax = -90;
+    if (night.start && night.end) {
+      for (let t = night.start.getTime(); t <= night.end.getTime(); t += 10 * 6e4) {
+        const a = altAz(target.raHours, target.decDeg, new Date(t), loc).altDeg;
+        if (a > altMax) altMax = a;
+      }
+    }
+    rows.push({
+      isoDate: iso2,
+      weekday: cur.getUTCDay(),
+      jdMidnight: dateToJD(utcDate(iso2, 0)),
+      night,
+      windows,
+      phaseFrom: windows[0] ? heliocentricPhase(windows[0].from, target) : null,
+      phaseTo: windows[0] ? heliocentricPhase(windows[0].to, target) : null,
+      altMax
+    });
+    cur = new Date(cur.getTime() + 864e5);
+  }
+  return rows;
+}
+
 // src/lib/mcp/helpers.ts
-import {
-  DEFAULT_MIN_ALTITUDE,
-  POZOR_LOCATIONS,
-  getLocation
-} from "npm:@/lib/pozor";
 function ok(payload, structured) {
   return {
     content: [{ type: "text", text: JSON.stringify(payload) }],
@@ -231,7 +629,6 @@ function resolveLocation(input) {
 var iso = (d) => d ? d.toISOString() : null;
 
 // src/lib/mcp/tools/get-session.ts
-import { computeMagnitude } from "npm:@/lib/astro";
 var get_session_default = defineTool6({
   name: "get_session",
   title: "Get session with observations",
@@ -304,7 +701,6 @@ var delete_session_default = defineTool8({
 // src/lib/mcp/tools/add-observation.ts
 import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.26.1";
 import { z as z9 } from "npm:zod@^3.25.76";
-import { computeMagnitude as computeMagnitude2 } from "npm:@/lib/astro";
 var add_observation_default = defineTool9({
   name: "add_observation",
   title: "Add observation",
@@ -352,7 +748,7 @@ var add_observation_default = defineTool9({
       note: row.note ?? null
     }).select("id,session_id,star_id,row_index,a,b,pasos_a,pasos_b,limit_value,ut_time,note").single();
     if (error) return fail(error.message);
-    const magnitude = computeMagnitude2(data, resolvedName ?? void 0).value;
+    const magnitude = computeMagnitude(data, resolvedName ?? void 0).value;
     return ok({ ...data, magnitude }, { observation: { ...data, magnitude } });
   }
 });
@@ -408,8 +804,87 @@ var delete_observation_default = defineTool11({
 // src/lib/mcp/tools/export-session.ts
 import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.26.1";
 import { z as z12 } from "npm:zod@^3.25.76";
-import { buildAAVSO, buildMEDUZA, buildVSNET } from "npm:@/lib/exporters";
-import { dateToJD } from "npm:@/lib/astro";
+
+// src/lib/exporters/index.ts
+function magOrLimit(r) {
+  const m = computeMagnitude(r, r.star_name);
+  return m.value == null ? null : csvSafe(m.value);
+}
+function csvSafe(s) {
+  return s.replace(/[,\r\n]/g, " ").trim();
+}
+function rowDate(row, ctx) {
+  if (!row.ut_time) return ctx.observedAt;
+  const d = new Date(ctx.observedAt);
+  applyUtTimeToDate(d, row.ut_time);
+  return d;
+}
+function buildVSNET(rows, ctx) {
+  const lines = [];
+  for (const r of rows) {
+    const mag = magOrLimit(r);
+    if (!mag) continue;
+    if (!r.vsnet_code) continue;
+    const code = r.vsnet_code.trim().padEnd(8, " ");
+    const dateStr = vsnetDate(rowDate(r, ctx));
+    const rawNote = (r.note ?? "").trim();
+    const suffix = rawNote ? ` ${rawNote}` : "";
+    lines.push(`${code} ${dateStr} ${mag.padStart(5, " ")} ${ctx.obsCode}${suffix}`);
+  }
+  return lines.join("\n") + "\n";
+}
+function buildAAVSO(rows, ctx) {
+  const header = [
+    "#TYPE=Visual",
+    `#OBSCODE=${ctx.obsCode}`,
+    "#SOFTWARE=Visual-Astro (japysoft)",
+    "#DELIM=,",
+    "#DATE=JD",
+    "#OBSTYPE=Visual"
+  ].join("\n");
+  const body = [];
+  for (const r of rows) {
+    const mag = magOrLimit(r);
+    if (!mag) continue;
+    if (!r.aavso_code) continue;
+    const isLimit = !!(r.limit_value && r.limit_value.trim());
+    const aVal = resolveCompValue(r.star_name, r.a ?? null);
+    const bVal = resolveCompValue(r.star_name, r.b ?? null);
+    const comp1 = isLimit ? Number.isFinite(bVal) ? bVal.toFixed(2) : csvSafe((r.limit_value ?? "").replace("<", "")) : Number.isFinite(aVal) ? aVal.toFixed(2) : csvSafe(r.a ?? "");
+    const comp2 = isLimit ? "na" : Number.isFinite(bVal) ? bVal.toFixed(2) : csvSafe(r.b ?? "");
+    const jd = ctx.jd + (rowDate(r, ctx).getTime() - ctx.observedAt.getTime()) / 864e5;
+    const rawNote = csvSafe((r.note ?? "").trim().replace(/:/g, "Z"));
+    const upper = rawNote.toUpperCase();
+    const noteOut = upper === "OUTBURST" || upper === "ACTIVE" ? "Y" : rawNote || "na";
+    body.push(
+      [
+        r.aavso_code,
+        jd.toFixed(4),
+        mag,
+        "na",
+        comp1 || "na",
+        comp2 || "na",
+        r.chart_id || "na",
+        noteOut
+      ].join(",")
+    );
+  }
+  return header + "\n" + body.join("\n") + "\n";
+}
+function buildMEDUZA(rows, ctx) {
+  const dateStr = meduzaDate(ctx.observedAt);
+  const lines = ["Estrella,JD,Mag,Fecha UT,Obs,Estima"];
+  for (const r of rows) {
+    const mag = magOrLimit(r);
+    if (!mag) continue;
+    lines.push(
+      [csvSafe(r.star_name), ctx.jd.toFixed(3), mag, dateStr, ctx.obsCode, csvSafe(aavsoEstima(r))].join(",")
+    );
+  }
+  return lines.join("\n") + "\n";
+}
+
+// src/lib/mcp/tools/export-session.ts
 var export_session_default = defineTool12({
   name: "export_session",
   title: "Export session",
@@ -677,8 +1152,7 @@ var delete_ccd_target_default = defineTool19({
 // src/lib/mcp/tools/pozor-night.ts
 import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.26.1";
 import { z as z19 } from "npm:zod@^3.25.76";
-import { moonAltitude, nightInfo, twilightTimes, utcDate } from "npm:@/lib/pozor";
-import * as Astronomy from "npm:astronomy-engine@^2.1.19";
+import * as Astronomy2 from "npm:astronomy-engine@^2.1.19";
 var pozor_night_default = defineTool20({
   name: "pozor_night",
   title: "POZOR night conditions",
@@ -697,7 +1171,7 @@ var pozor_night_default = defineTool20({
     const night = nightInfo(date, site);
     const tw = twilightTimes(date, site);
     const mid = night.start && night.end ? new Date((night.start.getTime() + night.end.getTime()) / 2) : utcDate(date, 0);
-    const illum = Astronomy.Illumination(Astronomy.Body.Moon, mid);
+    const illum = Astronomy2.Illumination(Astronomy2.Body.Moon, mid);
     const payload = {
       date,
       site: { key: site.key, label: site.label, lat: site.lat, lon: site.lon, elevation: site.elevation },
@@ -733,7 +1207,6 @@ var pozor_night_default = defineTool20({
 // src/lib/mcp/tools/pozor-instant.ts
 import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.26.1";
 import { z as z20 } from "npm:zod@^3.25.76";
-import { formatDMS, formatHMS, heliocentricPhase, instantInfo } from "npm:@/lib/pozor";
 
 // src/lib/mcp/tools/pozor-target.ts
 async function resolveTarget(ctx, input) {
@@ -820,7 +1293,6 @@ var pozor_instant_default = defineTool21({
 // src/lib/mcp/tools/pozor-journal.ts
 import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.26.1";
 import { z as z21 } from "npm:zod@^3.25.76";
-import { buildJournal } from "npm:@/lib/pozor";
 var pozor_journal_default = defineTool22({
   name: "pozor_journal",
   title: "POZOR observability journal",
@@ -871,7 +1343,6 @@ var pozor_journal_default = defineTool22({
 // src/lib/mcp/tools/pozor-minima.ts
 import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.26.1";
 import { z as z22 } from "npm:zod@^3.25.76";
-import { minimaInRange } from "npm:@/lib/pozor";
 var pozor_minima_default = defineTool23({
   name: "pozor_minima",
   title: "POZOR minima predictions",
@@ -931,8 +1402,6 @@ var pozor_minima_default = defineTool23({
 // src/lib/mcp/tools/jd-convert.ts
 import { defineTool as defineTool24 } from "npm:@lovable.dev/mcp-js@0.26.1";
 import { z as z23 } from "npm:zod@^3.25.76";
-import { dateToJD as dateToJD2 } from "npm:@/lib/astro";
-import { jdToDate } from "npm:@/lib/pozor";
 var jd_convert_default = defineTool24({
   name: "jd_convert",
   title: "Julian Date converter",
@@ -950,7 +1419,7 @@ var jd_convert_default = defineTool24({
     if (datetime_utc) {
       const d = new Date(datetime_utc);
       if (Number.isNaN(d.getTime())) return fail("Invalid datetime_utc.");
-      const value = dateToJD2(d);
+      const value = dateToJD(d);
       return ok({ jd: value, datetime_utc: d.toISOString() }, { jd: value, datetime_utc: d.toISOString() });
     }
     return fail("Provide jd or datetime_utc.");
@@ -960,7 +1429,167 @@ var jd_convert_default = defineTool24({
 // src/lib/mcp/tools/convert-sips.ts
 import { defineTool as defineTool25 } from "npm:@lovable.dev/mcp-js@0.26.1";
 import { z as z24 } from "npm:zod@^3.25.76";
-import { buildAAVSOFromSIPS, buildVSNETFromSIPS, parseSIPS } from "npm:@/lib/sips";
+
+// src/lib/sips.ts
+function sipsJdToDate(jd) {
+  const J = jd + 0.5;
+  const Z = Math.floor(J);
+  const F = J - Z;
+  let A = Z;
+  if (Z >= 2299161) {
+    const alpha = Math.floor((Z - 186721625e-2) / 36524.25);
+    A = Z + 1 + alpha - Math.floor(alpha / 4);
+  }
+  const B = A + 1524;
+  const C = Math.floor((B - 122.1) / 365.25);
+  const D = Math.floor(365.25 * C);
+  const E = Math.floor((B - D) / 30.6001);
+  const dayF = B - D - Math.floor(30.6001 * E) + F;
+  const day = Math.floor(dayF);
+  const dayFrac = dayF - day;
+  const month = E < 14 ? E - 1 : E - 13;
+  const year = month > 2 ? C - 4716 : C - 4715;
+  const totalSec = Math.round(dayFrac * 86400);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor(totalSec % 3600 / 60);
+  const s = totalSec % 60;
+  return new Date(Date.UTC(year, month - 1, day, h, m, s));
+}
+function vsnetDateFromJD(jd) {
+  const d = sipsJdToDate(jd);
+  const y = d.getUTCFullYear();
+  const mo = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = d.getUTCDate();
+  const frac = (d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600) / 24;
+  const dayWithFrac = (day + frac).toFixed(3).padStart(6, "0");
+  return `${y}${mo}${dayWithFrac}`;
+}
+function parseSIPS(text, msgs = {
+  minCols: (n) => `Line ${n}: at least 2 columns required`,
+  nonNumeric: (n) => `Line ${n}: non-numeric JD or magnitude`
+}) {
+  const rows = [];
+  const errors = [];
+  let varName = null;
+  let filter = null;
+  const lines = text.split(/\r?\n/);
+  lines.forEach((raw, i) => {
+    const line = raw.trim();
+    if (!line) return;
+    if (line.startsWith("#")) {
+      const mVar = line.match(/VAR\s*Name\s*:\s*(.+?)\s*$/i);
+      if (mVar) varName = mVar[1].trim();
+      const mFil = line.match(/Filter\s*:\s*([^\s]+)/i);
+      if (mFil) filter = mFil[1].trim();
+      return;
+    }
+    const parts = line.split(/[\s,;]+/);
+    if (parts.length < 2) {
+      errors.push(msgs.minCols(i + 1));
+      return;
+    }
+    const jd = parseFloat(parts[0]);
+    const mag = parseFloat(parts[1]);
+    const err = parts.length >= 3 ? parseFloat(parts[2]) : NaN;
+    if (!Number.isFinite(jd) || !Number.isFinite(mag)) {
+      errors.push(msgs.nonNumeric(i + 1));
+      return;
+    }
+    rows.push({ jd, mag, err: Number.isFinite(err) ? err : 0 });
+  });
+  return { rows, varName, filter, errors };
+}
+function vsnetFilter(f) {
+  if (!f) return "C";
+  const key = f.toUpperCase();
+  const map = {
+    V: "V",
+    B: "B",
+    R: "R",
+    I: "I",
+    U: "U",
+    TR: "TR",
+    TG: "TG",
+    TB: "TB",
+    CV: "CV",
+    CR: "CR",
+    CBB: "CBB",
+    LPR: "CV",
+    CLEAR: "C",
+    CLR: "C",
+    NONE: "C"
+  };
+  return map[key] ?? key;
+}
+function buildVSNETFromSIPS(rows, starCode, obsCode, filter) {
+  const code = starCode.trim().padEnd(8, " ");
+  const obs = obsCode.trim();
+  const filt = vsnetFilter(filter);
+  const out = [];
+  for (const r of rows) {
+    const dateStr = vsnetDateFromJD(r.jd);
+    const magStr = r.mag.toFixed(4).padStart(7, " ");
+    out.push(`${code} ${dateStr} ${magStr} ${obs} ${filt}`);
+  }
+  return out.join("\n") + (out.length ? "\n" : "");
+}
+var AAVSO_FILTER_MAP = {
+  V: "V",
+  B: "B",
+  R: "R",
+  I: "I",
+  U: "U",
+  TR: "TR",
+  TG: "TG",
+  TB: "TB",
+  CV: "CV",
+  CR: "CR",
+  CBB: "CBB",
+  LPR: "CV",
+  CLEAR: "CV",
+  CLR: "CV",
+  NONE: "CV"
+};
+function aavsoFilter(f) {
+  if (!f) return "CV";
+  const key = f.toUpperCase();
+  return AAVSO_FILTER_MAP[key] ?? key;
+}
+function buildAAVSOFromSIPS(rows, aavsoCode, obsCode, filter, chartId) {
+  const header = [
+    "#TYPE=Extended",
+    `#OBSCODE=${obsCode.trim()}`,
+    "#SOFTWARE=Visual-Astro (japysoft)",
+    "#DELIM=,",
+    "#DATE=JD",
+    "#OBSTYPE=CCD"
+  ].join("\n");
+  const filt = aavsoFilter(filter);
+  const chart = chartId.trim() || "na";
+  const body = [];
+  for (const r of rows) {
+    body.push([
+      aavsoCode.trim(),
+      r.jd.toFixed(6),
+      r.mag.toFixed(4),
+      r.err > 0 ? r.err.toFixed(4) : "na",
+      filt,
+      "NO",
+      "STD",
+      "ENSEMBLE",
+      "na",
+      "na",
+      "na",
+      "na",
+      "na",
+      chart,
+      "na"
+    ].join(","));
+  }
+  return header + "\n" + body.join("\n") + "\n";
+}
+
+// src/lib/mcp/tools/convert-sips.ts
 var convert_sips_default = defineTool25({
   name: "convert_sips",
   title: "Convert SIPS Standard to VSNET/AAVSO",

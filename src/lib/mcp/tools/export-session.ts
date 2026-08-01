@@ -2,8 +2,8 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser, unauthenticated } from "../supabase";
 import { ok, fail } from "../helpers";
-import { buildAAVSO, buildMEDUZA, buildVSNET, type ExportRow } from "@/lib/exporters";
-import { dateToJD } from "@/lib/astro";
+import { buildAAVSO, buildMEDUZA, buildVSNET, type ExportRow } from "../../exporters";
+import { dateToJD } from "../../astro";
 
 export default defineTool({
   name: "export_session",

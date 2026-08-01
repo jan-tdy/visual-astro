@@ -1,4 +1,4 @@
-import { applyUtTimeToDate, computeMagnitude, vsnetDate, meduzaDate, aavsoEstima, resolveCompValue, type ObsInput } from "@/lib/astro";
+import { applyUtTimeToDate, computeMagnitude, vsnetDate, meduzaDate, aavsoEstima, resolveCompValue, type ObsInput } from "../astro";
 
 export interface ExportRow extends ObsInput {
   star_name: string;

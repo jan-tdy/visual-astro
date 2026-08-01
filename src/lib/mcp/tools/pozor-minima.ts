@@ -2,7 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { unauthenticated } from "../supabase";
 import { LOCATION_KEYS, MIN_ALT_DEFAULT, fail, iso, ok, resolveLocation } from "../helpers";
-import { minimaInRange } from "@/lib/pozor";
+import { minimaInRange } from "../../pozor";
 import { resolveTarget } from "./pozor-target";
 
 export default defineTool({

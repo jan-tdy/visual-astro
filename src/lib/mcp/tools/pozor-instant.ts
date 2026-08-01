@@ -2,7 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { unauthenticated } from "../supabase";
 import { LOCATION_KEYS, fail, iso, ok, resolveLocation } from "../helpers";
-import { formatDMS, formatHMS, heliocentricPhase, instantInfo } from "@/lib/pozor";
+import { formatDMS, formatHMS, heliocentricPhase, instantInfo } from "../../pozor";
 import { resolveTarget } from "./pozor-target";
 
 export default defineTool({

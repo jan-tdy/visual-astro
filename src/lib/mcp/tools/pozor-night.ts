@@ -2,7 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { unauthenticated } from "../supabase";
 import { LOCATION_KEYS, iso, ok, resolveLocation } from "../helpers";
-import { moonAltitude, nightInfo, twilightTimes, utcDate } from "@/lib/pozor";
+import { moonAltitude, nightInfo, twilightTimes, utcDate } from "../../pozor";
 import * as Astronomy from "astronomy-engine";
 
 export default defineTool({
