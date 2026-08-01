@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { I18nProvider } from "@/hooks/useI18n";
 import { AppModeProvider } from "@/hooks/useAppMode";
+import { ErrorBoundary } from "@/components/app/ErrorBoundary";
 import Auth from "./pages/Auth.tsx";
 import Sessions from "./pages/Sessions.tsx";
 import SessionEditor from "./pages/SessionEditor.tsx";
@@ -39,6 +40,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <ErrorBoundary>
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
@@ -61,6 +63,7 @@ const App = () => (
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </ErrorBoundary>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
