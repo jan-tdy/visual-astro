@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ArrowDown, ArrowUp, Download, Loader2, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
+import { useSubscription } from "@/hooks/useSubscription";
 import { formatDMS, formatHMS } from "@/lib/pozor";
 import { CcdTarget, downloadText, sortTargets } from "./shared";
 
@@ -37,6 +38,7 @@ export function CcdCatalog({
   catalogId,
   catalogName,
   isOwnCatalog,
+  ownCatalogsCount,
   setCatalogId,
   reloadCatalogs,
 }: {
@@ -46,10 +48,12 @@ export function CcdCatalog({
   catalogId: string;
   catalogName: string;
   isOwnCatalog: boolean;
+  ownCatalogsCount: number;
   setCatalogId: (id: string) => void;
   reloadCatalogs: () => void;
 }) {
   const { t } = useI18n();
+  const { isPlusActive } = useSubscription();
   const [filter, setFilter] = useState("");
   const [editing, setEditing] = useState<Partial<CcdTarget> | null>(null);
   const [raText, setRaText] = useState("");
@@ -70,6 +74,10 @@ export function CcdCatalog({
         return null;
       }
       return catalogId;
+    }
+    if (!isPlusActive && ownCatalogsCount >= 1) {
+      toast.error(t("pozor.catalog.plusRequired"));
+      return null;
     }
     const { data: created, error: createErr } = await supabase
       .from("ccd_catalogs")

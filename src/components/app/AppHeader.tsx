@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { useI18n, SUPPORTED_LANGS } from "@/hooks/useI18n";
 import { useAppMode, type AppMode } from "@/hooks/useAppMode";
+import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -13,12 +14,19 @@ import {
 } from "@/components/ui/select";
 import {
   LogOut, BookOpen, Settings as SettingsIcon, ListChecks, Info, Sun, Moon, Menu,
-  Sparkles, BarChart3, Wrench, Clock, Star,
+  Sparkles, BarChart3, Wrench, Clock, Star, Lock,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GlobalSearch } from "@/components/app/GlobalSearch";
 import logoUrl from "@/assets/visual-astro-logo.png";
+
+interface NavLink {
+  to: string;
+  label: string;
+  icon: any;
+  locked?: boolean;
+}
 
 function ModeToggle({
   mode,
@@ -57,9 +65,27 @@ export function AppHeader() {
   const { theme, toggle } = useTheme();
   const { lang, setLang, t } = useI18n();
   const { mode, setMode } = useAppMode();
+  const { isPlusActive } = useSubscription();
   const loc = useLocation();
   const [open, setOpen] = useState(false);
-  const link = (to: string, label: string, Icon: any) => {
+
+  // Keep the switch in sync when a Pozor/Tools (CCD) or Sessions/Catalog/Prom/Graphs
+  // (Visual) URL is opened directly — e.g. a bookmark or link — instead of via the
+  // switch itself. Settings/Info belong to both modes, so they don't force a change.
+  useEffect(() => {
+    const isCcdPath = loc.pathname.startsWith("/pozor") || loc.pathname === "/tools";
+    const isVisualPath =
+      loc.pathname === "/" ||
+      loc.pathname.startsWith("/session") ||
+      loc.pathname === "/catalog" ||
+      loc.pathname === "/prom" ||
+      loc.pathname === "/graphs";
+    if (isCcdPath && mode !== "ccd") setMode("ccd");
+    else if (isVisualPath && mode !== "visual") setMode("visual");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loc.pathname]);
+
+  const link = (to: string, label: string, Icon: any, locked = false) => {
     const active = loc.pathname === to || (to === "/" && loc.pathname.startsWith("/session"));
     return (
       <Link
@@ -71,25 +97,26 @@ export function AppHeader() {
         }`}
       >
         <Icon className="h-4 w-4" /> {label}
+        {locked && <Lock className="h-3 w-3 opacity-60" />}
       </Link>
     );
   };
 
-  const visualLinks = [
+  const visualLinks: NavLink[] = [
     { to: "/", label: t("nav.sessions"), icon: ListChecks },
     { to: "/catalog", label: t("nav.catalog"), icon: BookOpen },
     { to: "/prom", label: t("nav.prom"), icon: Sparkles },
     { to: "/graphs", label: t("nav.graphs"), icon: BarChart3 },
   ];
-  const ccdLinks = [
+  const ccdLinks: NavLink[] = [
     { to: "/pozor/chart", label: t("pozor.tab.chart"), icon: Moon },
     { to: "/pozor/journal", label: t("pozor.tab.journal"), icon: ListChecks },
-    { to: "/pozor/minima", label: t("pozor.tab.minima"), icon: Clock },
+    { to: "/pozor/minima", label: t("pozor.tab.minima"), icon: Clock, locked: !isPlusActive },
     { to: "/pozor/instant", label: t("pozor.tab.instant"), icon: Star },
     { to: "/pozor/catalog", label: t("pozor.tab.catalog"), icon: BookOpen },
     { to: "/tools", label: t("nav.tools"), icon: Wrench },
   ];
-  const alwaysLinks = [
+  const alwaysLinks: NavLink[] = [
     { to: "/settings", label: t("nav.settings"), icon: SettingsIcon },
     { to: "/about", label: t("nav.info"), icon: Info },
   ];
@@ -131,7 +158,7 @@ export function AppHeader() {
           </span>
         </a>
         <nav className="hidden sm:flex items-center gap-1">
-          {navLinks.map((l) => link(l.to, l.label, l.icon))}
+          {navLinks.map((l) => link(l.to, l.label, l.icon, l.locked))}
         </nav>
         <ModeToggle
           mode={mode}
@@ -181,7 +208,7 @@ export function AppHeader() {
                   labelCcd={t("nav.modeCcd")}
                   className="self-start mb-2"
                 />
-                {navLinks.map((l) => link(l.to, l.label, l.icon))}
+                {navLinks.map((l) => link(l.to, l.label, l.icon, l.locked))}
                 <button
                   onClick={() => { setOpen(false); signOut(); }}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-muted-foreground hover:text-foreground text-left mt-4"

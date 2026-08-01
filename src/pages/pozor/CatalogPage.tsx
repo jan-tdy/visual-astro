@@ -5,7 +5,7 @@ import type { PozorOutletContext } from "./PozorLayout";
 export default function PozorCatalogPage() {
   const {
     targets, targetsLoading, reloadTargets, catalogId, catalogName,
-    isOwnCatalog, setCatalogId, reloadCatalogs,
+    isOwnCatalog, ownCatalogsCount, setCatalogId, reloadCatalogs,
   } = useOutletContext<PozorOutletContext>();
   return (
     <CcdCatalog
@@ -15,6 +15,7 @@ export default function PozorCatalogPage() {
       catalogId={catalogId}
       catalogName={catalogName}
       isOwnCatalog={isOwnCatalog}
+      ownCatalogsCount={ownCatalogsCount}
       setCatalogId={setCatalogId}
       reloadCatalogs={reloadCatalogs}
     />

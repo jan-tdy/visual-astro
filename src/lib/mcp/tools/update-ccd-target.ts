@@ -2,6 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser, unauthenticated } from "../supabase";
 import { ok, fail } from "../helpers";
+import { isPlusActive, plusRequired } from "../subscription";
 
 export default defineTool({
   name: "update_ccd_target",
@@ -22,6 +23,7 @@ export default defineTool({
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ target_id, ...patch }, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
+    if (!(await isPlusActive(ctx))) return plusRequired();
     const fields = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined));
     if (Object.keys(fields).length === 0) return fail("Nothing to update.");
     const supabase = supabaseForUser(ctx);

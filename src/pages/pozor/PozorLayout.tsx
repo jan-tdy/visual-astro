@@ -4,8 +4,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
 import { CatalogSwitcher } from "@/components/pozor/CatalogSwitcher";
 import {
-  useCcdCatalogs, useCcdTargets, usePozorSettings,
-  type CcdTarget, type PozorSettings,
+  useCcdCatalogs, useCcdTargets, usePozorLocations, usePozorSettings,
+  type CcdTarget, type PozorLocationRow, type PozorSettings,
 } from "@/components/pozor/shared";
 
 export interface PozorOutletContext {
@@ -15,10 +15,12 @@ export interface PozorOutletContext {
   catalogId: string;
   catalogName: string;
   isOwnCatalog: boolean;
+  ownCatalogsCount: number;
   setCatalogId: (id: string) => void;
   reloadCatalogs: () => void;
   settings: PozorSettings;
   setSettings: (s: PozorSettings) => void;
+  locations: PozorLocationRow[];
 }
 
 export default function PozorLayout() {
@@ -33,8 +35,10 @@ export default function PozorLayout() {
   } = useCcdCatalogs();
   const { targets, loading: targetsLoading, reload: reloadTargets } = useCcdTargets(catalogId);
   const { settings, setSettings } = usePozorSettings();
+  const { locations } = usePozorLocations();
   const activeCatalog = catalogs.find((c) => c.id === catalogId);
   const isOwnCatalog = !activeCatalog || activeCatalog.user_id === user?.id;
+  const ownCatalogsCount = catalogs.filter((c) => c.user_id === user?.id).length;
 
   const context: PozorOutletContext = {
     targets,
@@ -43,10 +47,12 @@ export default function PozorLayout() {
     catalogId,
     catalogName: activeCatalog?.name ?? "",
     isOwnCatalog,
+    ownCatalogsCount,
     setCatalogId,
     reloadCatalogs,
     settings,
     setSettings,
+    locations,
   };
 
   return (

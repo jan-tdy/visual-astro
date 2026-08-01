@@ -2,6 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser, unauthenticated } from "../supabase";
 import { ok, fail } from "../helpers";
+import { isPlusActive, plusRequired } from "../subscription";
 
 export default defineTool({
   name: "create_ccd_target",
@@ -23,6 +24,7 @@ export default defineTool({
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
+    if (!(await isPlusActive(ctx))) return plusRequired();
     const supabase = supabaseForUser(ctx);
     let catalogId = input.catalog_id ?? null;
     if (!catalogId) {

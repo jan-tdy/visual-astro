@@ -10,8 +10,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Loader2, Lock, Pencil, Plus, Trash2 } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
+import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
 import type { CcdCatalogInfo } from "./shared";
 
 export function CatalogSwitcher({
@@ -30,8 +32,11 @@ export function CatalogSwitcher({
   isOwnCatalog: boolean;
 }) {
   const { t } = useI18n();
+  const { user } = useAuth();
+  const { isPlusActive } = useSubscription();
   const active = catalogs.find((c) => c.id === activeId);
-  const ownCount = catalogs.filter((c) => c.user_id === active?.user_id).length;
+  const ownCount = catalogs.filter((c) => c.user_id === user?.id).length;
+  const canCreateNew = isPlusActive || ownCount === 0;
   const [dialog, setDialog] = useState<"new" | "rename" | null>(null);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -40,6 +45,10 @@ export function CatalogSwitcher({
   const submit = async () => {
     const trimmed = name.trim();
     if (!trimmed) return;
+    if (dialog === "new" && !canCreateNew) {
+      toast.error(t("pozor.catalog.plusRequired"));
+      return;
+    }
     setBusy(true);
     if (dialog === "new") {
       const { data, error } = await supabase
@@ -105,14 +114,21 @@ export function CatalogSwitcher({
       <Button
         size="icon"
         variant="outline"
-        className="h-9 w-9"
+        className="h-9 w-9 relative"
         onClick={() => {
+          if (!canCreateNew) {
+            toast.error(t("pozor.catalog.plusRequired"));
+            return;
+          }
           setName("");
           setDialog("new");
         }}
-        title={t("pozor.catalog.new")}
+        title={canCreateNew ? t("pozor.catalog.new") : t("pozor.catalog.plusRequired")}
       >
         <Plus className="h-4 w-4" />
+        {!canCreateNew && (
+          <Lock className="h-2.5 w-2.5 absolute -top-0.5 -right-0.5 text-muted-foreground" />
+        )}
       </Button>
       <Button
         size="icon"

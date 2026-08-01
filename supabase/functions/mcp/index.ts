@@ -142,62 +142,6 @@ var list_stars_default = defineTool3({
 // src/lib/mcp/tools/list-ccd-targets.ts
 import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.1";
 import { z as z4 } from "npm:zod@^3.25.76";
-var list_ccd_targets_default = defineTool4({
-  name: "list_ccd_targets",
-  title: "List POZOR CCD targets",
-  description: "List the observer's CCD/photometry targets with coordinates, epoch and period.",
-  inputSchema: {
-    search: z4.string().trim().min(1).optional().describe("Case-insensitive target name search."),
-    limit: z4.number().int().min(1).max(500).default(200).describe("Maximum number of targets to return.")
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ search, limit }, ctx) => {
-    if (!ctx.isAuthenticated()) return unauthenticated();
-    const supabase = supabaseForUser(ctx);
-    let query = supabase.from("ccd_targets").select("id,name,constellation,ra_hours,dec_deg,epoch_jd,period_days,filters,notes,sort_order").order("constellation").order("sort_order").limit(limit ?? 200);
-    if (search) query = query.ilike("name", `%${search}%`);
-    const { data, error } = await query;
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
-      structuredContent: { targets: data ?? [] }
-    };
-  }
-});
-
-// src/lib/mcp/tools/create-session.ts
-import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.1";
-import { z as z5 } from "npm:zod@^3.25.76";
-var create_session_default = defineTool5({
-  name: "create_session",
-  title: "Create observing session",
-  description: "Create a new visual observing session for the signed-in observer.",
-  inputSchema: {
-    name: z5.string().trim().min(1).max(200).optional().describe("Session name."),
-    observed_at_utc: z5.string().trim().optional().describe("Observation date/time in UTC ISO format; defaults to now."),
-    notes: z5.string().trim().max(2e3).optional().describe("Free-form session notes.")
-  },
-  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  handler: async ({ name, observed_at_utc, notes }, ctx) => {
-    if (!ctx.isAuthenticated()) return unauthenticated();
-    const supabase = supabaseForUser(ctx);
-    const { data, error } = await supabase.from("sessions").insert({
-      user_id: ctx.getUserId(),
-      name: name ?? null,
-      notes: notes ?? null,
-      ...observed_at_utc ? { observed_at_utc } : {}
-    }).select("id,name,observed_at_utc,notes").single();
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data) }],
-      structuredContent: { session: data }
-    };
-  }
-});
-
-// src/lib/mcp/tools/get-session.ts
-import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.1";
-import { z as z6 } from "npm:zod@^3.25.76";
 
 // src/lib/pozor.ts
 import * as Astronomy from "npm:astronomy-engine@^2.1.19";
@@ -3359,7 +3303,84 @@ function resolveLocation(input) {
 }
 var iso = (d) => d ? d.toISOString() : null;
 
+// src/lib/mcp/subscription.ts
+var DEV_PLUS_EMAIL = "var@kozmos.sk";
+async function isPlusActive(ctx) {
+  const client = supabaseForUser(ctx);
+  const { data: sub } = await client.from("subscriptions").select("status,current_period_end").order("created_at", { ascending: false }).limit(1).maybeSingle();
+  const status = sub ?? null;
+  const realPlusActive = !!status && (["active", "trialing", "past_due"].includes(status.status ?? "") && (!status.current_period_end || new Date(status.current_period_end) > /* @__PURE__ */ new Date()) || status.status === "canceled" && !!status.current_period_end && new Date(status.current_period_end) > /* @__PURE__ */ new Date());
+  if (realPlusActive) return true;
+  const { data: bonus } = await client.from("plus_bonuses").select("expires_at").gt("expires_at", (/* @__PURE__ */ new Date()).toISOString()).order("expires_at", { ascending: false }).limit(1).maybeSingle();
+  if (bonus) return true;
+  if (ctx.getUserEmail()?.toLowerCase() === DEV_PLUS_EMAIL) {
+    const { data: profile } = await client.from("profiles").select("dev_plus_override").maybeSingle();
+    if (profile?.dev_plus_override) return true;
+  }
+  return false;
+}
+function plusRequired() {
+  return fail("This POZOR tool requires a Plus subscription. Upgrade in the app under Settings \u2192 Pl\xE1n & faktur\xE1cia.");
+}
+
+// src/lib/mcp/tools/list-ccd-targets.ts
+var list_ccd_targets_default = defineTool4({
+  name: "list_ccd_targets",
+  title: "List POZOR CCD targets",
+  description: "List the observer's CCD/photometry targets with coordinates, epoch and period.",
+  inputSchema: {
+    search: z4.string().trim().min(1).optional().describe("Case-insensitive target name search."),
+    limit: z4.number().int().min(1).max(500).default(200).describe("Maximum number of targets to return.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ search, limit }, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    if (!await isPlusActive(ctx)) return plusRequired();
+    const supabase = supabaseForUser(ctx);
+    let query = supabase.from("ccd_targets").select("id,name,constellation,ra_hours,dec_deg,epoch_jd,period_days,filters,notes,sort_order").order("constellation").order("sort_order").limit(limit ?? 200);
+    if (search) query = query.ilike("name", `%${search}%`);
+    const { data, error } = await query;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { targets: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/create-session.ts
+import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z5 } from "npm:zod@^3.25.76";
+var create_session_default = defineTool5({
+  name: "create_session",
+  title: "Create observing session",
+  description: "Create a new visual observing session for the signed-in observer.",
+  inputSchema: {
+    name: z5.string().trim().min(1).max(200).optional().describe("Session name."),
+    observed_at_utc: z5.string().trim().optional().describe("Observation date/time in UTC ISO format; defaults to now."),
+    notes: z5.string().trim().max(2e3).optional().describe("Free-form session notes.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ name, observed_at_utc, notes }, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.from("sessions").insert({
+      user_id: ctx.getUserId(),
+      name: name ?? null,
+      notes: notes ?? null,
+      ...observed_at_utc ? { observed_at_utc } : {}
+    }).select("id,name,observed_at_utc,notes").single();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { session: data }
+    };
+  }
+});
+
 // src/lib/mcp/tools/get-session.ts
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z6 } from "npm:zod@^3.25.76";
 var get_session_default = defineTool6({
   name: "get_session",
   title: "Get session with observations",
@@ -3770,6 +3791,7 @@ var list_ccd_catalogs_default = defineTool16({
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (_input, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
+    if (!await isPlusActive(ctx)) return plusRequired();
     const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase.from("ccd_catalogs").select("id,name,sort_order,created_at").order("sort_order");
     if (error) return fail(error.message);
@@ -3799,6 +3821,7 @@ var create_ccd_target_default = defineTool17({
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
+    if (!await isPlusActive(ctx)) return plusRequired();
     const supabase = supabaseForUser(ctx);
     let catalogId = input.catalog_id ?? null;
     if (!catalogId) {
@@ -3852,6 +3875,7 @@ var update_ccd_target_default = defineTool18({
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ target_id, ...patch }, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
+    if (!await isPlusActive(ctx)) return plusRequired();
     const fields = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== void 0));
     if (Object.keys(fields).length === 0) return fail("Nothing to update.");
     const supabase = supabaseForUser(ctx);
@@ -3873,6 +3897,7 @@ var delete_ccd_target_default = defineTool19({
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ target_id }, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
+    if (!await isPlusActive(ctx)) return plusRequired();
     const supabase = supabaseForUser(ctx);
     const { error } = await supabase.from("ccd_targets").delete().eq("id", target_id);
     if (error) return fail(error.message);
@@ -3898,6 +3923,7 @@ var pozor_night_default = defineTool20({
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ date, ...loc }, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
+    if (!await isPlusActive(ctx)) return plusRequired();
     const site = resolveLocation(loc);
     const night = nightInfo(date, site);
     const tw = twilightTimes(date, site);
@@ -3995,6 +4021,7 @@ var pozor_instant_default = defineTool21({
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (input, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
+    if (!await isPlusActive(ctx)) return plusRequired();
     const { target, error } = await resolveTarget(ctx, input);
     if (error || !target) return fail(error ?? "Target not resolved.");
     const when = new Date(input.datetime_utc);
@@ -4047,6 +4074,7 @@ var pozor_journal_default = defineTool22({
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (input, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
+    if (!await isPlusActive(ctx)) return plusRequired();
     const { target, error } = await resolveTarget(ctx, input);
     if (error || !target) return fail(error ?? "Target not resolved.");
     const site = resolveLocation(input);
@@ -4097,6 +4125,7 @@ var pozor_minima_default = defineTool23({
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (input, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
+    if (!await isPlusActive(ctx)) return plusRequired();
     const { target, error } = await resolveTarget(ctx, input);
     if (error || !target) return fail(error ?? "Target not resolved.");
     if (!target.epochJd || !target.periodDays) return fail("This target has no epoch/period ephemeris.");

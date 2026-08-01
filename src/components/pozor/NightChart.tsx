@@ -3,26 +3,28 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
-import { formatUT, getLocation, nightInfo } from "@/lib/pozor";
+import { formatUT, nightInfo } from "@/lib/pozor";
 import { AltitudeChart } from "./AltitudeChart";
-import { todayIso, type CcdTarget, type PozorSettings } from "./shared";
+import { resolveLocation, todayIso, type CcdTarget, type PozorLocationRow, type PozorSettings } from "./shared";
 import { DateField, LocationPicker, MultiTargetPicker } from "./Controls";
 
 export function NightChart({
   targets,
   settings,
   setSettings,
+  locations,
 }: {
   targets: CcdTarget[];
   settings: PozorSettings;
   setSettings: (s: PozorSettings) => void;
+  locations: PozorLocationRow[];
 }) {
   const { t } = useI18n();
   const [date, setDate] = useState(todayIso());
   const [selected, setSelected] = useState<string[]>([]);
   const [view, setView] = useState<"single" | "grid">("single");
   const [page, setPage] = useState(0);
-  const location = getLocation(settings.locationKey);
+  const location = resolveLocation(locations, settings.locationId);
 
   const chosen = useMemo(
     () => targets.filter((x) => selected.includes(x.id)),
@@ -47,7 +49,7 @@ export function NightChart({
             }
           />
         )}
-        <LocationPicker settings={settings} setSettings={setSettings} />
+        <LocationPicker settings={settings} setSettings={setSettings} locations={locations} />
         <div className="flex-1" />
         <div className="flex gap-1">
           <Button

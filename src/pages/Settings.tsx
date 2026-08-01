@@ -24,6 +24,7 @@ import { DEV_PLUS_KEY } from "@/hooks/useSubscription";
 import { Zap } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
 import { fetchAllRows } from "@/lib/supabaseFetchAll";
+import { LocationManager } from "@/components/pozor/LocationManager";
 
 export default function Settings() {
   const { user } = useAuth();
@@ -310,6 +311,10 @@ export default function Settings() {
                 </div>
               ))}
             </Card>
+
+            <div className="mt-4">
+              <LocationManager />
+            </div>
           </TabsContent>
 
           <TabsContent value="billing" className="space-y-4">
