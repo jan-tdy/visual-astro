@@ -1,14 +1,12 @@
 import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
-import {
-  CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine,
-  ResponsiveContainer, Tooltip, XAxis, YAxis,
-} from "recharts";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
-import { formatUT, sampleNight, type SampleTarget } from "@/lib/pozor";
-import { CURVE_COLORS, todayIso, type CcdTarget, type PozorSettings } from "./shared";
+import { formatUT, getLocation, nightInfo } from "@/lib/pozor";
+import { AltitudeChart } from "./AltitudeChart";
+import { todayIso, type CcdTarget, type PozorSettings } from "./shared";
 import { DateField, LocationPicker, MultiTargetPicker } from "./Controls";
-import { getLocation } from "@/lib/pozor";
 
 export function NightChart({
   targets,
@@ -22,6 +20,8 @@ export function NightChart({
   const { t } = useI18n();
   const [date, setDate] = useState(todayIso());
   const [selected, setSelected] = useState<string[]>([]);
+  const [view, setView] = useState<"single" | "grid">("single");
+  const [page, setPage] = useState(0);
   const location = getLocation(settings.locationKey);
 
   const chosen = useMemo(
@@ -29,41 +29,42 @@ export function NightChart({
     [targets, selected],
   );
 
-  const { rows, night } = useMemo(() => {
-    const sampleTargets: SampleTarget[] = chosen.map((x) => ({
-      key: x.id,
-      raHours: x.ra_hours,
-      decDeg: x.dec_deg,
-    }));
-    const { samples, night } = sampleNight(date, location, sampleTargets, 10);
-    const rows = samples.map((s) => {
-      const row: Record<string, number | string> = {
-        minutes: s.minutes,
-        label: formatUT(s.date),
-        moon: Number(s.moonAlt.toFixed(2)),
-        sun: Number(s.sunAlt.toFixed(2)),
-      };
-      for (const tg of chosen) row[tg.id] = Number(s.targets[tg.id].toFixed(2));
-      return row;
-    });
-    return { rows, night };
-  }, [date, location, chosen]);
+  const night = useMemo(() => nightInfo(date, location), [date, location]);
 
-  const darkFrom = night.start ? rows.find((r) => r.label === formatUT(night.start!))?.minutes : undefined;
-  const darkTo = night.end ? rows.find((r) => r.label === formatUT(night.end!))?.minutes : undefined;
+  const pageCount = Math.max(1, Math.ceil(targets.length / 6));
+  const pageTargets = targets.slice(page * 6, page * 6 + 6);
 
   return (
     <div className="space-y-4">
       <Card className="p-4 flex flex-wrap items-end gap-3">
         <DateField label={t("pozor.date")} value={date} onChange={setDate} />
-        <MultiTargetPicker
-          targets={targets}
-          values={selected}
-          onToggle={(id) =>
-            setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
-          }
-        />
+        {view === "single" && (
+          <MultiTargetPicker
+            targets={targets}
+            values={selected}
+            onToggle={(id) =>
+              setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+            }
+          />
+        )}
         <LocationPicker settings={settings} setSettings={setSettings} />
+        <div className="flex-1" />
+        <div className="flex gap-1">
+          <Button
+            size="sm"
+            variant={view === "single" ? "default" : "outline"}
+            onClick={() => setView("single")}
+          >
+            {t("pozor.chart.viewSingle")}
+          </Button>
+          <Button
+            size="sm"
+            variant={view === "grid" ? "default" : "outline"}
+            onClick={() => setView("grid")}
+          >
+            {t("pozor.chart.viewGrid")}
+          </Button>
+        </div>
       </Card>
 
       <Card className="p-4 space-y-3">
@@ -86,77 +87,64 @@ export function NightChart({
           </span>
         </div>
 
-        <div className="h-[420px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={rows} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-              <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
-              {darkFrom != null && darkTo != null && (
-                <ReferenceArea
-                  x1={darkFrom as number}
-                  x2={darkTo as number}
-                  fill="hsl(var(--primary))"
-                  fillOpacity={0.06}
-                />
-              )}
-              <ReferenceLine
-                y={settings.minAltitude}
-                stroke="hsl(var(--destructive))"
-                strokeDasharray="4 4"
-                label={{ value: `${settings.minAltitude}°`, fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-              />
-              <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
-              <XAxis
-                dataKey="minutes"
-                type="number"
-                domain={["dataMin", "dataMax"]}
-                tickFormatter={(v) => rows.find((r) => r.minutes === v)?.label as string ?? ""}
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={11}
-              />
-              <YAxis
-                domain={[-30, 90]}
-                tickFormatter={(v) => `${Math.round(Number(v))}°`}
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={11}
-              />
-              <Tooltip
-                contentStyle={{
-                  background: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "var(--radius)",
-                  fontSize: 12,
-                }}
-                labelFormatter={(v) => `${rows.find((r) => r.minutes === v)?.label ?? ""} UT`}
-                formatter={(value: any, name: any) => [
-                  `${Number(value).toFixed(1)}°`,
-                  name === "moon"
-                    ? t("pozor.moonAlt")
-                    : name === "sun"
-                      ? t("pozor.sunAlt")
-                      : (targets.find((x) => x.id === name)?.name ?? name),
-                ]}
-              />
-              <Line
-                dataKey="sun"
-                stroke="hsl(var(--muted-foreground))"
-                strokeDasharray="2 3"
-                dot={false}
-                strokeWidth={1}
-              />
-              <Line dataKey="moon" stroke="hsl(var(--accent))" strokeDasharray="6 3" dot={false} strokeWidth={1.5} />
-              {chosen.map((x, i) => (
-                <Line
-                  key={x.id}
-                  dataKey={x.id}
-                  stroke={CURVE_COLORS[i % CURVE_COLORS.length]}
-                  dot={false}
-                  strokeWidth={2}
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-        {!chosen.length && <p className="text-sm text-muted-foreground">{t("pozor.chart.hint")}</p>}
+        {view === "single" ? (
+          <>
+            <AltitudeChart date={date} location={location} targets={chosen} minAltitude={settings.minAltitude} />
+            {!chosen.length && <p className="text-sm text-muted-foreground">{t("pozor.chart.hint")}</p>}
+          </>
+        ) : (
+          <div className="space-y-3">
+            {targets.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("pozor.chart.hint")}</p>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                    title={t("pozor.chart.prevSix")}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    {t("pozor.chart.pageOf")
+                      .replace("{a}", String(page * 6 + 1))
+                      .replace("{b}", String(Math.min(targets.length, page * 6 + 6)))
+                      .replace("{n}", String(targets.length))}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+                    disabled={page >= pageCount - 1}
+                    title={t("pozor.chart.nextSix")}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {pageTargets.map((x) => (
+                    <div key={x.id} className="space-y-1">
+                      <p className="text-xs font-medium truncate" title={x.name}>
+                        {x.name} <span className="text-muted-foreground">{x.constellation}</span>
+                      </p>
+                      <AltitudeChart
+                        date={date}
+                        location={location}
+                        targets={[x]}
+                        minAltitude={settings.minAltitude}
+                        height={200}
+                        compact
+                      />
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </Card>
     </div>
   );

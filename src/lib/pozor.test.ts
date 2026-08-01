@@ -7,6 +7,9 @@ import {
   helioCorrection,
   instantInfo,
   jdToDate,
+  minimaTimesInRange,
+  sunAltitude,
+  twilightTimes,
   utcDate,
 } from "@/lib/pozor";
 
@@ -86,5 +89,69 @@ describe("precession is applied", () => {
     const pos = altAz(V2104AQL.raHours, V2104AQL.decDeg, EPOCH, piconcillo);
     expect(pos.raOfDate).toBeGreaterThan(V2104AQL.raHours);
     expect(pos.raOfDate - V2104AQL.raHours).toBeLessThan(0.05);
+  });
+});
+
+describe("twilightTimes", () => {
+  const tw = twilightTimes("2026-01-15", piconcillo);
+
+  it("orders the evening crossings sunset -> civil -> nautical -> astronomical dusk", () => {
+    expect(tw.sunset).not.toBeNull();
+    expect(tw.civilDusk!.getTime()).toBeGreaterThan(tw.sunset!.getTime());
+    expect(tw.nauticalDusk!.getTime()).toBeGreaterThan(tw.civilDusk!.getTime());
+    expect(tw.astroDusk!.getTime()).toBeGreaterThan(tw.nauticalDusk!.getTime());
+  });
+
+  it("orders the morning crossings astronomical -> nautical -> civil dawn -> sunrise", () => {
+    expect(tw.astroDusk!.getTime()).toBeLessThan(tw.astroDawn!.getTime());
+    expect(tw.astroDawn!.getTime()).toBeLessThan(tw.nauticalDawn!.getTime());
+    expect(tw.nauticalDawn!.getTime()).toBeLessThan(tw.civilDawn!.getTime());
+    expect(tw.civilDawn!.getTime()).toBeLessThan(tw.sunrise!.getTime());
+  });
+
+  it("matches the actual (refraction-corrected) Sun altitude at each crossing, within 1°", () => {
+    // SearchAltitude targets the geometric (unrefracted) altitude, while sunAltitude()
+    // applies standard refraction (up to ~0.6° near the horizon) — allow for that offset.
+    const checks: [Date | null, number][] = [
+      [tw.sunset, 0],
+      [tw.civilDusk, -6],
+      [tw.nauticalDusk, -12],
+      [tw.astroDusk, -18],
+      [tw.astroDawn, -18],
+      [tw.nauticalDawn, -12],
+      [tw.civilDawn, -6],
+      [tw.sunrise, 0],
+    ];
+    for (const [d, expected] of checks) {
+      expect(Math.abs(sunAltitude(d!, piconcillo) - expected)).toBeLessThan(1);
+    }
+  });
+});
+
+describe("minimaTimesInRange", () => {
+  // Algol-like short-period eclipsing binary: epoch at phase 0 on 2000-01-01 00:00 UT.
+  const epochJd = dateToJD(utcDate("2000-01-01", 0));
+  const periodDays = 2.8673043;
+
+  it("places primary minima exactly on-epoch and secondary ones half a period later", () => {
+    const from = utcDate("2026-01-01", 0);
+    const to = utcDate("2026-01-10", 0);
+    const events = minimaTimesInRange({ epochJd, periodDays }, from, to);
+    expect(events.length).toBeGreaterThan(0);
+    for (const ev of events) {
+      const phase = ((ev.date.getTime() / 86400e3 + 2440587.5 - epochJd) / periodDays) % 1;
+      const wrapped = phase < 0 ? phase + 1 : phase;
+      const target = ev.kind === "primary" ? 0 : 0.5;
+      const dist = Math.min(Math.abs(wrapped - target), 1 - Math.abs(wrapped - target));
+      expect(dist).toBeLessThan(1e-6);
+    }
+    expect(events.some((e) => e.kind === "primary")).toBe(true);
+    expect(events.some((e) => e.kind === "secondary")).toBe(true);
+  });
+
+  it("returns nothing for a target without a usable period", () => {
+    const from = utcDate("2026-01-01", 0);
+    const to = utcDate("2026-01-10", 0);
+    expect(minimaTimesInRange({ epochJd, periodDays: 0 }, from, to)).toEqual([]);
   });
 });

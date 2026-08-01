@@ -354,6 +354,56 @@ export function sunAltitude(date: Date, loc: PozorLocation): number {
 }
 
 /* ------------------------------------------------------------------ */
+/* Twilight crossing times                                             */
+/* ------------------------------------------------------------------ */
+
+export interface TwilightTimes {
+  /** Sunset (Sun alt 0°), evening. */
+  sunset: Date | null;
+  /** Civil dusk (Sun alt −6°), evening. */
+  civilDusk: Date | null;
+  /** Nautical dusk (Sun alt −12°), evening. */
+  nauticalDusk: Date | null;
+  /** Astronomical dusk (Sun alt −18°), evening. */
+  astroDusk: Date | null;
+  /** Astronomical dawn (Sun alt −18°), morning. */
+  astroDawn: Date | null;
+  /** Nautical dawn (Sun alt −12°), morning. */
+  nauticalDawn: Date | null;
+  /** Civil dawn (Sun alt −6°), morning. */
+  civilDawn: Date | null;
+  /** Sunrise (Sun alt 0°), morning. */
+  sunrise: Date | null;
+}
+
+/**
+ * Evening/morning instants when the Sun crosses 0°, −6°, −12° and −18°
+ * altitude (sunset/sunrise, civil, nautical and astronomical twilight) for
+ * the night of `isoDate` at `loc`.
+ */
+export function twilightTimes(isoDate: string, loc: PozorLocation): TwilightTimes {
+  const observer = observerOf(loc);
+  const noonLocal = utcDate(isoDate, 12 - loc.lon / 15);
+  const search = (dir: -1 | 1, altDeg: number, start: Date): Date | null => {
+    try {
+      const r = Astronomy.SearchAltitude(Astronomy.Body.Sun, observer, dir, start, 1, altDeg);
+      return r ? r.date : null;
+    } catch {
+      return null;
+    }
+  };
+  const sunset = search(-1, 0, noonLocal);
+  const civilDusk = search(-1, -6, sunset ?? noonLocal);
+  const nauticalDusk = search(-1, -12, civilDusk ?? noonLocal);
+  const astroDusk = search(-1, -18, nauticalDusk ?? noonLocal);
+  const astroDawn = search(+1, -18, astroDusk ?? noonLocal);
+  const nauticalDawn = search(+1, -12, astroDawn ?? noonLocal);
+  const civilDawn = search(+1, -6, nauticalDawn ?? noonLocal);
+  const sunrise = search(+1, 0, civilDawn ?? noonLocal);
+  return { sunset, civilDusk, nauticalDusk, astroDusk, astroDawn, nauticalDawn, civilDawn, sunrise };
+}
+
+/* ------------------------------------------------------------------ */
 /* Night sampling & observability windows                              */
 /* ------------------------------------------------------------------ */
 
@@ -384,7 +434,7 @@ export function sampleNight(
   targets: SampleTarget[],
   stepMinutes = 10,
   padMinutes = 90,
-): { samples: NightSample[]; night: NightInfo } {
+): { samples: NightSample[]; night: NightInfo; fromDate: Date; toDate: Date } {
   const night = nightInfo(isoDate, loc);
   const localNoon = utcDate(isoDate, 12 - loc.lon / 15).getTime();
   const from = (night.start ? night.start.getTime() : localNoon + 6 * 3600e3) - padMinutes * 60e3;
@@ -405,7 +455,7 @@ export function sampleNight(
     }
     samples.push(row);
   }
-  return { samples, night };
+  return { samples, night, fromDate: new Date(from), toDate: new Date(to) };
 }
 
 export interface Window {
@@ -515,6 +565,42 @@ export function minimaInRange(
       duringNight,
       aboveMinAlt,
     });
+  }
+  return out;
+}
+
+export interface MinimumTime {
+  epoch: number;
+  date: Date;
+  kind: "primary" | "secondary";
+}
+
+/**
+ * Primary (phase 0) and secondary (phase 0.5, circular-orbit assumption)
+ * minima of an eclipsing target that fall inside [`fromDate`, `toDate`] —
+ * unfiltered by observability, purely epoch/period arithmetic.
+ */
+export function minimaTimesInRange(
+  target: { epochJd: number; periodDays: number },
+  fromDate: Date,
+  toDate: Date,
+): MinimumTime[] {
+  const { epochJd, periodDays } = target;
+  if (!periodDays || periodDays <= 0) return [];
+  const jdFrom = dateToJD(fromDate);
+  const jdTo = dateToJD(toDate);
+  const out: MinimumTime[] = [];
+  for (const [kind, offset] of [
+    ["primary", 0],
+    ["secondary", 0.5],
+  ] as const) {
+    const eStart = Math.floor((jdFrom - epochJd) / periodDays - offset);
+    const eEnd = Math.ceil((jdTo - epochJd) / periodDays - offset);
+    for (let e = eStart; e <= eEnd; e++) {
+      const jd = epochJd + (e + offset) * periodDays;
+      if (jd < jdFrom || jd > jdTo) continue;
+      out.push({ epoch: e, date: jdToDate(jd), kind });
+    }
   }
   return out;
 }
