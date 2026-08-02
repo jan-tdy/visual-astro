@@ -17,10 +17,6 @@ export const SUPPORTED_LANGS = [
   { code: "fr", label: "Français" },
   { code: "it", label: "Italiano" },
   { code: "pl", label: "Polski" },
-  { code: "nl", label: "Nederlands" },
-  { code: "hu", label: "Magyar" },
-  { code: "uk", label: "Українська" },
-  { code: "ru", label: "Русский" },
 ] as const;
 
 type Lang = (typeof SUPPORTED_LANGS)[number]["code"];
@@ -1119,10 +1115,6 @@ const TOLGEE_MAP: Record<Lang, string> = {
   fr: "fr",
   it: "it",
   pl: "pl",
-  nl: "nl",
-  hu: "hu",
-  uk: "uk",
-  ru: "ru",
 };
 const toTolgee = (l: string) => TOLGEE_MAP[l as Lang] ?? "en";
 const fromTolgee = (t: string): Lang => {
