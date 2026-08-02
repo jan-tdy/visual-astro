@@ -69,9 +69,6 @@ export default function SessionEditor() {
   const [observedAt, setObservedAt] = useState<Date>(new Date());
   const [sessionName, setSessionName] = useState<string>("");
   const [obsCode, setObsCode] = useState("DPV");
-  // 1-based position of this session among the user's sessions ordered by date,
-  // used only as the "-NN" suffix in the export summary string.
-  const [sessionNumber, setSessionNumber] = useState(1);
   const [starSearch, setStarSearch] = useState("");
   const [activeConst, setActiveConst] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState<{ name: string; text: string; filename: string; kind: "vsnet" | "aavso" } | null>(null);
@@ -442,12 +439,6 @@ export default function SessionEditor() {
       }
       setObservedAt(new Date(session.observed_at_utc));
       setSessionName(session.name ?? "");
-      const { count } = await supabase
-        .from("sessions")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .lte("observed_at_utc", session.observed_at_utc);
-      setSessionNumber(count ?? 1);
       setStars(starsResult.data);
       const map: Record<string, Obs> = {};
       const extras: Record<string, Obs[]> = {};
@@ -805,9 +796,9 @@ export default function SessionEditor() {
   };
 
   const exportSummary = useMemo(
-    () => buildExportSummary(buildExportRows(), { obsCode, sessionNumber }),
+    () => buildExportSummary(buildExportRows(), { obsCode }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [obsByStar, extraByStar, obsCode, sessionNumber, stars],
+    [obsByStar, extraByStar, obsCode, stars],
   );
 
   const exportFile = (kind: "vsnet" | "aavso", preview = false) => {
