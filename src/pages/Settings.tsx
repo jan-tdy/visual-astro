@@ -32,7 +32,6 @@ export default function Settings() {
   const { isPlusActive, sub, isDevUser, devOverride, setDevOverride } = useSubscription();
   const { prefs, update: setPrefs } = usePrefs();
   const [obsCode, setObsCode] = useState("DPV");
-  const [refDate, setRefDate] = useState("1980-01-01");
   const [busy, setBusy] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [portalBusy, setPortalBusy] = useState(false);
@@ -47,13 +46,12 @@ export default function Settings() {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("obs_code,fecha_referencia")
+      .select("obs_code")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
         if (data) {
           setObsCode(data.obs_code);
-          setRefDate(data.fecha_referencia);
         }
       });
   }, [user]);
@@ -63,7 +61,7 @@ export default function Settings() {
     setBusy(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ obs_code: obsCode, fecha_referencia: refDate })
+      .update({ obs_code: obsCode })
       .eq("user_id", user.id);
     setBusy(false);
     if (error) toast.error(error.message);
