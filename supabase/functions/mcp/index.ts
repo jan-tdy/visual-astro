@@ -2930,14 +2930,6 @@ function vsnetDate(d) {
   const dayWithFrac = (day + frac).toFixed(3).padStart(6, "0");
   return `${y}${m}${dayWithFrac}`;
 }
-function meduzaDate(d) {
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const day = d.getUTCDate();
-  const frac = (d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600) / 24;
-  const dayWithFrac = (day + frac).toFixed(3).padStart(6, "0");
-  return `${y}-${m}-${dayWithFrac}`;
-}
 function resolveCompValue(starName, raw) {
   if (raw == null) return NaN;
   const s = String(raw).trim();
@@ -2972,13 +2964,6 @@ function applyUtTimeToDate(d, utTime) {
   const mm = parseInt(m[2], 10);
   d.setUTCHours(hh, mm, 0, 0);
   if (hh < 12) d.setUTCDate(d.getUTCDate() + 1);
-}
-function aavsoEstima(o) {
-  if (o.limit_value && o.limit_value.trim()) return o.limit_value.trim();
-  if (o.a && o.b && o.pasos_a !== null && o.pasos_b !== null) {
-    return `${o.a}-${o.pasos_a}V${o.pasos_b}-${o.b}`;
-  }
-  return "";
 }
 
 // src/lib/pozor.ts
@@ -3623,27 +3608,15 @@ function buildAAVSO(rows, ctx) {
   }
   return header + "\n" + body.join("\n") + "\n";
 }
-function buildMEDUZA(rows, ctx) {
-  const dateStr = meduzaDate(ctx.observedAt);
-  const lines = ["Estrella,JD,Mag,Fecha UT,Obs,Estima"];
-  for (const r of rows) {
-    const mag = magOrLimit(r);
-    if (!mag) continue;
-    lines.push(
-      [csvSafe(r.star_name), ctx.jd.toFixed(3), mag, dateStr, ctx.obsCode, csvSafe(aavsoEstima(r))].join(",")
-    );
-  }
-  return lines.join("\n") + "\n";
-}
 
 // src/lib/mcp/tools/export-session.ts
 var export_session_default = defineTool12({
   name: "export_session",
   title: "Export session",
-  description: "Build the VSNET, AAVSO Visual or MEDUZA export text for a session, exactly as the app's export dialog does.",
+  description: "Build the VSNET or AAVSO Visual export text for a session, exactly as the app's export dialog does.",
   inputSchema: {
     session_id: z12.string().uuid().describe("Session to export."),
-    format: z12.enum(["vsnet", "aavso", "meduza"]).describe("Export format."),
+    format: z12.enum(["vsnet", "aavso"]).describe("Export format."),
     obs_code: z12.string().trim().min(1).max(10).optional().describe("Observer code; defaults to the profile setting.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
@@ -3682,7 +3655,7 @@ var export_session_default = defineTool12({
       jd: session.jd != null ? Number(session.jd) : dateToJD(observedAt),
       obsCode: code
     };
-    const text = format === "vsnet" ? buildVSNET(rows, exportCtx) : format === "aavso" ? buildAAVSO(rows, exportCtx) : buildMEDUZA(rows, exportCtx);
+    const text = format === "vsnet" ? buildVSNET(rows, exportCtx) : buildAAVSO(rows, exportCtx);
     return {
       content: [{ type: "text", text }],
       structuredContent: { format, obs_code: code, rows: rows.length, text }
@@ -4447,7 +4420,7 @@ var mcp_default = defineMcp({
   name: "visual-astro",
   title: "Visual Astro",
   version: "0.1.0",
-  instructions: "Full toolset for Visual Astro, a variable-star observing logbook. Read and edit observing sessions and their observations (with computed Argelander magnitudes), manage the visual star catalog, manage POZOR CCD/photometry catalogs and targets, run POZOR observability computations (night conditions, altitude/airmass at an instant, night-by-night journals, minima predictions), build VSNET/AAVSO/MEDUZA exports, convert SIPS Standard photometry files and Julian Dates, and read or update the observer profile. All data is scoped to the signed-in observer.",
+  instructions: "Full toolset for Visual Astro, a variable-star observing logbook. Read and edit observing sessions and their observations (with computed Argelander magnitudes), manage the visual star catalog, manage POZOR CCD/photometry catalogs and targets, run POZOR observability computations (night conditions, altitude/airmass at an instant, night-by-night journals, minima predictions), build VSNET/AAVSO exports, convert SIPS Standard photometry files and Julian Dates, and read or update the observer profile. All data is scoped to the signed-in observer.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"

@@ -2,17 +2,17 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser, unauthenticated } from "../supabase";
 import { ok, fail } from "../helpers";
-import { buildAAVSO, buildMEDUZA, buildVSNET, type ExportRow } from "../../exporters";
+import { buildAAVSO, buildVSNET, type ExportRow } from "../../exporters";
 import { dateToJD } from "../../astro";
 
 export default defineTool({
   name: "export_session",
   title: "Export session",
   description:
-    "Build the VSNET, AAVSO Visual or MEDUZA export text for a session, exactly as the app's export dialog does.",
+    "Build the VSNET or AAVSO Visual export text for a session, exactly as the app's export dialog does.",
   inputSchema: {
     session_id: z.string().uuid().describe("Session to export."),
-    format: z.enum(["vsnet", "aavso", "meduza"]).describe("Export format."),
+    format: z.enum(["vsnet", "aavso"]).describe("Export format."),
     obs_code: z.string().trim().min(1).max(10).optional().describe("Observer code; defaults to the profile setting."),
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
@@ -59,12 +59,7 @@ export default defineTool({
       jd: session.jd != null ? Number(session.jd) : dateToJD(observedAt),
       obsCode: code,
     };
-    const text =
-      format === "vsnet"
-        ? buildVSNET(rows, exportCtx)
-        : format === "aavso"
-          ? buildAAVSO(rows, exportCtx)
-          : buildMEDUZA(rows, exportCtx);
+    const text = format === "vsnet" ? buildVSNET(rows, exportCtx) : buildAAVSO(rows, exportCtx);
     return {
       content: [{ type: "text" as const, text }],
       structuredContent: { format, obs_code: code, rows: rows.length, text },

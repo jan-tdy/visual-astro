@@ -1,4 +1,4 @@
-import { applyUtTimeToDate, computeMagnitude, vsnetDate, meduzaDate, aavsoEstima, resolveCompValue, type ObsInput } from "../astro";
+import { applyUtTimeToDate, computeMagnitude, vsnetDate, resolveCompValue, type ObsInput } from "../astro";
 
 export interface ExportRow extends ObsInput {
   star_name: string;
@@ -23,8 +23,8 @@ function magOrLimit(r: ExportRow): string | null {
 }
 
 /**
- * Guard user free text (notes, star names) against the CSV delimiter — AAVSO/MEDUZA
- * exports are unquoted comma-separated, so a stray comma would silently shift columns.
+ * Guard user free text (notes, star names) against the CSV delimiter — the AAVSO
+ * export is unquoted comma-separated, so a stray comma would silently shift columns.
  */
 function csvSafe(s: string): string {
   return s.replace(/[,\r\n]/g, " ").trim();
@@ -92,19 +92,6 @@ export function buildAAVSO(rows: ExportRow[], ctx: ExportContext): string {
     );
   }
   return header + "\n" + body.join("\n") + "\n";
-}
-
-export function buildMEDUZA(rows: ExportRow[], ctx: ExportContext): string {
-  const dateStr = meduzaDate(ctx.observedAt);
-  const lines: string[] = ["Estrella,JD,Mag,Fecha UT,Obs,Estima"];
-  for (const r of rows) {
-    const mag = magOrLimit(r);
-    if (!mag) continue;
-    lines.push(
-      [csvSafe(r.star_name), ctx.jd.toFixed(3), mag, dateStr, ctx.obsCode, csvSafe(aavsoEstima(r))].join(","),
-    );
-  }
-  return lines.join("\n") + "\n";
 }
 
 function padNum(n: number, width: number): string {

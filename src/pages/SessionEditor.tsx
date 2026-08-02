@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
   import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus, ScanLine, Printer, Search, PanelLeftClose, PanelLeftOpen, Table as TableIcon, Type, ArrowUp, ArrowDown, Sparkles, Minus, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
-import { buildAAVSO, buildExportSummary, buildMEDUZA, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
+import { buildAAVSO, buildExportSummary, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
 import { getPrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useI18n } from "@/hooks/useI18n";
@@ -77,7 +77,7 @@ export default function SessionEditor() {
   const [typeFilter, setTypeFilter] = useState<(typeof TYPE_FILTERS)[number]>("ALL");
   const [starSearch, setStarSearch] = useState("");
   const [activeConst, setActiveConst] = useState<string | null>(null);
-  const [previewing, setPreviewing] = useState<{ name: string; text: string; filename: string; kind: "vsnet" | "aavso" | "meduza" } | null>(null);
+  const [previewing, setPreviewing] = useState<{ name: string; text: string; filename: string; kind: "vsnet" | "aavso" } | null>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const paperInputRef = useRef<HTMLInputElement>(null);
@@ -814,7 +814,7 @@ export default function SessionEditor() {
     [obsByStar, extraByStar, obsCode, sessionNumber, stars],
   );
 
-  const exportFile = (kind: "vsnet" | "aavso" | "meduza", preview = false) => {
+  const exportFile = (kind: "vsnet" | "aavso", preview = false) => {
     const rows = buildExportRows();
     const ctx = { observedAt, jd, obsCode };
     let text = "", filename = "", name = "";
@@ -822,14 +822,10 @@ export default function SessionEditor() {
       text = buildVSNET(rows, ctx);
       filename = `vsnet_${filenameDate(observedAt)}.txt`;
       name = "VSNET";
-    } else if (kind === "aavso") {
+    } else {
       text = buildAAVSO(rows, ctx);
       filename = `aavso_${filenameDate(observedAt)}.txt`;
       name = "AAVSO";
-    } else {
-      text = buildMEDUZA(rows, ctx);
-      filename = `meduza_${filenameDate(observedAt)}.txt`;
-      name = "MEDUZA";
     }
     if (preview) setPreviewing({ name, text, filename, kind });
     else {
@@ -1255,7 +1251,7 @@ export default function SessionEditor() {
                 <option value="aavso">{t("editor.sort.aavso")}</option>
               </select>
             </div>
-            {(["vsnet", "aavso", "meduza"] as const).map((k) => (
+            {(["vsnet", "aavso"] as const).map((k) => (
               <div key={k} className="flex gap-1">
                 <Button size="sm" onClick={() => exportFile(k)}>
                   <Download className="h-3.5 w-3.5 mr-1" /> {k.toUpperCase()}
