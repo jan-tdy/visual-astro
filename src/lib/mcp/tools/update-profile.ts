@@ -6,15 +6,9 @@ import { ok, fail } from "../helpers";
 export default defineTool({
   name: "update_profile",
   title: "Update observer profile",
-  description: "Change the observer code or reference date used by exports.",
+  description: "Change the observer code used by exports.",
   inputSchema: {
     obs_code: z.string().trim().min(1).max(10).optional().describe("Observer code, e.g. 'DPV'."),
-    fecha_referencia: z
-      .string()
-      .trim()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional()
-      .describe("Reference date, YYYY-MM-DD."),
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (patch, ctx) => {
@@ -26,7 +20,7 @@ export default defineTool({
       .from("profiles")
       .update(fields)
       .eq("user_id", ctx.getUserId())
-      .select("obs_code,fecha_referencia")
+      .select("obs_code")
       .maybeSingle();
     if (error) return fail(error.message);
     if (!data) return fail("Profile not found.");

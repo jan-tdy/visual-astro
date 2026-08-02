@@ -35,7 +35,7 @@
       {
         "name": "update_profile",
         "title": "Update observer profile",
-        "description": "Change the observer code or reference date used by exports.",
+        "description": "Change the observer code used by exports.",
         "annotations": {
           "readOnlyHint": false,
           "destructiveHint": false,
@@ -49,11 +49,6 @@
               "minLength": 1,
               "maxLength": 10,
               "description": "Observer code, e.g. 'DPV'."
-            },
-            "fecha_referencia": {
-              "type": "string",
-              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
-              "description": "Reference date, YYYY-MM-DD."
             }
           },
           "additionalProperties": false,

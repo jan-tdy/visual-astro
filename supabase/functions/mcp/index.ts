@@ -4424,10 +4424,9 @@ import { z as z25 } from "npm:zod@^3.25.76";
 var update_profile_default = defineTool27({
   name: "update_profile",
   title: "Update observer profile",
-  description: "Change the observer code or reference date used by exports.",
+  description: "Change the observer code used by exports.",
   inputSchema: {
-    obs_code: z25.string().trim().min(1).max(10).optional().describe("Observer code, e.g. 'DPV'."),
-    fecha_referencia: z25.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Reference date, YYYY-MM-DD.")
+    obs_code: z25.string().trim().min(1).max(10).optional().describe("Observer code, e.g. 'DPV'.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (patch, ctx) => {
@@ -4435,7 +4434,7 @@ var update_profile_default = defineTool27({
     const fields = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== void 0));
     if (Object.keys(fields).length === 0) return fail("Nothing to update.");
     const supabase = supabaseForUser(ctx);
-    const { data, error } = await supabase.from("profiles").update(fields).eq("user_id", ctx.getUserId()).select("obs_code,fecha_referencia").maybeSingle();
+    const { data, error } = await supabase.from("profiles").update(fields).eq("user_id", ctx.getUserId()).select("obs_code").maybeSingle();
     if (error) return fail(error.message);
     if (!data) return fail("Profile not found.");
     return ok(data, { profile: data });
