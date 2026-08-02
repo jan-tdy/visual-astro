@@ -110,8 +110,9 @@ export interface SessionSummaryContext {
 
 /**
  * A copyable one-line recap of the session: observer code + observation count,
- * start/end UT, and counts of rows noted OUTBURST / ACTIVE.
- * e.g. "DPV-26, start2300ut, end-0200ut, outburst-0005, active-0001".
+ * start/end UT (crossing midnight is flagged "nxtday"), and counts of rows
+ * noted OUTBURST / ACTIVE.
+ * e.g. "DPV-26, start2300ut, end-0200utnxtday, outburst-0005, active-0001".
  */
 export function buildExportSummary(rows: ExportRow[], ctx: SessionSummaryContext): string {
   const clocks = rows
@@ -120,6 +121,7 @@ export function buildExportSummary(rows: ExportRow[], ctx: SessionSummaryContext
 
   let startStr = "0000";
   let endStr = "0000";
+  let nextDay = false;
   if (clocks.length > 0) {
     // Same "post-midnight rolls to next day" convention as the export row sort in
     // SessionEditor: hours before noon belong to the tail end of the observing night.
@@ -129,6 +131,7 @@ export function buildExportSummary(rows: ExportRow[], ctx: SessionSummaryContext
     const end = withKey[withKey.length - 1].c;
     startStr = `${padNum(start.h, 2)}${padNum(start.m, 2)}`;
     endStr = `${padNum(end.h, 2)}${padNum(end.m, 2)}`;
+    nextDay = end.h < start.h;
   }
 
   let outburst = 0;
@@ -142,7 +145,7 @@ export function buildExportSummary(rows: ExportRow[], ctx: SessionSummaryContext
   return [
     `${ctx.obsCode.toUpperCase()}-${rows.length}`,
     `start${startStr}ut`,
-    `end-${endStr}ut`,
+    `end-${endStr}ut${nextDay ? "nxtday" : ""}`,
     `outburst-${padNum(outburst, 4)}`,
     `active-${padNum(active, 4)}`,
   ].join(", ");
