@@ -157,10 +157,6 @@ export default function Settings() {
             <Input id="obs" value={obsCode} onChange={(e) => setObsCode(e.target.value)} />
             <p className="text-xs text-muted-foreground mt-1">{t("settings.obsCodeHint")}</p>
           </div>
-          <div>
-            <Label htmlFor="ref">{t("settings.refDate")}</Label>
-            <Input id="ref" type="date" value={refDate} onChange={(e) => setRefDate(e.target.value)} />
-          </div>
           <Button onClick={save} disabled={busy}>{t("settings.save")}</Button>
             </Card>
 
