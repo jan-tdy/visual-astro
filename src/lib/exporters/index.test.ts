@@ -53,7 +53,7 @@ describe("buildExportSummary", () => {
       { ...baseRow, ut_time: "23:10", note: "ACTIVE" },
     ];
     const out = buildExportSummary(rows, { obsCode: "DPV" });
-    expect(out).toBe("DPV-3, start2242ut, end-0345ut, outburst-0000, active-0002");
+    expect(out).toBe("DPV-3, start2242ut, end-0345utnxtday, outburst-0000, active-0002");
   });
 
   it("uppercases the observer code and counts a session that never crosses midnight", () => {
