@@ -81,9 +81,11 @@ export function AppHeader() {
           {link("/", t("nav.sessions"), ListChecks)}
           {link("/catalog", t("nav.catalog"), BookOpen)}
           {link("/prom", t("nav.prom"), Sparkles)}
-          {link("/pozor", t("nav.pozor"), Telescope)}
           {link("/graphs", t("nav.graphs"), BarChart3)}
+          <div className="h-5 w-px bg-border mx-1 shrink-0" aria-hidden />
+          {link("/pozor", t("nav.pozor"), Telescope)}
           {link("/tools", t("nav.tools"), Wrench)}
+          <div className="h-5 w-px bg-border mx-1 shrink-0" aria-hidden />
           {link("/settings", t("nav.settings"), SettingsIcon)}
           {link("/about", t("nav.info"), Info)}
         </nav>
@@ -124,9 +126,11 @@ export function AppHeader() {
                 {link("/", t("nav.sessions"), ListChecks)}
                 {link("/catalog", t("nav.catalog"), BookOpen)}
                 {link("/prom", t("nav.prom"), Sparkles)}
-                {link("/pozor", t("nav.pozor"), Telescope)}
                 {link("/graphs", t("nav.graphs"), BarChart3)}
+                <div className="h-px bg-border my-1" aria-hidden />
+                {link("/pozor", t("nav.pozor"), Telescope)}
                 {link("/tools", t("nav.tools"), Wrench)}
+                <div className="h-px bg-border my-1" aria-hidden />
                 {link("/settings", t("nav.settings"), SettingsIcon)}
                 {link("/about", t("nav.info"), Info)}
                 <button
