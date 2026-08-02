@@ -39,17 +39,6 @@ export function vsnetDate(d: Date): string {
   return `${y}${m}${dayWithFrac}`;
 }
 
-/** YYYY-MM-DD.fff for MEDUZA */
-export function meduzaDate(d: Date): string {
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const day = d.getUTCDate();
-  const frac =
-    (d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600) / 24;
-  const dayWithFrac = (day + frac).toFixed(3).padStart(6, "0");
-  return `${y}-${m}-${dayWithFrac}`;
-}
-
 /** Filename prefix yyyymmdd */
 export function filenameDate(d: Date): string {
   const y = d.getUTCFullYear();
@@ -139,13 +128,4 @@ export function parseLimitMagnitude(raw: string | null | undefined): number | nu
   if (!m) return null;
   const v = parseFloat(m[0]);
   return Number.isFinite(v) ? v : null;
-}
-
-/** Build the AAVSO comment field "A-paV-pb-B" matching the ODS column. */
-export function aavsoEstima(o: ObsInput): string {
-  if (o.limit_value && o.limit_value.trim()) return o.limit_value.trim();
-  if (o.a && o.b && o.pasos_a !== null && o.pasos_b !== null) {
-    return `${o.a}-${o.pasos_a}V${o.pasos_b}-${o.b}`;
-  }
-  return "";
 }

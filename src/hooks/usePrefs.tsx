@@ -9,20 +9,17 @@ export interface UserPrefs {
   openPortalAfterExport: {
     aavso: boolean;
     vsnet: boolean;
-    meduza: boolean;
   };
   portalUrls: {
     aavso: string;
     vsnet: string;
-    meduza: string;
   };
 }
 
 const KEY = "user_prefs_v1";
-export const SUBMISSION_PORTALS: Record<"aavso" | "vsnet" | "meduza", { url: string; label: string }> = {
+export const SUBMISSION_PORTALS: Record<"aavso" | "vsnet", { url: string; label: string }> = {
   aavso: { url: "https://www.aavso.org/webobs/file/", label: "AAVSO WebObs (upload súboru)" },
   vsnet: { url: "https://vsnet.kusastro.kyoto-u.ac.jp/vsnet/", label: "VSNET (info o zaslaní pozorovaní)" },
-  meduza: { url: "http://var.astro.cz/en/", label: "MEDUZA / var.astro.cz" },
 };
 
 const DEFAULTS: UserPrefs = {
@@ -30,11 +27,10 @@ const DEFAULTS: UserPrefs = {
   confirmDelete: true,
   autosaveDelayMs: 600,
   defaultConstellation: "AND",
-  openPortalAfterExport: { aavso: false, vsnet: false, meduza: false },
+  openPortalAfterExport: { aavso: false, vsnet: false },
   portalUrls: {
     aavso: SUBMISSION_PORTALS.aavso.url,
     vsnet: SUBMISSION_PORTALS.vsnet.url,
-    meduza: SUBMISSION_PORTALS.meduza.url,
   },
 };
 

@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, Sparkles, Database, RefreshCw, ExternalLink, Lock, Upload } from "lucide-react";
+import { Check, Sparkles, Database, RefreshCw, ExternalLink, Lock, Upload, Copy, Cpu } from "lucide-react";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
 import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
@@ -36,6 +36,7 @@ export default function Settings() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [portalBusy, setPortalBusy] = useState(false);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  const mcpUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mcp`;
   const [usage, setUsage] = useState<{
     bytes: number;
     counts: { stars: number; sessions: number; observations: number; promOverrides: number };
@@ -146,6 +147,7 @@ export default function Settings() {
           <TabsList className="mb-4">
             <TabsTrigger value="general">{t("settings.tab.general")}</TabsTrigger>
             <TabsTrigger value="billing">{t("settings.tab.billing")}</TabsTrigger>
+            <TabsTrigger value="mcp">{t("settings.tab.mcp")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general">
@@ -254,7 +256,7 @@ export default function Settings() {
                 </p>
               )}
 
-              {(["aavso", "vsnet", "meduza"] as const).map((k) => (
+              {(["aavso", "vsnet"] as const).map((k) => (
                 <div key={k} className="space-y-2 rounded-lg border border-border p-3">
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-0.5 min-w-0">
@@ -485,6 +487,51 @@ export default function Settings() {
                   </div>
                 ))}
               </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="mcp" className="space-y-4">
+            <Card className="p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <Cpu className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-lg font-semibold">{t("settings.mcp.title")}</h2>
+              </div>
+              <p className="text-sm text-muted-foreground">{t("settings.mcp.desc")}</p>
+              <div className="flex items-center gap-2">
+                <Input readOnly value={mcpUrl} className="font-mono text-xs" onFocus={(e) => e.target.select()} />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    navigator.clipboard.writeText(mcpUrl);
+                    toast.success(t("settings.mcp.copied"));
+                  }}
+                  title={t("settings.mcp.copy")}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </Card>
+
+            <Card className="p-6 space-y-3">
+              <h3 className="font-semibold">{t("settings.mcp.claudeTitle")}</h3>
+              <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                <li>{t("settings.mcp.claude1")}</li>
+                <li>{t("settings.mcp.claude2")}</li>
+                <li>{t("settings.mcp.claude3")}</li>
+                <li>{t("settings.mcp.claude4")}</li>
+              </ol>
+            </Card>
+
+            <Card className="p-6 space-y-3">
+              <h3 className="font-semibold">{t("settings.mcp.chatgptTitle")}</h3>
+              <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                <li>{t("settings.mcp.chatgpt1")}</li>
+                <li>{t("settings.mcp.chatgpt2")}</li>
+                <li>{t("settings.mcp.chatgpt3")}</li>
+                <li>{t("settings.mcp.chatgpt4")}</li>
+                <li>{t("settings.mcp.chatgpt5")}</li>
+              </ol>
             </Card>
           </TabsContent>
         </Tabs>
