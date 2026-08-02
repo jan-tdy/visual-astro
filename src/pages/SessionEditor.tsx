@@ -40,8 +40,6 @@ type Obs = {
   _dirty?: boolean;
 };
 
-const TYPE_FILTERS: (StarType | "ALL")[] = ["ALL", "VISUAL", "BINAR", "ECL faint", "ECL bright"];
-
 function constAbbrev(name: string): string {
   // Pretty short label for the constellation links (matches user image)
   const map: Record<string, string> = {
@@ -74,7 +72,6 @@ export default function SessionEditor() {
   // 1-based position of this session among the user's sessions ordered by date,
   // used only as the "-NN" suffix in the export summary string.
   const [sessionNumber, setSessionNumber] = useState(1);
-  const [typeFilter, setTypeFilter] = useState<(typeof TYPE_FILTERS)[number]>("ALL");
   const [starSearch, setStarSearch] = useState("");
   const [activeConst, setActiveConst] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState<{ name: string; text: string; filename: string; kind: "vsnet" | "aavso" } | null>(null);
@@ -481,7 +478,6 @@ export default function SessionEditor() {
     const m: Record<string, Star[]> = {};
     const q = starSearch.trim().toLowerCase();
     for (const s of stars) {
-      if (typeFilter !== "ALL" && s.type !== typeFilter) continue;
       if (q) {
         const haystack = [s.name, s.constellation, s.type, s.vsnet_code, s.aavso_code, s.chart_id]
           .filter(Boolean)
@@ -496,7 +492,7 @@ export default function SessionEditor() {
       m[s.constellation].push(s);
     }
     return { order, map: m };
-  }, [stars, typeFilter, starSearch]);
+  }, [stars, starSearch]);
 
   // Flat ordering of stars across constellations for keyboard navigation
   const flatIndex = useMemo(() => {
@@ -1332,18 +1328,6 @@ export default function SessionEditor() {
                 data-active={activeConst === c}
               >
                 {constAbbrev(c)}
-              </a>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-x-5 gap-y-1 pt-2 border-t border-border/60">
-            {TYPE_FILTERS.map((tf) => (
-              <a
-                key={tf}
-                onClick={() => setTypeFilter(tf)}
-                className="nav-link"
-                data-active={typeFilter === tf}
-              >
-                {tf === "ALL" ? t("editor.typeAll") : tf}
               </a>
             ))}
           </div>
