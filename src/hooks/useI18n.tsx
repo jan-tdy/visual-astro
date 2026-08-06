@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useMemo } from "react";
 import {
   Tolgee,
+  BackendFetch,
   TolgeeProvider,
   FormatSimple,
   useTolgee,
@@ -1133,8 +1134,12 @@ export const dict = {
 
 type Key = keyof (typeof dict)["sk"];
 
-// No API key is shipped to the browser. Translations are bundled from
-// src/locales/*.json (exported from Tolgee at build time).
+// Translations are loaded at runtime from Tolgee Content Delivery (public,
+// read-only CDN — no admin/personal API key in the browser). Edit strings in
+// Tolgee and hit "Publish" on the Content Delivery config to push them live.
+// Set this to your Content Delivery URL, e.g. "https://cdn.tolg.ee/<id>".
+const TOLGEE_CDN_URL: string =
+  (import.meta.env.VITE_TOLGEE_CDN_URL as string | undefined) ?? "";
 
 // Map our short app lang codes to Tolgee project language tags
 const TOLGEE_MAP: Record<Lang, string> = {
@@ -1159,27 +1164,24 @@ const storedLang = (): Lang => {
   return (SUPPORTED_LANGS.some((l) => l.code === s) ? s : "sk") as Lang;
 };
 
-// Lazily bundled locale files (flat dot-notation keys) exported from Tolgee.
-const localeLoaders: Record<string, () => Promise<Record<string, string>>> = {
-  "sk-SK": () => import("@/locales/sk-SK.json").then((m) => m.default as Record<string, string>),
-  en: () => import("@/locales/en.json").then((m) => m.default as Record<string, string>),
-  "cs-CZ": () => import("@/locales/cs-CZ.json").then((m) => m.default as Record<string, string>),
-  "de-DE": () => import("@/locales/de-DE.json").then((m) => m.default as Record<string, string>),
-  "es-ES": () => import("@/locales/es-ES.json").then((m) => m.default as Record<string, string>),
-  fr: () => import("@/locales/fr.json").then((m) => m.default as Record<string, string>),
-  it: () => import("@/locales/it.json").then((m) => m.default as Record<string, string>),
-  pl: () => import("@/locales/pl.json").then((m) => m.default as Record<string, string>),
-};
+let builder = Tolgee();
+if (TOLGEE_CDN_URL) {
+  builder = builder.use(
+    BackendFetch({ prefix: TOLGEE_CDN_URL.replace(/\/$/, ""), fallbackOnFail: true }),
+  );
+}
 
-const tolgee = Tolgee()
-  .use(FormatSimple())
-  .init({
-    language: toTolgee(storedLang()),
-    defaultLanguage: "sk-SK",
-    fallbackLanguage: "sk-SK",
-    availableLanguages: SUPPORTED_LANGS.map((l) => toTolgee(l.code)),
-    staticData: localeLoaders,
-  });
+const tolgee = builder.use(FormatSimple()).init({
+  language: toTolgee(storedLang()),
+  defaultLanguage: "sk-SK",
+  fallbackLanguage: "sk-SK",
+  availableLanguages: SUPPORTED_LANGS.map((l) => toTolgee(l.code)),
+  // in-app fallback so the UI never renders raw keys if the CDN is unreachable
+  staticData: {
+    "sk-SK": dict.sk as unknown as Record<string, string>,
+    en: dict.en as unknown as Record<string, string>,
+  },
+});
 
 interface Ctx {
   lang: Lang;
