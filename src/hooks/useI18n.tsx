@@ -1133,8 +1133,8 @@ export const dict = {
 
 type Key = keyof (typeof dict)["sk"];
 
-const TOLGEE_API_KEY = "tgpak_gmzdcnrql5yg6ndjobxtm5jxgyyg2ntomq4gczrqmjrwwobzojxa";
-const TOLGEE_API_URL = "https://app.tolgee.io";
+// No API key is shipped to the browser. Translations are bundled from
+// src/locales/*.json (exported from Tolgee at build time).
 
 // Map our short app lang codes to Tolgee project language tags
 const TOLGEE_MAP: Record<Lang, string> = {
