@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useMemo } from "react";
 import {
   Tolgee,
-  BackendFetch,
   TolgeeProvider,
   FormatSimple,
   useTolgee,
@@ -1134,8 +1133,8 @@ export const dict = {
 
 type Key = keyof (typeof dict)["sk"];
 
-const TOLGEE_API_KEY = "tgpak_gmzdcnrql5yg6ndjobxtm5jxgyyg2ntomq4gczrqmjrwwobzojxa";
-const TOLGEE_API_URL = "https://app.tolgee.io";
+// No API key is shipped to the browser. Translations are bundled from
+// src/locales/*.json (exported from Tolgee at build time).
 
 // Map our short app lang codes to Tolgee project language tags
 const TOLGEE_MAP: Record<Lang, string> = {
@@ -1160,31 +1159,26 @@ const storedLang = (): Lang => {
   return (SUPPORTED_LANGS.some((l) => l.code === s) ? s : "sk") as Lang;
 };
 
+// Lazily bundled locale files (flat dot-notation keys) exported from Tolgee.
+const localeLoaders: Record<string, () => Promise<Record<string, string>>> = {
+  "sk-SK": () => import("@/locales/sk-SK.json").then((m) => m.default as Record<string, string>),
+  en: () => import("@/locales/en.json").then((m) => m.default as Record<string, string>),
+  "cs-CZ": () => import("@/locales/cs-CZ.json").then((m) => m.default as Record<string, string>),
+  "de-DE": () => import("@/locales/de-DE.json").then((m) => m.default as Record<string, string>),
+  "es-ES": () => import("@/locales/es-ES.json").then((m) => m.default as Record<string, string>),
+  fr: () => import("@/locales/fr.json").then((m) => m.default as Record<string, string>),
+  it: () => import("@/locales/it.json").then((m) => m.default as Record<string, string>),
+  pl: () => import("@/locales/pl.json").then((m) => m.default as Record<string, string>),
+};
+
 const tolgee = Tolgee()
-  .use(
-    BackendFetch({
-      prefix: TOLGEE_API_URL,
-      getPath: ({ language, prefix }) => `${prefix}/v2/projects/translations/${language}`,
-      headers: { "X-API-Key": TOLGEE_API_KEY, "Content-Type": "application/json" },
-      getData: async (r) => {
-        const data = await r.json();
-        return data?.[r.url.split("/").pop() || ""] ?? {};
-      },
-      fallbackOnFail: true,
-    }),
-  )
   .use(FormatSimple())
   .init({
     language: toTolgee(storedLang()),
     defaultLanguage: "sk-SK",
     fallbackLanguage: "sk-SK",
     availableLanguages: SUPPORTED_LANGS.map((l) => toTolgee(l.code)),
-    apiKey: TOLGEE_API_KEY,
-    apiUrl: TOLGEE_API_URL,
-    staticData: {
-      "sk-SK": dict.sk as unknown as Record<string, string>,
-      en: dict.en as unknown as Record<string, string>,
-    },
+    staticData: localeLoaders,
   });
 
 interface Ctx {
