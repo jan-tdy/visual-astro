@@ -15,7 +15,8 @@ import { getPrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useI18n } from "@/hooks/useI18n";
 import { fetchAllRows } from "@/lib/supabaseFetchAll";
-import { buildStarMatchIndex, parseRawLine, type RawCorrection } from "@/lib/rawParse";
+import { buildStarMatchIndex, parseRawLine, replaceStarToken, type RawCorrection } from "@/lib/rawParse";
+import { buildPaperTemplatePdf, type PaperTemplateLabels } from "@/lib/paperTemplatePdf";
 import {
   buildStarHistory, findOutliers,
   type HistoryObs, type HistoryOutlier, type StarHistory,
@@ -108,6 +109,10 @@ export default function SessionEditor() {
     try { return (localStorage.getItem("raw_preview_order") as any) || "asc"; } catch { return "asc"; }
   });
   useEffect(() => { try { localStorage.setItem("raw_preview_order", rawPreviewOrder); } catch {} }, [rawPreviewOrder]);
+  // Inline star-name edit in the raw preview table: which source line (index
+  // into rawText.split) is being edited, and the current search text.
+  const [rawEditingLine, setRawEditingLine] = useState<number | null>(null);
+  const [rawEditQuery, setRawEditQuery] = useState("");
   const rawPrefilledRef = useRef(false);
   const rawDraftKey = id ? `raw_draft_${id}` : "";
   const rawModeKey = id ? `raw_mode_${id}` : "";
@@ -180,6 +185,38 @@ export default function SessionEditor() {
       to: star?.name ?? c.to,
       reason: t(`editor.raw.fix.${c.kind}`),
     };
+  };
+
+  /** Catalog stars whose name/VSNET/AAVSO code contains `query` (case-insensitive). */
+  const searchStars = (query: string): Star[] => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return stars.filter((s) =>
+      s.name.toLowerCase().includes(q) ||
+      (s.vsnet_code?.toLowerCase().includes(q) ?? false) ||
+      (s.aavso_code?.toLowerCase().includes(q) ?? false)
+    );
+  };
+
+  /**
+   * Rewrite the star name on one raw-text line, keeping everything else on
+   * that line untouched — used when the observer clicks a star name in the
+   * raw preview table to fix a wrong/unrecognized match. `plusLevel` and
+   * `matchLen` come from parseRawLine (0/0 when nothing matched at all, in
+   * which case the new name is simply prepended).
+   */
+  const applyRawStarEdit = (lineIndex: number, plusLevel: number, matchLen: number, star: Star) => {
+    setRawText((prev) => {
+      const lines = prev.split(/\r?\n/);
+      const line = lines[lineIndex];
+      if (line == null) return prev;
+      const token = star.name.toLowerCase().replace(/\s+/g, "");
+      const next = [...lines];
+      next[lineIndex] = replaceStarToken(line, plusLevel, matchLen, token);
+      return next.join("\n");
+    });
+    setRawEditingLine(null);
+    setRawEditQuery("");
   };
 
   const applyRaw = () => {
@@ -922,51 +959,29 @@ export default function SessionEditor() {
     }
   };
 
-  const downloadPaperTemplate = () => {
-    // Same headings as the on-screen table — one set of words, one set of keys.
-    const headers = ["#", t("editor.col.star"), "A", t("editor.col.pasoA"), t("editor.col.pasoB"), "B", t("editor.col.limit"), "UT", t("editor.col.note")];
-    const ROWS_PER_COL = 50;
-    const TOTAL = 100;
-    const renderTable = (startIdx: number) => `
-      <table>
-        <thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
-        <tbody>${Array.from({ length: ROWS_PER_COL }).map((_, i) => `<tr><td class="num">${startIdx + i + 1}</td>${Array.from({ length: headers.length - 1 }).map(() => `<td></td>`).join("")}</tr>`).join("")}</tbody>
-      </table>`;
-    void TOTAL;
-    const html = `<!doctype html><html lang="sk"><head><meta charset="utf-8"><title>${t("editor.paperTitle")}</title>
-<style>
-  @page { size: A4 portrait; margin: 6mm; }
-  * { box-sizing: border-box; }
-  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #000; margin: 0; padding: 4mm; font-size: 7pt; }
-  header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2mm; border-bottom: 1px solid #000; padding-bottom: 1mm; }
-  header h1 { margin: 0; font-size: 10pt; letter-spacing: 0.5px; }
-  header .meta { font-size: 7pt; display: flex; gap: 4mm; align-items: center; }
-  header .meta span { display: inline-block; min-width: 24mm; border-bottom: 1px solid #000; margin-left: 3px; padding: 0 3px; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; }
-  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  th, td { border: 1px solid #000; padding: 0.4mm 0.6mm; font-size: 6pt; text-align: left; height: 4.7mm; }
-  th { background: #eee; font-weight: 600; text-align: center; font-size: 6.5pt; padding: 0.6mm 0.4mm; }
-  td.num { text-align: center; width: 5mm; background: #fafafa; color: #555; }
-  th:nth-child(1), td:nth-child(1) { width: 5mm; }
-  th:nth-child(2), td:nth-child(2) { width: 18%; }
-  th:nth-child(9), td:nth-child(9) { width: 18%; }
-  .print { position: fixed; top: 8px; right: 8px; }
-  @media print { .print { display: none; } }
-</style></head><body>
-  <button class="print" onclick="window.print()">${t("editor.paperPrint")}</button>
-  <header>
-    <h1>${t("editor.paperHeader")}</h1>
-    <div class="meta">${t("editor.paperDate")}<span></span> ${t("editor.paperObserver")}<span></span></div>
-  </header>
-  <div class="grid">
-    ${renderTable(0)}
-    ${renderTable(ROWS_PER_COL)}
-  </div>
-</body></html>`;
-    const w = window.open("", "_blank");
-    if (!w) { toast.error(t("editor.popupBlocked")); return; }
-    w.document.write(html);
-    w.document.close();
+  const downloadPaperTemplate = async () => {
+    // A real PDF, drawn with vector rect()/line() calls rather than an HTML
+    // table handed to window.print(): browsers/printers can silently drop
+    // hairline table borders under "fit to page" scaling, a real vector line
+    // in the PDF itself can't be dropped that way.
+    const prefs = getPrefs();
+    const labels: PaperTemplateLabels = {
+      title: t("editor.paperHeader"),
+      dateLabel: t("editor.paperDate"),
+      observerLabel: t("editor.paperObserver"),
+      colNum: "#",
+      colStar: t("editor.col.star"),
+      colA: "A",
+      colPasoA: t("editor.col.pasoA"),
+      colPasoB: t("editor.col.pasoB"),
+      colB: "B",
+      colMag: t("editor.paperColMag"),
+      colLimit: t("editor.col.limit"),
+      colUt: "UT",
+      colNote: t("editor.col.note"),
+    };
+    const doc = await buildPaperTemplatePdf(prefs.paperTemplate, labels, obsCode);
+    doc.save(`pozorovaci-papier-${isoDate}.pdf`);
   };
 
   // Format input value for date (UTC)
@@ -1445,6 +1460,8 @@ export default function SessionEditor() {
                     bad?: boolean; catIdx: number; order: number;
                     fix?: { from: string; to: string; reason: string };
                     outliers?: HistoryOutlier[];
+                    /** source line + how to splice in a different star name (see applyRawStarEdit) */
+                    lineIndex: number; plusLevel: number; matchLen: number;
                   };
                   const rows: PreviewRow[] = [];
                   const emptyObs = (): Obs => ({ star_id: "", a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null, ut_time: null, note: null });
@@ -1454,13 +1471,13 @@ export default function SessionEditor() {
                     if (!line.trim()) return;
                     const p = parseRawLine(line, matchIndex);
                     if (!p) {
-                      rows.push({ key: `bad-${i}`, name: line.trim(), o: emptyObs(), mag: null as any, bad: true, catIdx: Number.MAX_SAFE_INTEGER, order: i });
+                      rows.push({ key: `bad-${i}`, name: line.trim(), o: emptyObs(), mag: null as any, bad: true, catIdx: Number.MAX_SAFE_INTEGER, order: i, lineIndex: i, plusLevel: 0, matchLen: 0 });
                       return;
                     }
                     const star = p.starToken ? byToken.get(p.starToken) : null;
                     const target = star ?? ((p.plusLevel ?? 0) > 0 ? prevStar : null);
                     if (!target) {
-                      rows.push({ key: `bad-${i}`, name: line.trim(), o: emptyObs(), mag: null as any, bad: true, catIdx: Number.MAX_SAFE_INTEGER, order: i });
+                      rows.push({ key: `bad-${i}`, name: line.trim(), o: emptyObs(), mag: null as any, bad: true, catIdx: Number.MAX_SAFE_INTEGER, order: i, lineIndex: i, plusLevel: p.plusLevel ?? 0, matchLen: p.matchLen });
                       return;
                     }
                     const o: Obs = {
@@ -1475,6 +1492,7 @@ export default function SessionEditor() {
                       mag: computeMagnitude(o, target.name),
                       catIdx: catalogIndex.get(target.id) ?? Number.MAX_SAFE_INTEGER,
                       order: i,
+                      lineIndex: i, plusLevel: p.plusLevel ?? 0, matchLen: p.matchLen,
                       fix: p.correction ? describeCorrection(p.correction) : undefined,
                       outliers: prefs.magCheckEnabled
                         ? findOutliers(o, history.get(target.id), target.name, outlierOpts)
@@ -1559,9 +1577,69 @@ export default function SessionEditor() {
                             const magOff = r.outliers?.some((x) => x.field === "mag" || x.field === "limit");
                             return (
                             <tr key={r.key} className={`border-t border-border/40 ${r.bad ? "text-destructive" : ""}`}>
-                              <td className="px-2 py-1 font-sans font-medium">
-                                {r.bad ? `? ${r.name}` : r.name}
-                                {r.fix && (
+                              <td className="px-2 py-1 font-sans font-medium relative">
+                                {rawEditingLine === r.lineIndex ? (
+                                  <div className="relative">
+                                    <input
+                                      autoFocus
+                                      value={rawEditQuery}
+                                      onChange={(e) => setRawEditQuery(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Escape") {
+                                          setRawEditingLine(null);
+                                          setRawEditQuery("");
+                                        } else if (e.key === "Enter") {
+                                          const matches = searchStars(rawEditQuery);
+                                          if (matches.length === 1) {
+                                            applyRawStarEdit(r.lineIndex, r.plusLevel, r.matchLen, matches[0]);
+                                          }
+                                        }
+                                      }}
+                                      onBlur={() => {
+                                        window.setTimeout(() => {
+                                          setRawEditingLine((v) => (v === r.lineIndex ? null : v));
+                                        }, 150);
+                                      }}
+                                      placeholder={t("editor.raw.editPlaceholder")}
+                                      className="w-full h-6 rounded border border-input bg-background px-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-ring"
+                                    />
+                                    {rawEditQuery.trim() && (
+                                      <div className="absolute z-30 mt-0.5 max-h-48 w-48 overflow-y-auto rounded-md border border-border bg-popover shadow-md">
+                                        {searchStars(rawEditQuery).slice(0, 8).map((s) => (
+                                          <button
+                                            key={s.id}
+                                            type="button"
+                                            onMouseDown={(e) => {
+                                              e.preventDefault();
+                                              applyRawStarEdit(r.lineIndex, r.plusLevel, r.matchLen, s);
+                                            }}
+                                            className="block w-full text-left px-2 py-1 text-xs font-sans hover:bg-accent"
+                                          >
+                                            {s.name}
+                                          </button>
+                                        ))}
+                                        {searchStars(rawEditQuery).length === 0 && (
+                                          <div className="px-2 py-1 text-xs font-sans text-muted-foreground">
+                                            {t("editor.raw.editNoMatch")}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    title={t("editor.raw.editNameTitle")}
+                                    onClick={() => {
+                                      setRawEditingLine(r.lineIndex);
+                                      setRawEditQuery(r.bad ? "" : r.name);
+                                    }}
+                                    className="text-left hover:underline decoration-dotted underline-offset-2"
+                                  >
+                                    {r.bad ? `? ${r.name}` : r.name}
+                                  </button>
+                                )}
+                                {r.fix && rawEditingLine !== r.lineIndex && (
                                   <span
                                     className="ml-1 text-yellow-600 dark:text-yellow-400"
                                     title={`${r.fix.from} → ${r.fix.to} (${r.fix.reason})`}

@@ -274,7 +274,38 @@ export type ParsedRaw = {
   plusLevel?: number;
   /** set when the star name was autocorrected — surfaced to the observer */
   correction?: RawCorrection;
+  /**
+   * Characters of the normalised, "+"-stripped line consumed by the star
+   * match (0 when nothing matched). Lets a caller rebuild the line after
+   * swapping in a different star token: `newToken + s.slice(matchLen)`.
+   */
+  matchLen: number;
 };
+
+/**
+ * Rewrite the star name on one raw-text line, leaving the paso/UT/note data
+ * untouched — used by the raw-mode preview to let the observer click a
+ * mis-recognised (or unrecognized) star name and pick the right one.
+ *
+ * `plusLevel` and `matchLen` are {@link ParsedRaw.plusLevel} / `matchLen` from
+ * the original parse: `matchLen` is how many characters of the normalised,
+ * "+"-stripped line the old star token consumed (0 when nothing matched, in
+ * which case the new token is simply prepended to the line's content).
+ */
+export function replaceStarToken(
+  line: string,
+  plusLevel: number,
+  matchLen: number,
+  newToken: string,
+): string {
+  const hashIdx = line.indexOf("#");
+  const noteSuffix = hashIdx >= 0 ? line.slice(hashIdx) : "";
+  const body = hashIdx >= 0 ? line.slice(0, hashIdx) : line;
+  let s = body.trim().toLowerCase().replace(/\s+/g, "");
+  for (let i = 0; i < plusLevel && s.startsWith("+"); i++) s = s.slice(1);
+  const rest = s.slice(matchLen);
+  return "+".repeat(plusLevel) + newToken + rest + noteSuffix;
+}
 
 const dashToDot = (v: string | null) => (v ? v.replace(/-/g, ".") : v);
 
@@ -301,12 +332,13 @@ export function parseRawLine(line: string, index: StarMatchIndex): ParsedRaw | n
   if (!match && plusLevel === 0) return null;
   const starToken = match?.token ?? "";
   const correction = match?.correction;
-  const rest = s.slice(match?.consumed ?? 0);
+  const matchLen = match?.consumed ?? 0;
+  const rest = s.slice(matchLen);
 
   if (!rest) {
     return {
       starToken, a: null, pasos_a: null, pasos_b: null, b: null,
-      ut_time: null, limit_value: null, note, plusLevel, correction,
+      ut_time: null, limit_value: null, note, plusLevel, correction, matchLen,
     };
   }
 
@@ -326,7 +358,7 @@ export function parseRawLine(line: string, index: StarMatchIndex): ParsedRaw | n
       a: null, pasos_a: null, pasos_b: null, b: null,
       ut_time,
       limit_value: normalized ? "<" + normalized : null,
-      note, plusLevel, correction,
+      note, plusLevel, correction, matchLen,
     };
   }
 
@@ -366,6 +398,6 @@ export function parseRawLine(line: string, index: StarMatchIndex): ParsedRaw | n
   }
   return {
     starToken, a: dashToDot(a), pasos_a, pasos_b, b: dashToDot(b),
-    ut_time, limit_value: null, note, plusLevel, correction,
+    ut_time, limit_value: null, note, plusLevel, correction, matchLen,
   };
 }

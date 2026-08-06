@@ -2,6 +2,33 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_MAG_TOLERANCE } from "@/lib/magHistory";
 
+export interface PaperColumnCfg {
+  visible: boolean;
+  /** column width in mm on the printed/PDF sheet */
+  widthMm: number;
+}
+
+export interface PaperTemplatePrefs {
+  /** total ruled rows on the sheet (split across 1–2 side-by-side blocks per page) */
+  rows: number;
+  /** merge A / Paso A / Paso B / B into one free-write cell instead of four ruled ones */
+  mergeMag: boolean;
+  /** when mergeMag is on, also fold the Limit column into that merged cell */
+  mergeLimit: boolean;
+  columns: {
+    star: PaperColumnCfg;
+    a: PaperColumnCfg;
+    pasoA: PaperColumnCfg;
+    pasoB: PaperColumnCfg;
+    b: PaperColumnCfg;
+    /** used instead of a/pasoA/pasoB/b when mergeMag is on */
+    mag: PaperColumnCfg;
+    limit: PaperColumnCfg;
+    ut: PaperColumnCfg;
+    note: PaperColumnCfg;
+  };
+}
+
 export interface UserPrefs {
   autofillUtNow: boolean;       // pri otvorení nového riadku predvyplniť aktuálny UT čas
   confirmDelete: boolean;        // pýtať potvrdenie pri mazaní v katalógoch
@@ -17,12 +44,30 @@ export interface UserPrefs {
     aavso: string;
     vsnet: string;
   };
+  paperTemplate: PaperTemplatePrefs;
 }
 
 const KEY = "user_prefs_v1";
 export const SUBMISSION_PORTALS: Record<"aavso" | "vsnet", { url: string; label: string }> = {
   aavso: { url: "https://www.aavso.org/webobs/file/", label: "AAVSO WebObs (upload súboru)" },
   vsnet: { url: "https://vsnet.kusastro.kyoto-u.ac.jp/vsnet/", label: "VSNET (info o zaslaní pozorovaní)" },
+};
+
+const DEFAULT_PAPER_TEMPLATE: PaperTemplatePrefs = {
+  rows: 100,
+  mergeMag: false,
+  mergeLimit: false,
+  columns: {
+    star: { visible: true, widthMm: 16 },
+    a: { visible: true, widthMm: 8 },
+    pasoA: { visible: true, widthMm: 7 },
+    pasoB: { visible: true, widthMm: 7 },
+    b: { visible: true, widthMm: 8 },
+    mag: { visible: true, widthMm: 30 },
+    limit: { visible: true, widthMm: 10 },
+    ut: { visible: true, widthMm: 10 },
+    note: { visible: true, widthMm: 16 },
+  },
 };
 
 const DEFAULTS: UserPrefs = {
@@ -37,6 +82,7 @@ const DEFAULTS: UserPrefs = {
     aavso: SUBMISSION_PORTALS.aavso.url,
     vsnet: SUBMISSION_PORTALS.vsnet.url,
   },
+  paperTemplate: DEFAULT_PAPER_TEMPLATE,
 };
 
 function read(): UserPrefs {
@@ -49,6 +95,11 @@ function read(): UserPrefs {
       ...parsed,
       openPortalAfterExport: { ...DEFAULTS.openPortalAfterExport, ...(parsed.openPortalAfterExport ?? {}) },
       portalUrls: { ...DEFAULTS.portalUrls, ...(parsed.portalUrls ?? {}) },
+      paperTemplate: {
+        ...DEFAULT_PAPER_TEMPLATE,
+        ...(parsed.paperTemplate ?? {}),
+        columns: { ...DEFAULT_PAPER_TEMPLATE.columns, ...(parsed.paperTemplate?.columns ?? {}) },
+      },
     };
   } catch {
     return DEFAULTS;

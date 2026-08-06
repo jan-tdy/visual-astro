@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, Sparkles, Database, RefreshCw, ExternalLink, Lock, Upload, Copy, Cpu, TriangleAlert, LineChart as LineChartIcon } from "lucide-react";
+import { Check, Sparkles, Database, RefreshCw, ExternalLink, Lock, Upload, Copy, Cpu, TriangleAlert, LineChart as LineChartIcon, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
 import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
@@ -398,6 +398,140 @@ export default function Settings() {
                   .replace("{anchor}", t(`settings.nightAnchor.${pozor.range.anchor}`))
                   .replace("{after}", String(pozor.range.padAfterMinutes))}
               </p>
+            </Card>
+
+            <Card className="p-6 space-y-5 mt-4">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-lg font-semibold">{t("settings.paper.title")}</h2>
+              </div>
+              <p className="text-xs text-muted-foreground -mt-3">{t("settings.paper.desc")}</p>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>{t("settings.paper.rows")}</Label>
+                  <span className="text-xs font-mono text-muted-foreground">{prefs.paperTemplate.rows}</span>
+                </div>
+                <Slider
+                  min={20}
+                  max={300}
+                  step={10}
+                  value={[prefs.paperTemplate.rows]}
+                  onValueChange={([v]) => setPrefs({ paperTemplate: { ...prefs.paperTemplate, rows: v } })}
+                />
+              </div>
+
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="mergeMag">{t("settings.paper.mergeMag")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("settings.paper.mergeMagDesc")}</p>
+                </div>
+                <Switch
+                  id="mergeMag"
+                  checked={prefs.paperTemplate.mergeMag}
+                  onCheckedChange={(v) => setPrefs({ paperTemplate: { ...prefs.paperTemplate, mergeMag: v } })}
+                />
+              </div>
+
+              {prefs.paperTemplate.mergeMag && (
+                <div className="flex items-start justify-between gap-4 pl-4 border-l-2 border-border">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="mergeLimit">{t("settings.paper.mergeLimit")}</Label>
+                  </div>
+                  <Switch
+                    id="mergeLimit"
+                    checked={prefs.paperTemplate.mergeLimit}
+                    onCheckedChange={(v) => setPrefs({ paperTemplate: { ...prefs.paperTemplate, mergeLimit: v } })}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>{t("settings.paper.columns")}</Label>
+                <div className="rounded-lg border border-border divide-y divide-border">
+                  <div className="flex items-center gap-3 px-3 py-2">
+                    <span className="w-9" />
+                    <span className="flex-1 text-sm">{t("editor.col.star")}</span>
+                    <span className="text-xs text-muted-foreground">{t("settings.paper.always")}</span>
+                    <Input
+                      type="number"
+                      min={4}
+                      max={60}
+                      value={prefs.paperTemplate.columns.star.widthMm}
+                      onChange={(e) =>
+                        setPrefs({
+                          paperTemplate: {
+                            ...prefs.paperTemplate,
+                            columns: {
+                              ...prefs.paperTemplate.columns,
+                              star: { ...prefs.paperTemplate.columns.star, widthMm: Math.max(4, Math.min(60, Number(e.target.value) || 0)) },
+                            },
+                          },
+                        })
+                      }
+                      className="w-16 h-8 text-xs"
+                    />
+                    <span className="text-xs text-muted-foreground">mm</span>
+                  </div>
+
+                  {(prefs.paperTemplate.mergeMag
+                    ? ([
+                        ["mag", t("editor.paperColMag")],
+                        ...(prefs.paperTemplate.mergeLimit ? [] : [["limit", t("editor.col.limit")] as const]),
+                        ["ut", "UT"],
+                        ["note", t("editor.col.note")],
+                      ] as const)
+                    : ([
+                        ["a", "A"],
+                        ["pasoA", t("editor.col.pasoA")],
+                        ["pasoB", t("editor.col.pasoB")],
+                        ["b", "B"],
+                        ["limit", t("editor.col.limit")],
+                        ["ut", "UT"],
+                        ["note", t("editor.col.note")],
+                      ] as const)
+                  ).map(([key, label]) => {
+                    const col = prefs.paperTemplate.columns[key];
+                    return (
+                      <div key={key} className="flex items-center gap-3 px-3 py-2">
+                        <Switch
+                          className="shrink-0"
+                          checked={col.visible}
+                          onCheckedChange={(v) =>
+                            setPrefs({
+                              paperTemplate: {
+                                ...prefs.paperTemplate,
+                                columns: { ...prefs.paperTemplate.columns, [key]: { ...col, visible: v } },
+                              },
+                            })
+                          }
+                        />
+                        <span className="flex-1 text-sm">{label}</span>
+                        <Input
+                          type="number"
+                          min={4}
+                          max={60}
+                          disabled={!col.visible}
+                          value={col.widthMm}
+                          onChange={(e) =>
+                            setPrefs({
+                              paperTemplate: {
+                                ...prefs.paperTemplate,
+                                columns: {
+                                  ...prefs.paperTemplate.columns,
+                                  [key]: { ...col, widthMm: Math.max(4, Math.min(60, Number(e.target.value) || 0)) },
+                                },
+                              },
+                            })
+                          }
+                          className="w-16 h-8 text-xs"
+                        />
+                        <span className="text-xs text-muted-foreground">mm</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </Card>
 
             <div className="mt-4">
