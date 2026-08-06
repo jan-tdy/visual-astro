@@ -15,7 +15,10 @@ import { getPrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useI18n } from "@/hooks/useI18n";
 import { fetchAllRows } from "@/lib/supabaseFetchAll";
-import { buildStarMatchIndex, parseRawLine, replaceStarToken, type RawCorrection } from "@/lib/rawParse";
+import {
+  buildStarMatchIndex, parseRawLine, replaceStarToken,
+  replaceRawLineFields, replaceRawLineNote, type RawCorrection, type RawFields,
+} from "@/lib/rawParse";
 import { buildPaperTemplatePdf, type PaperTemplateLabels } from "@/lib/paperTemplatePdf";
 import {
   buildStarHistory, findOutliers,
@@ -98,6 +101,10 @@ export default function SessionEditor() {
   // inside the raw panel — the observer switches back to the table to check
   // them, and a warning that vanishes on the way there is no warning at all.
   const [appliedFixes, setAppliedFixes] = useState<(RawCorrection & { line: string })[]>([]);
+  // Lines the last apply couldn't resolve at all. Same reasoning as
+  // appliedFixes: these need to stay visible after switching back to the
+  // table, not just inside the raw panel that's no longer on screen.
+  const [unmatchedLines, setUnmatchedLines] = useState<string[]>([]);
   // Per-star statistics from this observer's *other* sessions, used to flag a
   // value that looks mis-transcribed (a "3" read as a "5" on the night sheet).
   const [history, setHistory] = useState<Map<string, StarHistory>>(new Map());
@@ -113,10 +120,20 @@ export default function SessionEditor() {
   // into rawText.split) is being edited, and the current search text.
   const [rawEditingLine, setRawEditingLine] = useState<number | null>(null);
   const [rawEditQuery, setRawEditQuery] = useState("");
+  // Inline edit of a single data value (A/PasoA/PasoB/B/Limit/UT/Note) in the
+  // raw preview table — same idea as the star-name edit above, but keyed by
+  // (line, field) since several cells on the same row can be edited.
+  type RawEditField = keyof RawFields | "note";
+  const [rawFieldEdit, setRawFieldEdit] = useState<{ lineIndex: number; field: RawEditField } | null>(null);
+  const [rawFieldValue, setRawFieldValue] = useState("");
+  // Escape cancels, but removing the focused input from the DOM can still
+  // fire a blur right after — this tells that blur to skip the commit.
+  const rawFieldCancelRef = useRef(false);
   const rawPrefilledRef = useRef(false);
   const rawDraftKey = id ? `raw_draft_${id}` : "";
   const rawModeKey = id ? `raw_mode_${id}` : "";
   const rawFixesKey = id ? `raw_fixes_${id}` : "";
+  const rawUnmatchedKey = id ? `raw_unmatched_${id}` : "";
   // Restore persisted draft + mode + pending corrections on mount
   // (survives refresh / net drops)
   useEffect(() => {
@@ -128,6 +145,8 @@ export default function SessionEditor() {
       if (mode === "1") setRawMode(true);
       const fixes = localStorage.getItem(`raw_fixes_${id}`);
       if (fixes) setAppliedFixes(JSON.parse(fixes));
+      const unmatched = localStorage.getItem(`raw_unmatched_${id}`);
+      if (unmatched) setUnmatchedLines(JSON.parse(unmatched));
     } catch {}
   }, [id]);
   // The corrections outlive the apply that produced them: they stay until the
@@ -139,6 +158,18 @@ export default function SessionEditor() {
     try {
       if (fixes.length) localStorage.setItem(rawFixesKey, JSON.stringify(fixes));
       else localStorage.removeItem(rawFixesKey);
+    } catch {
+      // Private mode / quota: the list still shows for this visit, it just
+      // won't survive a reload. Not worth interrupting the observer over.
+    }
+  };
+  // Same idea as rememberFixes, for lines the last apply couldn't resolve at all.
+  const rememberUnmatched = (lines: string[]) => {
+    setUnmatchedLines(lines);
+    if (!rawUnmatchedKey) return;
+    try {
+      if (lines.length) localStorage.setItem(rawUnmatchedKey, JSON.stringify(lines));
+      else localStorage.removeItem(rawUnmatchedKey);
     } catch {
       // Private mode / quota: the list still shows for this visit, it just
       // won't survive a reload. Not worth interrupting the observer over.
@@ -219,6 +250,56 @@ export default function SessionEditor() {
     setRawEditQuery("");
   };
 
+  /**
+   * Rewrite a single value (A/PasoA/PasoB/B/Limit/UT/Note) on one raw-text
+   * line — used when the observer clicks a data cell (not the star name) in
+   * the raw preview table. `o` is that row's already-parsed observation, so
+   * only the one edited field changes; everything else on the line —
+   * including the star name — is carried through unchanged.
+   */
+  const applyRawFieldEdit = (
+    lineIndex: number, plusLevel: number, matchLen: number, o: Obs,
+    field: RawEditField, rawValue: string,
+  ) => {
+    setRawText((prev) => {
+      const lines = prev.split(/\r?\n/);
+      const line = lines[lineIndex];
+      if (line == null) return prev;
+      const next = [...lines];
+      if (field === "note") {
+        next[lineIndex] = replaceRawLineNote(line, rawValue);
+      } else {
+        const fields: RawFields = {
+          a: o.a, pasos_a: o.pasos_a, pasos_b: o.pasos_b, b: o.b,
+          limit_value: o.limit_value, ut_time: o.ut_time,
+        };
+        switch (field) {
+          case "a": fields.a = formatAB(rawValue).trim() || null; break;
+          case "b": fields.b = formatAB(rawValue).trim() || null; break;
+          case "pasos_a":
+          case "pasos_b": {
+            // the compact format only has room for a single paso digit
+            const digit = rawValue.replace(/\D/g, "").slice(-1);
+            fields[field] = digit ? parseInt(digit, 10) : null;
+            break;
+          }
+          case "limit_value": {
+            const v = formatAB(rawValue.replace(/^</, "")).trim();
+            fields.limit_value = v ? "<" + v : null;
+            break;
+          }
+          case "ut_time":
+            fields.ut_time = formatUt(rawValue) || null;
+            break;
+        }
+        next[lineIndex] = replaceRawLineFields(line, plusLevel, matchLen, fields);
+      }
+      return next.join("\n");
+    });
+    setRawFieldEdit(null);
+    setRawFieldValue("");
+  };
+
   const applyRaw = () => {
     const lines = rawText.split(/\r?\n/);
     const unmatched: string[] = [];
@@ -275,6 +356,7 @@ export default function SessionEditor() {
     }
     setRawReport({ matched, unmatched });
     rememberFixes(corrections);
+    rememberUnmatched(unmatched);
     if (matched > 0) toast.success(`Uložených ${matched} pozorovaní`);
     if (unmatched.length) toast.error(`Nerozpoznané: ${unmatched.length}`);
     // An autocorrect the observer never notices is worse than none, so it gets
@@ -1257,6 +1339,30 @@ export default function SessionEditor() {
             </div>
           )}
 
+          {unmatchedLines.length > 0 && (
+            <div className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+              <div className="flex items-start justify-between gap-2">
+                <div className="font-semibold mb-1">
+                  {t("editor.raw.unmatchedTitle").replace("{n}", String(unmatchedLines.length))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => rememberUnmatched([])}
+                  title={t("editor.raw.unmatchedDismiss")}
+                  className="shrink-0 rounded p-0.5 opacity-70 hover:opacity-100 hover:bg-destructive/20"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <ul className="list-disc pl-5 space-y-0.5 font-mono">
+                {unmatchedLines.map((l, i) => (
+                  <li key={i}>{l}</li>
+                ))}
+              </ul>
+              <div className="mt-1.5 opacity-80 font-sans">{t("editor.raw.unmatchedHint")}</div>
+            </div>
+          )}
+
           {historyWarnings.length > 0 && (
             <div className="mt-3 rounded-md border border-sky-500/40 bg-sky-500/10 p-3 text-xs text-sky-700 dark:text-sky-300">
               <div className="font-semibold mb-1">
@@ -1524,6 +1630,54 @@ export default function SessionEditor() {
                   });
                   const fixes = sorted.filter((r) => r.fix);
                   const flagged = sorted.filter((r) => r.outliers?.length);
+                  // Click-to-edit for a single data cell (A/PasoA/PasoB/B/Limit/UT/Note).
+                  // Bad (unparseable) rows have nothing structured to edit — fixing the
+                  // star name first (see the name cell above) is what turns them into a
+                  // normal, editable row.
+                  const renderFieldCell = (r: PreviewRow, field: RawEditField, display: string, extraTdClass = "") => {
+                    if (r.bad) {
+                      return <td className={`px-2 py-1 ${extraTdClass}`}>{display}</td>;
+                    }
+                    const editing = rawFieldEdit?.lineIndex === r.lineIndex && rawFieldEdit.field === field;
+                    if (editing) {
+                      return (
+                        <td className={`px-2 py-1 ${extraTdClass}`}>
+                          <input
+                            autoFocus
+                            value={rawFieldValue}
+                            onChange={(e) => setRawFieldValue(e.target.value)}
+                            onFocus={(e) => e.currentTarget.select()}
+                            onKeyDown={(e) => {
+                              if (e.key === "Escape") {
+                                rawFieldCancelRef.current = true;
+                                setRawFieldEdit(null);
+                                setRawFieldValue("");
+                              } else if (e.key === "Enter") {
+                                applyRawFieldEdit(r.lineIndex, r.plusLevel, r.matchLen, r.o, field, rawFieldValue);
+                              }
+                            }}
+                            onBlur={() => {
+                              if (rawFieldCancelRef.current) { rawFieldCancelRef.current = false; return; }
+                              applyRawFieldEdit(r.lineIndex, r.plusLevel, r.matchLen, r.o, field, rawFieldValue);
+                            }}
+                            className="w-full h-6 rounded border border-input bg-background px-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-ring"
+                          />
+                        </td>
+                      );
+                    }
+                    return (
+                      <td
+                        className={`px-2 py-1 cursor-text hover:bg-accent/40 ${extraTdClass}`}
+                        title={t("editor.raw.editValueTitle")}
+                        onClick={() => {
+                          setRawFieldEdit({ lineIndex: r.lineIndex, field });
+                          setRawFieldValue(display);
+                        }}
+                      >
+                        {display}
+                      </td>
+                    );
+                  };
                   return (
                     <div className="space-y-2">
                     {fixes.length > 0 && (
@@ -1648,19 +1802,19 @@ export default function SessionEditor() {
                                   </span>
                                 )}
                               </td>
-                              <td className={`px-2 py-1 ${r.outliers?.some((x) => x.field === "a") ? "text-sky-600 dark:text-sky-400" : ""}`}>{r.o.a ?? ""}</td>
-                              <td className={`px-2 py-1 ${r.outliers?.some((x) => x.field === "pasos_a") ? "text-sky-600 dark:text-sky-400" : ""}`}>{r.o.pasos_a ?? ""}</td>
-                              <td className={`px-2 py-1 ${r.outliers?.some((x) => x.field === "pasos_b") ? "text-sky-600 dark:text-sky-400" : ""}`}>{r.o.pasos_b ?? ""}</td>
-                              <td className={`px-2 py-1 ${r.outliers?.some((x) => x.field === "b") ? "text-sky-600 dark:text-sky-400" : ""}`}>{r.o.b ?? ""}</td>
-                              <td className="px-2 py-1">{r.o.limit_value ?? ""}</td>
-                              <td className="px-2 py-1">{r.o.ut_time ?? ""}</td>
+                              {renderFieldCell(r, "a", r.o.a ?? "", r.outliers?.some((x) => x.field === "a") ? "text-sky-600 dark:text-sky-400" : "")}
+                              {renderFieldCell(r, "pasos_a", r.o.pasos_a != null ? String(r.o.pasos_a) : "", r.outliers?.some((x) => x.field === "pasos_a") ? "text-sky-600 dark:text-sky-400" : "")}
+                              {renderFieldCell(r, "pasos_b", r.o.pasos_b != null ? String(r.o.pasos_b) : "", r.outliers?.some((x) => x.field === "pasos_b") ? "text-sky-600 dark:text-sky-400" : "")}
+                              {renderFieldCell(r, "b", r.o.b ?? "", r.outliers?.some((x) => x.field === "b") ? "text-sky-600 dark:text-sky-400" : "")}
+                              {renderFieldCell(r, "limit_value", r.o.limit_value ?? "")}
+                              {renderFieldCell(r, "ut_time", r.o.ut_time ?? "")}
                               <td
                                 className={`px-2 py-1 text-right ${magOff ? "text-sky-600 dark:text-sky-400 font-semibold" : ""}`}
                                 title={r.outliers?.length ? r.outliers.map(describeOutlier).join(" · ") : undefined}
                               >
                                 {r.mag?.value ?? <span className="text-muted-foreground">—</span>}
                               </td>
-                              <td className="px-2 py-1 font-sans text-muted-foreground">{r.o.note ?? ""}</td>
+                              {renderFieldCell(r, "note", r.o.note ?? "", "font-sans text-muted-foreground")}
                             </tr>
                             );
                           })}
