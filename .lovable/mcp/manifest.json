@@ -446,7 +446,7 @@
       {
         "name": "export_session",
         "title": "Export session",
-        "description": "Build the VSNET, AAVSO Visual or MEDUZA export text for a session, exactly as the app's export dialog does.",
+        "description": "Build the VSNET or AAVSO Visual export text for a session, exactly as the app's export dialog does.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -464,8 +464,7 @@
               "type": "string",
               "enum": [
                 "vsnet",
-                "aavso",
-                "meduza"
+                "aavso"
               ],
               "description": "Export format."
             },
