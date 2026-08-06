@@ -4,7 +4,10 @@ import { fetchAllRows } from "@/lib/supabaseFetchAll";
 import { toast } from "sonner";
 import {
   DEFAULT_MIN_ALTITUDE,
+  DEFAULT_NIGHT_RANGE,
   POZOR_LOCATIONS,
+  type NightAnchor,
+  type NightRange,
   type PozorLocation,
 } from "@/lib/pozor";
 
@@ -222,6 +225,23 @@ const SETTINGS_KEY = "pozor_settings_v1";
 export interface PozorSettings {
   locationId: string;
   minAltitude: number;
+  /** Plotted span of the night charts (see {@link NightRange}). */
+  range: NightRange;
+}
+
+const NIGHT_ANCHORS: NightAnchor[] = ["sunset", "civil", "nautical", "night"];
+
+/** Clamp a stored pad to something a chart can actually render. */
+const readPad = (v: unknown, fallback: number) =>
+  Number.isFinite(v) ? Math.min(360, Math.max(0, Math.round(v as number))) : fallback;
+
+function readRange(p: unknown): NightRange {
+  const r = (p ?? {}) as Partial<NightRange>;
+  return {
+    anchor: NIGHT_ANCHORS.includes(r.anchor as NightAnchor) ? (r.anchor as NightAnchor) : DEFAULT_NIGHT_RANGE.anchor,
+    padBeforeMinutes: readPad(r.padBeforeMinutes, DEFAULT_NIGHT_RANGE.padBeforeMinutes),
+    padAfterMinutes: readPad(r.padAfterMinutes, DEFAULT_NIGHT_RANGE.padAfterMinutes),
+  };
 }
 
 function readSettings(): PozorSettings {
@@ -232,15 +252,16 @@ function readSettings(): PozorSettings {
       return {
         locationId: typeof p.locationId === "string" ? p.locationId : "",
         minAltitude: Number.isFinite(p.minAltitude) ? p.minAltitude : DEFAULT_MIN_ALTITUDE,
+        range: readRange(p.range),
       };
     }
   } catch {
     /* ignore */
   }
-  return { locationId: "", minAltitude: DEFAULT_MIN_ALTITUDE };
+  return { locationId: "", minAltitude: DEFAULT_MIN_ALTITUDE, range: { ...DEFAULT_NIGHT_RANGE } };
 }
 
-/** Active location id + minimum altitude, persisted per browser. */
+/** Active location id, minimum altitude and chart span, persisted per browser. */
 export function usePozorSettings() {
   const [settings, setSettings] = useState<PozorSettings>(readSettings);
   useEffect(() => {

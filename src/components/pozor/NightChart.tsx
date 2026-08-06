@@ -91,7 +91,7 @@ export function NightChart({
 
         {view === "single" ? (
           <>
-            <AltitudeChart date={date} location={location} targets={chosen} minAltitude={settings.minAltitude} />
+            <AltitudeChart date={date} location={location} targets={chosen} minAltitude={settings.minAltitude} range={settings.range} />
             {!chosen.length && <p className="text-sm text-muted-foreground">{t("pozor.chart.hint")}</p>}
           </>
         ) : (
@@ -137,6 +137,7 @@ export function NightChart({
                         location={location}
                         targets={[x]}
                         minAltitude={settings.minAltitude}
+                        range={settings.range}
                         height={200}
                         compact
                       />

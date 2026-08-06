@@ -162,6 +162,39 @@ describe("sampleNight span", () => {
     expect(night.end!.getTime()).toBeLessThan(toDate.getTime());
   });
 
+  it("honours a custom pad on each side of the anchor", () => {
+    const { twilight, fromDate, toDate } = sampleNight("2026-08-06", hlohovec, [], 10, {
+      anchor: "sunset",
+      padBeforeMinutes: 5,
+      padAfterMinutes: 90,
+    });
+    expect(twilight.sunset!.getTime() - fromDate.getTime()).toBe(5 * 60e3);
+    expect(toDate.getTime() - twilight.sunrise!.getTime()).toBe(90 * 60e3);
+  });
+
+  it("can anchor on astronomical darkness instead of sunset", () => {
+    const { night, fromDate, toDate } = sampleNight("2026-08-06", hlohovec, [], 10, {
+      anchor: "night",
+      padBeforeMinutes: 5,
+      padAfterMinutes: 5,
+    });
+    expect(night.start!.getTime() - fromDate.getTime()).toBe(5 * 60e3);
+    expect(toDate.getTime() - night.end!.getTime()).toBe(5 * 60e3);
+  });
+
+  it("falls back to sunset when the chosen anchor never happens", () => {
+    // Midsummer above the Arctic Circle: the Sun never reaches −18°, so an
+    // astronomical-night anchor has nothing to hang off and must not produce an
+    // empty chart.
+    const arctic = { key: "arctic", label: "Arctic", lat: 69.65, lon: 18.96, elevation: 0 };
+    const { samples } = sampleNight("2026-06-21", arctic, [], 30, {
+      anchor: "night",
+      padBeforeMinutes: 0,
+      padAfterMinutes: 0,
+    });
+    expect(samples.length).toBeGreaterThan(0);
+  });
+
   it("samples the target altitude at every step", () => {
     const { samples } = sampleNight(
       "2026-08-06",

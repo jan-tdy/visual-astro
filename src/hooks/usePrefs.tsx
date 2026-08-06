@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { DEFAULT_MAG_TOLERANCE } from "@/lib/magHistory";
 
 export interface UserPrefs {
   autofillUtNow: boolean;       // pri otvorení nového riadku predvyplniť aktuálny UT čas
   confirmDelete: boolean;        // pýtať potvrdenie pri mazaní v katalógoch
   autosaveDelayMs: number;       // oneskorenie auto-save (300–2000)
   defaultConstellation: string;  // predvolené súhvezdie po otvorení session
+  magCheckEnabled: boolean;      // porovnávať magnitúdy s priemerom minulých sessions
+  magCheckTolerance: number;     // o koľko mag sa smie líšiť bez upozornenia (0.2–5.0)
   openPortalAfterExport: {
     aavso: boolean;
     vsnet: boolean;
@@ -27,6 +30,8 @@ const DEFAULTS: UserPrefs = {
   confirmDelete: true,
   autosaveDelayMs: 600,
   defaultConstellation: "AND",
+  magCheckEnabled: true,
+  magCheckTolerance: DEFAULT_MAG_TOLERANCE,
   openPortalAfterExport: { aavso: false, vsnet: false },
   portalUrls: {
     aavso: SUBMISSION_PORTALS.aavso.url,

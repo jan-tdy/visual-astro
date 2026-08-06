@@ -5,8 +5,8 @@ import {
 } from "recharts";
 import { useI18n } from "@/hooks/useI18n";
 import {
-  altAz, formatUT, minimaTimesInRange, sampleNight,
-  type PozorLocation, type SampleTarget,
+  altAz, DEFAULT_NIGHT_RANGE, formatUT, minimaTimesInRange, sampleNight,
+  type NightRange, type PozorLocation, type SampleTarget,
 } from "@/lib/pozor";
 import { CURVE_COLORS } from "./shared";
 
@@ -61,6 +61,7 @@ export function AltitudeChart({
   location,
   targets,
   minAltitude,
+  range = DEFAULT_NIGHT_RANGE,
   height = 420,
   compact = false,
 }: {
@@ -68,6 +69,7 @@ export function AltitudeChart({
   location: PozorLocation;
   targets: AltitudeChartTarget[];
   minAltitude: number;
+  range?: NightRange;
   height?: number;
   compact?: boolean;
 }) {
@@ -79,7 +81,7 @@ export function AltitudeChart({
       raHours: x.ra_hours,
       decDeg: x.dec_deg,
     }));
-    const { samples, night, twilight, fromDate, toDate } = sampleNight(date, location, sampleTargets, 10);
+    const { samples, night, twilight, fromDate, toDate } = sampleNight(date, location, sampleTargets, 10, range);
     const rows = samples.map((s) => {
       const row: Record<string, number | string> = {
         minutes: s.minutes,
@@ -91,7 +93,7 @@ export function AltitudeChart({
       return row;
     });
     return { rows, night, twilight, fromDate, toDate };
-  }, [date, location, targets]);
+  }, [date, location, targets, range]);
 
   const minMinutes = (rows[0]?.minutes as number) ?? 0;
   const maxMinutes = (rows[rows.length - 1]?.minutes as number) ?? 0;

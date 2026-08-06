@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, Sparkles, Database, RefreshCw, ExternalLink, Lock, Upload, Copy, Cpu } from "lucide-react";
+import { Check, Sparkles, Database, RefreshCw, ExternalLink, Lock, Upload, Copy, Cpu, TriangleAlert, LineChart as LineChartIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
 import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
@@ -25,12 +25,15 @@ import { Zap } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
 import { fetchAllRows } from "@/lib/supabaseFetchAll";
 import { LocationManager } from "@/components/pozor/LocationManager";
+import { usePozorSettings } from "@/components/pozor/shared";
+import type { NightAnchor } from "@/lib/pozor";
 
 export default function Settings() {
   const { user } = useAuth();
   const { t } = useI18n();
   const { isPlusActive, sub, isDevUser, devOverride, setDevOverride } = useSubscription();
   const { prefs, update: setPrefs } = usePrefs();
+  const { settings: pozor, setSettings: setPozor } = usePozorSettings();
   const [obsCode, setObsCode] = useState("DPV");
   const [busy, setBusy] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -306,6 +309,95 @@ export default function Settings() {
                   </div>
                 </div>
               ))}
+            </Card>
+
+            <Card className="p-6 space-y-5 mt-4">
+              <div className="flex items-center gap-2">
+                <TriangleAlert className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-lg font-semibold">{t("settings.magCheck")}</h2>
+              </div>
+              <p className="text-xs text-muted-foreground -mt-3">{t("settings.magCheckDesc")}</p>
+
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="magcheck">{t("settings.magCheckOn")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("settings.magCheckOnDesc")}</p>
+                </div>
+                <Switch
+                  id="magcheck"
+                  checked={prefs.magCheckEnabled}
+                  onCheckedChange={(v) => setPrefs({ magCheckEnabled: v })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>{t("settings.magTolerance")}</Label>
+                  <span className="text-xs font-mono text-muted-foreground">
+                    ± {prefs.magCheckTolerance.toFixed(1)} mag
+                  </span>
+                </div>
+                <Slider
+                  min={0.2}
+                  max={5}
+                  step={0.1}
+                  value={[prefs.magCheckTolerance]}
+                  disabled={!prefs.magCheckEnabled}
+                  onValueChange={([v]) => setPrefs({ magCheckTolerance: v })}
+                />
+                <p className="text-xs text-muted-foreground">{t("settings.magToleranceDesc")}</p>
+              </div>
+            </Card>
+
+            <Card className="p-6 space-y-5 mt-4">
+              <div className="flex items-center gap-2">
+                <LineChartIcon className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-lg font-semibold">{t("settings.nightRange")}</h2>
+              </div>
+              <p className="text-xs text-muted-foreground -mt-3">{t("settings.nightRangeDesc")}</p>
+
+              <div className="space-y-2">
+                <Label htmlFor="anchor">{t("settings.nightAnchor")}</Label>
+                <Select
+                  value={pozor.range.anchor}
+                  onValueChange={(v) =>
+                    setPozor({ ...pozor, range: { ...pozor.range, anchor: v as NightAnchor } })
+                  }
+                >
+                  <SelectTrigger id="anchor"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(["sunset", "civil", "nautical", "night"] as const).map((a) => (
+                      <SelectItem key={a} value={a}>{t(`settings.nightAnchor.${a}`)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {([
+                ["padBeforeMinutes", "settings.nightPadBefore"],
+                ["padAfterMinutes", "settings.nightPadAfter"],
+              ] as const).map(([key, label]) => (
+                <div key={key} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>{t(label)}</Label>
+                    <span className="text-xs font-mono text-muted-foreground">{pozor.range[key]} min</span>
+                  </div>
+                  <Slider
+                    min={0}
+                    max={180}
+                    step={5}
+                    value={[pozor.range[key]]}
+                    onValueChange={([v]) => setPozor({ ...pozor, range: { ...pozor.range, [key]: v } })}
+                  />
+                </div>
+              ))}
+
+              <p className="text-xs text-muted-foreground">
+                {t("settings.nightRangePreview")
+                  .replace("{before}", String(pozor.range.padBeforeMinutes))
+                  .replace("{anchor}", t(`settings.nightAnchor.${pozor.range.anchor}`))
+                  .replace("{after}", String(pozor.range.padAfterMinutes))}
+              </p>
             </Card>
 
             <div className="mt-4">

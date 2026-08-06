@@ -425,21 +425,43 @@ export interface SampleTarget {
 }
 
 /**
- * Sample altitudes across the whole night, from sunset to sunrise (plus a small
- * padding margin on both sides so the sunset/sunrise boundaries stay visible on
- * the chart).
+ * Which pair of events the plotted span hangs off. "sunset" keeps the whole
+ * night in view; the darker anchors zoom in on the part that is actually
+ * usable, which matters most in midsummer when the gap between sunset and
+ * astronomical darkness runs to several hours.
+ */
+export type NightAnchor = "sunset" | "civil" | "nautical" | "night";
+
+export interface NightRange {
+  anchor: NightAnchor;
+  /** Minutes of margin before the evening anchor. */
+  padBeforeMinutes: number;
+  /** Minutes of margin after the morning anchor. */
+  padAfterMinutes: number;
+}
+
+export const DEFAULT_NIGHT_RANGE: NightRange = {
+  anchor: "sunset",
+  padBeforeMinutes: 30,
+  padAfterMinutes: 30,
+};
+
+/**
+ * Sample altitudes across the night, from the chosen evening anchor to its
+ * morning counterpart, plus the configured margin on either side.
  *
- * The span must be anchored on sunset/sunrise rather than on astronomical
- * darkness: the gap between the two grows with latitude and towards midsummer
- * (~2h at Hlohovec in August, ~4h in June), so a fixed pad around astronomical
- * night would push sunset and sunrise off the chart entirely.
+ * The default anchor is sunset/sunrise rather than astronomical darkness: the
+ * gap between the two grows with latitude and towards midsummer (~2h at
+ * Hlohovec in August, ~4h in June), so a fixed pad around astronomical night
+ * would push sunset and sunrise off the chart entirely. Observers who only care
+ * about proper darkness can say so via `range.anchor`.
  */
 export function sampleNight(
   isoDate: string,
   loc: PozorLocation,
   targets: SampleTarget[],
   stepMinutes = 10,
-  padMinutes = 30,
+  range: NightRange = DEFAULT_NIGHT_RANGE,
 ): {
   samples: NightSample[];
   night: NightInfo;
@@ -450,12 +472,20 @@ export function sampleNight(
   const night = nightInfo(isoDate, loc);
   const tw = twilightTimes(isoDate, loc);
   const localNoon = utcDate(isoDate, 12 - loc.lon / 15).getTime();
-  // Fall back to astronomical darkness, then to a fixed evening-to-morning slot,
-  // for places/dates where the Sun never crosses the horizon at all.
-  const fromAnchor = tw.sunset ?? night.start ?? new Date(localNoon + 6 * 3600e3);
-  const toAnchor = tw.sunrise ?? night.end ?? new Date(localNoon + 18 * 3600e3);
-  const from = fromAnchor.getTime() - padMinutes * 60e3;
-  const to = toAnchor.getTime() + padMinutes * 60e3;
+  const ANCHORS: Record<NightAnchor, [Date | null, Date | null]> = {
+    sunset: [tw.sunset, tw.sunrise],
+    civil: [tw.civilDusk, tw.civilDawn],
+    nautical: [tw.nauticalDusk, tw.nauticalDawn],
+    night: [night.start, night.end],
+  };
+  const [evening, morning] = ANCHORS[range.anchor] ?? ANCHORS.sunset;
+  // Fall back through sunset and astronomical darkness to a fixed evening-to-morning
+  // slot: at high latitudes (or in midsummer) the chosen anchor may not exist at all,
+  // and an empty chart is far worse than a slightly wider one.
+  const fromAnchor = evening ?? tw.sunset ?? night.start ?? new Date(localNoon + 6 * 3600e3);
+  const toAnchor = morning ?? tw.sunrise ?? night.end ?? new Date(localNoon + 18 * 3600e3);
+  const from = fromAnchor.getTime() - range.padBeforeMinutes * 60e3;
+  const to = toAnchor.getTime() + range.padAfterMinutes * 60e3;
   const samples: NightSample[] = [];
   for (let t = from; t <= to; t += stepMinutes * 60e3) {
     const d = new Date(t);
