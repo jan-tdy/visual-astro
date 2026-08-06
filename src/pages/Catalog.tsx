@@ -408,7 +408,7 @@ function StarDialog({
             <p className="text-xs text-muted-foreground mt-1">{t("catalog.dialog.nameHint")}</p>
           </div>
           <div>
-            <Label>{t("catalog.dialog.constellation")}</Label>
+            <Label>{t("catalog.col.constellation")}</Label>
             <Select
               value={constMode === "other" ? OTHER_CONST : (form.constellation || undefined)}
               onValueChange={(v) => {
@@ -441,7 +441,7 @@ function StarDialog({
             <p className="text-xs text-muted-foreground mt-1">{t("catalog.dialog.constHint")}</p>
           </div>
           <div>
-            <Label>{t("catalog.dialog.type")}</Label>
+            <Label>{t("catalog.col.type")}</Label>
             <Select value={form.type} onValueChange={(v: any) => setForm({ ...form, type: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>

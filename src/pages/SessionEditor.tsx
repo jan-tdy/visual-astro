@@ -1762,7 +1762,7 @@ export default function SessionEditor() {
           >
             <button
               onClick={() => setPreviewing(null)}
-              aria-label={t("editor.close")}
+              aria-label={t("common.close")}
               className="absolute -top-3 -right-3 h-9 w-9 rounded-full bg-card border border-border shadow-md flex items-center justify-center hover:bg-secondary transition-colors"
             >
               <X className="h-4 w-4" />

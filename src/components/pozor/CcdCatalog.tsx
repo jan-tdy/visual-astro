@@ -268,7 +268,7 @@ export function CcdCatalog({
         <Input
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          placeholder={t("pozor.cat.search")}
+          placeholder={t("pozor.search")}
           className="max-w-xs"
         />
         <div className="flex-1" />
@@ -280,7 +280,7 @@ export function CcdCatalog({
         </Button>
         <Button size="sm" variant="outline" asChild disabled={!catalogId}>
           <label className={catalogId ? "cursor-pointer" : "cursor-not-allowed opacity-50"}>
-            <Upload className="h-4 w-4 mr-1" /> {t("pozor.cat.import")}
+            <Upload className="h-4 w-4 mr-1" /> {t("catalog.import")}
             <input
               type="file"
               accept="application/json"
