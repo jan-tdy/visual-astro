@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useMemo } from "react";
 import {
   Tolgee,
-  BackendFetch,
   TolgeeProvider,
   FormatSimple,
   useTolgee,
