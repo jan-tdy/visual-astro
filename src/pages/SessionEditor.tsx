@@ -15,6 +15,11 @@ import { getPrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useI18n } from "@/hooks/useI18n";
 import { fetchAllRows } from "@/lib/supabaseFetchAll";
+import { buildStarMatchIndex, parseRawLine, type RawCorrection } from "@/lib/rawParse";
+import {
+  buildStarHistory, findOutliers,
+  type HistoryObs, type HistoryOutlier, type StarHistory,
+} from "@/lib/magHistory";
 
 type StarType = "VISUAL" | "BINAR" | "ECL faint" | "ECL bright";
 type Star = {
@@ -88,6 +93,13 @@ export default function SessionEditor() {
   useEffect(() => { try { localStorage.setItem("session_simple_mode", simpleMode ? "1" : "0"); } catch {} }, [simpleMode]);
   const [rawText, setRawText] = useState("");
   const [rawReport, setRawReport] = useState<{ matched: number; unmatched: string[] } | null>(null);
+  // Star names the last apply rewrote. Kept in the session header rather than
+  // inside the raw panel — the observer switches back to the table to check
+  // them, and a warning that vanishes on the way there is no warning at all.
+  const [appliedFixes, setAppliedFixes] = useState<(RawCorrection & { line: string })[]>([]);
+  // Per-star statistics from this observer's *other* sessions, used to flag a
+  // value that looks mis-transcribed (a "3" read as a "5" on the night sheet).
+  const [history, setHistory] = useState<Map<string, StarHistory>>(new Map());
   const [rawPreviewSort, setRawPreviewSort] = useState<"catalog" | "ut">(() => {
     try { return (localStorage.getItem("raw_preview_sort") as any) || "catalog"; } catch { return "catalog"; }
   });
@@ -99,7 +111,9 @@ export default function SessionEditor() {
   const rawPrefilledRef = useRef(false);
   const rawDraftKey = id ? `raw_draft_${id}` : "";
   const rawModeKey = id ? `raw_mode_${id}` : "";
-  // Restore persisted draft + mode on mount (survives refresh / net drops)
+  const rawFixesKey = id ? `raw_fixes_${id}` : "";
+  // Restore persisted draft + mode + pending corrections on mount
+  // (survives refresh / net drops)
   useEffect(() => {
     if (!id) return;
     try {
@@ -107,8 +121,24 @@ export default function SessionEditor() {
       if (saved != null) { setRawText(saved); rawPrefilledRef.current = true; }
       const mode = localStorage.getItem(`raw_mode_${id}`);
       if (mode === "1") setRawMode(true);
+      const fixes = localStorage.getItem(`raw_fixes_${id}`);
+      if (fixes) setAppliedFixes(JSON.parse(fixes));
     } catch {}
   }, [id]);
+  // The corrections outlive the apply that produced them: they stay until the
+  // observer ticks them off, so a name rewritten last night is still flagged
+  // when the session is reopened to export it.
+  const rememberFixes = (fixes: (RawCorrection & { line: string })[]) => {
+    setAppliedFixes(fixes);
+    if (!rawFixesKey) return;
+    try {
+      if (fixes.length) localStorage.setItem(rawFixesKey, JSON.stringify(fixes));
+      else localStorage.removeItem(rawFixesKey);
+    } catch {
+      // Private mode / quota: the list still shows for this visit, it just
+      // won't survive a reload. Not worth interrupting the observer over.
+    }
+  };
   // Persist draft on every change
   useEffect(() => {
     if (!rawDraftKey) return;
@@ -128,147 +158,34 @@ export default function SessionEditor() {
   });
   useEffect(() => { try { localStorage.setItem("export_sort", exportSort); } catch {} }, [exportSort]);
 
-  // ---- RAW MODE: parse one compact line into an observation ----
-  // Format: <starLetters><A><pasoA>v<pasoB><B><UT>
-  // - star: leading letters (matched by name, spaces stripped, case-insensitive)
-  // - 'v' (upper/lower) separates left (A + pasoA) and right (pasoB + B + UT)
-  // - pasoA = last single digit of left; A = everything before
-  // - pasoB = first single digit of right; then B; UT = trailing 3-4 digits
-  // - dashes '-' inside A/B are converted to '.' (so "12-5" -> "12.5")
-  // Examples:
-  //   "agdraf3v1g2108"       -> AG Dra   A=f    pA=3 pB=1 B=g    UT=21:08
-  //   "mvlyr12-51v312-92110" -> MV Lyr   A=12.5 pA=1 pB=3 B=12.9 UT=21:10
-  type ParsedRaw = {
-    starToken: string;
-    a: string | null; pasos_a: number | null;
-    pasos_b: number | null; b: string | null;
-    ut_time: string | null;
-    limit_value?: string | null;
-    note?: string | null;
-    plusLevel?: number; // 0 = new star, 1 = "+" (2nd obs of prev), 2 = "++" ...
-  };
-  const parseRawLine = (
-    line: string,
-    tokens: string[],
-  ): ParsedRaw | null => {
-    // Split off note at '#' (kept with original casing/spaces)
-    const hashIdx = line.indexOf("#");
-    const note = hashIdx >= 0 ? line.slice(hashIdx + 1).trim() || null : null;
-    const body = hashIdx >= 0 ? line.slice(0, hashIdx) : line;
-    let s = body.trim().toLowerCase().replace(/\s+/g, "");
-    if (!s) return null;
-    // Extract leading "+" markers → další zápis pre predošlú hviezdu
-    let plusLevel = 0;
-    while (s.startsWith("+")) { plusLevel++; s = s.slice(1); }
-    if (plusLevel > 0 && !s) {
-      // sám "+" bez tela – ignoruj
-      return null;
+  // ---- RAW MODE ----
+  // Line parsing + star-name autocorrect live in @/lib/rawParse (unit-tested);
+  // this component only owns the catalog index and how corrections are shown.
+  const { byToken, matchIndex } = useMemo(() => {
+    const norm = (x: string) => x.toLowerCase().replace(/\s+/g, "");
+    const map = new Map<string, Star>();
+    for (const s of stars) {
+      map.set(norm(s.name), s);
+      if (s.vsnet_code) map.set(norm(s.vsnet_code), s);
+      if (s.aavso_code) map.set(norm(s.aavso_code), s);
     }
-    // 1) Prefer the longest known star token that is a prefix of the line
-    let starToken = "";
-    let consumedLen = 0;
-    if (plusLevel > 0) {
-      // Pri "+" prefixe nemusí byť názov hviezdy – použije sa predošlá
-      // (nastaví sa v applyRaw). Skús ho ale rozpoznať ak je uvedený.
-    }
-    for (const tk of tokens) {
-      if (tk && s.startsWith(tk) && tk.length > starToken.length) {
-        starToken = tk;
-        consumedLen = tk.length;
-      }
-    }
-    // 2) Predikcia: ak sa nič presne nezhoduje, hľadaj najdlhší unikátny
-    //    spoločný prefix (aspoň 3 znaky) — napr. "sdss1730" → "sdss173062dra"
-    if (!starToken && plusLevel === 0) {
-      const MIN = 3;
-      let bestLen = 0;
-      let bestTk = "";
-      let tie = false;
-      for (const tk of tokens) {
-        const max = Math.min(tk.length, s.length);
-        let k = 0;
-        while (k < max && tk[k] === s[k]) k++;
-        if (k >= MIN) {
-          if (k > bestLen) { bestLen = k; bestTk = tk; tie = false; }
-          else if (k === bestLen && tk !== bestTk) tie = true;
-        }
-      }
-      if (bestTk && !tie) { starToken = bestTk; consumedLen = bestLen; }
-    }
-    if (!starToken && plusLevel === 0) return null;
-    const rest = s.slice(consumedLen);
-    const dashToDot = (v: string | null) => (v ? v.replace(/-/g, ".") : v);
-    if (!rest) return { starToken, a: null, pasos_a: null, pasos_b: null, b: null, ut_time: null, limit_value: null, note, plusLevel };
-    // Limit line: starts with '<'
-    if (rest.startsWith("<")) {
-      const inner = rest.slice(1);
-      let limitBody: string | null = inner || null;
-      let ut_time: string | null = null;
-      const m = /^(.+?)(\d{3,4})$/.exec(inner);
-      if (m && /[.\-]/.test(m[1])) {
-        limitBody = m[1];
-        const d = m[2];
-        ut_time = d.length === 3 ? d[0] + ":" + d.slice(1) : d.slice(0, 2) + ":" + d.slice(2);
-      }
-      const normalized = dashToDot(limitBody);
-      return {
-        starToken,
-        a: null, pasos_a: null, pasos_b: null, b: null,
-        ut_time,
-        limit_value: normalized ? "<" + normalized : null,
-        note,
-        plusLevel,
-      };
-    }
-    const vIdx = rest.search(/v/i);
-    const left = vIdx >= 0 ? rest.slice(0, vIdx) : rest;
-    const right = vIdx >= 0 ? rest.slice(vIdx + 1) : "";
-    // left -> A, pasoA (last single digit)
-    let a: string | null = null;
-    let pasos_a: number | null = null;
-    if (left) {
-      const lm = /^(.*)(\d)$/.exec(left);
-      if (lm) {
-        a = lm[1] || null;
-        pasos_a = parseInt(lm[2], 10);
-      } else {
-        a = left;
-      }
-    }
-    // right -> pasoB (first single digit), B, UT (trailing 3-4 digits)
-    let pasos_b: number | null = null;
-    let b: string | null = null;
-    let ut_time: string | null = null;
-    if (right) {
-      let inner = right;
-      const um = /^(.*)(\d{4})$/.exec(inner) ?? /^(.*)(\d{3})$/.exec(inner);
-      if (um) {
-        inner = um[1];
-        const d = um[2];
-        ut_time = d.length === 3 ? d[0] + ":" + d.slice(1) : d.slice(0, 2) + ":" + d.slice(2);
-      }
-      const pm = /^(\d)(.*)$/.exec(inner);
-      if (pm) {
-        pasos_b = parseInt(pm[1], 10);
-        b = pm[2] || null;
-      } else if (inner) {
-        b = inner;
-      }
-    }
-    return { starToken, a: dashToDot(a), pasos_a, pasos_b, b: dashToDot(b), ut_time, limit_value: null, note, plusLevel };
+    return { byToken: map, matchIndex: buildStarMatchIndex(Array.from(map.keys())) };
+  }, [stars]);
+
+  /** Human-readable "typed → used" line for an autocorrected star name. */
+  const describeCorrection = (c: RawCorrection) => {
+    const star = byToken.get(c.to);
+    return {
+      from: c.from,
+      to: star?.name ?? c.to,
+      reason: t(`editor.raw.fix.${c.kind}`),
+    };
   };
 
   const applyRaw = () => {
-    const norm = (x: string) => x.toLowerCase().replace(/\s+/g, "");
-    const byToken = new Map<string, Star>();
-    for (const s of stars) {
-      byToken.set(norm(s.name), s);
-      if (s.vsnet_code) byToken.set(norm(s.vsnet_code), s);
-      if (s.aavso_code) byToken.set(norm(s.aavso_code), s);
-    }
-    const tokens = Array.from(byToken.keys()).sort((a, b) => b.length - a.length);
     const lines = rawText.split(/\r?\n/);
     const unmatched: string[] = [];
+    const corrections: (RawCorrection & { line: string })[] = [];
     let matched = 0;
     let prevStarId: string | null = null;
     // Sledujeme, koľko "+"-zápisov už tento apply zapísal per hviezda,
@@ -276,8 +193,9 @@ export default function SessionEditor() {
     const extrasOffset: Record<string, number> = {};
     for (const line of lines) {
       if (!line.trim()) continue;
-      const p = parseRawLine(line, tokens);
+      const p = parseRawLine(line, matchIndex);
       if (!p) { unmatched.push(line.trim()); continue; }
+      if (p.correction) corrections.push({ line: line.trim(), ...p.correction });
       const star = p.starToken ? byToken.get(p.starToken) : null;
       const plus = p.plusLevel ?? 0;
       // Ktorú hviezdu použiť
@@ -319,8 +237,12 @@ export default function SessionEditor() {
       matched++;
     }
     setRawReport({ matched, unmatched });
+    rememberFixes(corrections);
     if (matched > 0) toast.success(`Uložených ${matched} pozorovaní`);
     if (unmatched.length) toast.error(`Nerozpoznané: ${unmatched.length}`);
+    // An autocorrect the observer never notices is worse than none, so it gets
+    // its own toast on top of the persistent list in the report below.
+    if (corrections.length) toast.warning(t("editor.raw.fixToast").replace("{n}", String(corrections.length)));
   };
 
   // Serialize existing observations back into raw format
@@ -462,6 +384,29 @@ export default function SessionEditor() {
       setLoading(false);
     })();
   }, [user, id, nav]);
+
+  // Past observations of the same stars, for the "does this value look like a
+  // misread digit?" check. Loaded after the session itself so it never delays
+  // the editor becoming usable, and failures stay silent — the check is an
+  // extra pair of eyes, not something the editor depends on.
+  useEffect(() => {
+    if (!user || !id || stars.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await fetchAllRows<HistoryObs & { session_id: string }>((from, to) =>
+        supabase
+          .from("observations")
+          .select("star_id,a,b,pasos_a,pasos_b,limit_value,session_id")
+          .eq("user_id", user.id)
+          .neq("session_id", id)
+          .range(from, to),
+      );
+      if (cancelled || error) return;
+      const names = new Map(stars.map((s) => [s.id, s.name]));
+      setHistory(buildStarHistory(data, names));
+    })();
+    return () => { cancelled = true; };
+  }, [user, id, stars]);
 
   // Group stars by constellation, in catalog order
   const grouped = useMemo(() => {
@@ -1083,6 +1028,33 @@ export default function SessionEditor() {
     return list;
   })();
 
+  // Values that sit far from what this star has looked like in earlier
+  // sessions. Purely advisory: variables vary, and a real outburst is exactly
+  // the observation worth keeping — so this asks for a re-read, never a fix.
+  const historyWarnings: { name: string; row: string; outliers: HistoryOutlier[] }[] = (() => {
+    const prefs = getPrefs();
+    if (!prefs.magCheckEnabled || history.size === 0) return [];
+    const opts = { tolerance: prefs.magCheckTolerance };
+    const list: { name: string; row: string; outliers: HistoryOutlier[] }[] = [];
+    const byId = new Map(stars.map((s) => [s.id, s]));
+    const check = (o: Obs, row: string) => {
+      const s = byId.get(o.star_id);
+      if (!s || !o.ut_time || !o.ut_time.trim()) return;
+      const found = findOutliers(o, history.get(o.star_id), s.name, opts);
+      if (found.length) list.push({ name: s.name, row, outliers: found });
+    };
+    for (const o of Object.values(obsByStar)) check(o, "");
+    for (const [starId, arr] of Object.entries(extraByStar)) {
+      arr.forEach((o, i) => check({ ...o, star_id: starId }, String(i + 2)));
+    }
+    return list;
+  })();
+
+  /** "13.45 vs Ø 15.24 (12×)" — the numbers the observer needs to judge the flag. */
+  const describeOutlier = (x: HistoryOutlier) =>
+    `${t(`editor.histField.${x.field}`)} ${x.value.toFixed(2)} · ${t("editor.histAvg")} ${x.stat.mean.toFixed(2)} ` +
+    `(${x.stat.min.toFixed(2)}–${x.stat.max.toFixed(2)}, ${x.stat.n}×)`;
+
   return (
     <div className={`min-h-screen ${simpleMode ? "simple-mode relative" : ""}`}>
       {simpleMode && <div aria-hidden className="fixed inset-0 -z-10 bg-background" />}
@@ -1223,6 +1195,56 @@ export default function SessionEditor() {
             </div>
           )}
 
+          {appliedFixes.length > 0 && (
+            <div className="mt-3 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-xs text-yellow-700 dark:text-yellow-300">
+              <div className="flex items-start justify-between gap-2">
+                <div className="font-semibold mb-1">
+                  {t("editor.raw.fixTitle").replace("{n}", String(appliedFixes.length))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => rememberFixes([])}
+                  title={t("editor.raw.fixDismiss")}
+                  className="shrink-0 rounded p-0.5 opacity-70 hover:opacity-100 hover:bg-yellow-500/20"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <ul className="list-disc pl-5 space-y-0.5">
+                {appliedFixes.map((f, i) => {
+                  const d = describeCorrection(f);
+                  return (
+                    <li key={i}>
+                      <code className="font-mono">{d.from}</code> → <span className="font-medium">{d.to}</span>
+                      <span className="opacity-80"> ({d.reason})</span>
+                      <span className="opacity-60 font-mono"> · {f.line}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="mt-1.5 opacity-80">{t("editor.raw.fixHint")}</div>
+            </div>
+          )}
+
+          {historyWarnings.length > 0 && (
+            <div className="mt-3 rounded-md border border-sky-500/40 bg-sky-500/10 p-3 text-xs text-sky-700 dark:text-sky-300">
+              <div className="font-semibold mb-1">
+                {t("editor.histTitle").replace("{n}", String(historyWarnings.length))}
+              </div>
+              <ul className="list-disc pl-5 space-y-0.5">
+                {historyWarnings.map((w, i) => (
+                  <li key={i}>
+                    <span className="font-medium">{w.name}</span>
+                    {w.row && t("editor.warnRow").replace("{n}", w.row)}
+                    {": "}
+                    <span className="font-mono">{w.outliers.map(describeOutlier).join(" · ")}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-1.5 opacity-80">{t("editor.histHint")}</div>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
             <div className="flex items-center gap-2 mr-2">
               <label className="text-xs text-muted-foreground">{t("editor.exportSort")}:</label>
@@ -1346,6 +1368,7 @@ export default function SessionEditor() {
                   {" "}{t("editor.raw.multiIntro")}
                   {" "}<code className="font-mono">+</code> {t("editor.raw.entry2")}
                   {" "}<code className="font-mono">++</code> {t("editor.raw.entry3")}
+                  {" "}{t("editor.raw.autocorrectHint")}
                 </div>
               </div>
               <Button size="sm" onClick={applyRaw} disabled={!rawText.trim()}>
@@ -1396,30 +1419,32 @@ export default function SessionEditor() {
                 </div>
                 {(() => {
                   // Live preview: parse the current raw text without touching DB.
-                  const norm = (x: string) => x.toLowerCase().replace(/\s+/g, "");
-                  const byToken = new Map<string, Star>();
-                  for (const s of stars) {
-                    byToken.set(norm(s.name), s);
-                    if (s.vsnet_code) byToken.set(norm(s.vsnet_code), s);
-                    if (s.aavso_code) byToken.set(norm(s.aavso_code), s);
-                  }
-                  const tokens = Array.from(byToken.keys()).sort((a, b) => b.length - a.length);
+                  const prefs = getPrefs();
+                  const outlierOpts = { tolerance: prefs.magCheckTolerance };
                   const catalogIndex = new Map<string, number>();
                   stars.forEach((s, i) => catalogIndex.set(s.id, i));
-                  const rows: { key: string; name: string; o: Obs; mag: ReturnType<typeof computeMagnitude>; bad?: boolean; catIdx: number; order: number }[] = [];
+                  type PreviewRow = {
+                    key: string; name: string; o: Obs;
+                    mag: ReturnType<typeof computeMagnitude>;
+                    bad?: boolean; catIdx: number; order: number;
+                    fix?: { from: string; to: string; reason: string };
+                    outliers?: HistoryOutlier[];
+                  };
+                  const rows: PreviewRow[] = [];
+                  const emptyObs = (): Obs => ({ star_id: "", a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null, ut_time: null, note: null });
                   let prevStar: Star | null = null;
                   const lines = rawText.split(/\r?\n/);
                   lines.forEach((line, i) => {
                     if (!line.trim()) return;
-                    const p = parseRawLine(line, tokens);
+                    const p = parseRawLine(line, matchIndex);
                     if (!p) {
-                      rows.push({ key: `bad-${i}`, name: line.trim(), o: { star_id: "", a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null, ut_time: null, note: null }, mag: null as any, bad: true, catIdx: Number.MAX_SAFE_INTEGER, order: i });
+                      rows.push({ key: `bad-${i}`, name: line.trim(), o: emptyObs(), mag: null as any, bad: true, catIdx: Number.MAX_SAFE_INTEGER, order: i });
                       return;
                     }
                     const star = p.starToken ? byToken.get(p.starToken) : null;
                     const target = star ?? ((p.plusLevel ?? 0) > 0 ? prevStar : null);
                     if (!target) {
-                      rows.push({ key: `bad-${i}`, name: line.trim(), o: { star_id: "", a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null, ut_time: null, note: null }, mag: null as any, bad: true, catIdx: Number.MAX_SAFE_INTEGER, order: i });
+                      rows.push({ key: `bad-${i}`, name: line.trim(), o: emptyObs(), mag: null as any, bad: true, catIdx: Number.MAX_SAFE_INTEGER, order: i });
                       return;
                     }
                     const o: Obs = {
@@ -1429,7 +1454,16 @@ export default function SessionEditor() {
                       ut_time: p.ut_time,
                       note: p.note ?? null,
                     };
-                    rows.push({ key: `r-${i}`, name: target.name, o, mag: computeMagnitude(o, target.name), catIdx: catalogIndex.get(target.id) ?? Number.MAX_SAFE_INTEGER, order: i });
+                    rows.push({
+                      key: `r-${i}`, name: target.name, o,
+                      mag: computeMagnitude(o, target.name),
+                      catIdx: catalogIndex.get(target.id) ?? Number.MAX_SAFE_INTEGER,
+                      order: i,
+                      fix: p.correction ? describeCorrection(p.correction) : undefined,
+                      outliers: prefs.magCheckEnabled
+                        ? findOutliers(o, history.get(target.id), target.name, outlierOpts)
+                        : [],
+                    });
                     if (!(p.plusLevel && p.plusLevel > 0) || star) prevStar = target;
                   });
                   if (rows.length === 0) {
@@ -1454,7 +1488,41 @@ export default function SessionEditor() {
                     }
                     return rawPreviewOrder === "desc" ? -cmp : cmp;
                   });
+                  const fixes = sorted.filter((r) => r.fix);
+                  const flagged = sorted.filter((r) => r.outliers?.length);
                   return (
+                    <div className="space-y-2">
+                    {fixes.length > 0 && (
+                      <div className="rounded-md border border-yellow-500/40 bg-yellow-500/10 p-2 text-xs text-yellow-700 dark:text-yellow-300">
+                        <div className="font-semibold">
+                          {t("editor.raw.fixTitle").replace("{n}", String(fixes.length))}
+                        </div>
+                        <ul className="list-disc pl-5 mt-1 space-y-0.5">
+                          {fixes.map((r) => (
+                            <li key={r.key}>
+                              <code className="font-mono">{r.fix!.from}</code> → <span className="font-medium">{r.fix!.to}</span>
+                              <span className="opacity-80"> ({r.fix!.reason})</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {flagged.length > 0 && (
+                      <div className="rounded-md border border-sky-500/40 bg-sky-500/10 p-2 text-xs text-sky-700 dark:text-sky-300">
+                        <div className="font-semibold">
+                          {t("editor.histTitle").replace("{n}", String(flagged.length))}
+                        </div>
+                        <ul className="list-disc pl-5 mt-1 space-y-0.5">
+                          {flagged.map((r) => (
+                            <li key={r.key}>
+                              <span className="font-medium">{r.name}</span>{": "}
+                              <span className="font-mono">{r.outliers!.map(describeOutlier).join(" · ")}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="mt-1 opacity-80">{t("editor.histHint")}</div>
+                      </div>
+                    )}
                     <div className="overflow-x-auto rounded-md border border-border">
                       <table className="w-full text-xs">
                         <thead className="bg-secondary/40 text-left">
@@ -1471,21 +1539,40 @@ export default function SessionEditor() {
                           </tr>
                         </thead>
                         <tbody className="font-mono">
-                          {sorted.map((r) => (
+                          {sorted.map((r) => {
+                            const magOff = r.outliers?.some((x) => x.field === "mag" || x.field === "limit");
+                            return (
                             <tr key={r.key} className={`border-t border-border/40 ${r.bad ? "text-destructive" : ""}`}>
-                              <td className="px-2 py-1 font-sans font-medium">{r.bad ? `? ${r.name}` : r.name}</td>
-                              <td className="px-2 py-1">{r.o.a ?? ""}</td>
-                              <td className="px-2 py-1">{r.o.pasos_a ?? ""}</td>
-                              <td className="px-2 py-1">{r.o.pasos_b ?? ""}</td>
-                              <td className="px-2 py-1">{r.o.b ?? ""}</td>
+                              <td className="px-2 py-1 font-sans font-medium">
+                                {r.bad ? `? ${r.name}` : r.name}
+                                {r.fix && (
+                                  <span
+                                    className="ml-1 text-yellow-600 dark:text-yellow-400"
+                                    title={`${r.fix.from} → ${r.fix.to} (${r.fix.reason})`}
+                                  >
+                                    ✎
+                                  </span>
+                                )}
+                              </td>
+                              <td className={`px-2 py-1 ${r.outliers?.some((x) => x.field === "a") ? "text-sky-600 dark:text-sky-400" : ""}`}>{r.o.a ?? ""}</td>
+                              <td className={`px-2 py-1 ${r.outliers?.some((x) => x.field === "pasos_a") ? "text-sky-600 dark:text-sky-400" : ""}`}>{r.o.pasos_a ?? ""}</td>
+                              <td className={`px-2 py-1 ${r.outliers?.some((x) => x.field === "pasos_b") ? "text-sky-600 dark:text-sky-400" : ""}`}>{r.o.pasos_b ?? ""}</td>
+                              <td className={`px-2 py-1 ${r.outliers?.some((x) => x.field === "b") ? "text-sky-600 dark:text-sky-400" : ""}`}>{r.o.b ?? ""}</td>
                               <td className="px-2 py-1">{r.o.limit_value ?? ""}</td>
                               <td className="px-2 py-1">{r.o.ut_time ?? ""}</td>
-                              <td className="px-2 py-1 text-right">{r.mag?.value ?? <span className="text-muted-foreground">—</span>}</td>
+                              <td
+                                className={`px-2 py-1 text-right ${magOff ? "text-sky-600 dark:text-sky-400 font-semibold" : ""}`}
+                                title={r.outliers?.length ? r.outliers.map(describeOutlier).join(" · ") : undefined}
+                              >
+                                {r.mag?.value ?? <span className="text-muted-foreground">—</span>}
+                              </td>
                               <td className="px-2 py-1 font-sans text-muted-foreground">{r.o.note ?? ""}</td>
                             </tr>
-                          ))}
+                            );
+                          })}
                         </tbody>
                       </table>
+                    </div>
                     </div>
                   );
                 })()}
