@@ -5,7 +5,7 @@ import {
 } from "recharts";
 import { useI18n } from "@/hooks/useI18n";
 import {
-  altAz, formatUT, minimaTimesInRange, sampleNight, twilightTimes,
+  altAz, formatUT, minimaTimesInRange, sampleNight,
   type PozorLocation, type SampleTarget,
 } from "@/lib/pozor";
 import { CURVE_COLORS } from "./shared";
@@ -73,13 +73,13 @@ export function AltitudeChart({
 }) {
   const { t } = useI18n();
 
-  const { rows, night, fromDate, toDate } = useMemo(() => {
+  const { rows, night, twilight, fromDate, toDate } = useMemo(() => {
     const sampleTargets: SampleTarget[] = targets.map((x) => ({
       key: x.id,
       raHours: x.ra_hours,
       decDeg: x.dec_deg,
     }));
-    const { samples, night, fromDate, toDate } = sampleNight(date, location, sampleTargets, 10);
+    const { samples, night, twilight, fromDate, toDate } = sampleNight(date, location, sampleTargets, 10);
     const rows = samples.map((s) => {
       const row: Record<string, number | string> = {
         minutes: s.minutes,
@@ -90,7 +90,7 @@ export function AltitudeChart({
       for (const tg of targets) row[tg.id] = Number(s.targets[tg.id].toFixed(2));
       return row;
     });
-    return { rows, night, fromDate, toDate };
+    return { rows, night, twilight, fromDate, toDate };
   }, [date, location, targets]);
 
   const minMinutes = (rows[0]?.minutes as number) ?? 0;
@@ -101,12 +101,15 @@ export function AltitudeChart({
   const darkTo = toMinutes(night.end);
 
   const twilightLines = useMemo(() => {
-    const tw = twilightTimes(date, location);
-    return TWILIGHT_LABELS.map(({ key, label }) => ({ key, label, minutes: toMinutes(tw[key]) })).filter(
+    return TWILIGHT_LABELS.map(({ key, label }) => ({
+      key,
+      label,
+      minutes: toMinutes(twilight[key]),
+    })).filter(
       (l) => l.minutes != null && l.minutes >= minMinutes && l.minutes <= maxMinutes,
     ) as { key: string; label: string; minutes: number }[];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date, location, fromDate, minMinutes, maxMinutes]);
+  }, [twilight, fromDate, minMinutes, maxMinutes]);
 
   const hourTicks = useMemo(() => {
     const startMs = fromDate.getTime();
