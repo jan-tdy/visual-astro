@@ -16,6 +16,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useI18n } from "@/hooks/useI18n";
 import { fetchAllRows } from "@/lib/supabaseFetchAll";
 import { buildStarMatchIndex, parseRawLine, replaceStarToken, type RawCorrection } from "@/lib/rawParse";
+import { buildPaperTemplatePdf, type PaperTemplateLabels } from "@/lib/paperTemplatePdf";
 import {
   buildStarHistory, findOutliers,
   type HistoryObs, type HistoryOutlier, type StarHistory,
@@ -958,51 +959,29 @@ export default function SessionEditor() {
     }
   };
 
-  const downloadPaperTemplate = () => {
-    // Same headings as the on-screen table — one set of words, one set of keys.
-    const headers = ["#", t("editor.col.star"), "A", t("editor.col.pasoA"), t("editor.col.pasoB"), "B", t("editor.col.limit"), "UT", t("editor.col.note")];
-    const ROWS_PER_COL = 50;
-    const TOTAL = 100;
-    const renderTable = (startIdx: number) => `
-      <table>
-        <thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
-        <tbody>${Array.from({ length: ROWS_PER_COL }).map((_, i) => `<tr><td class="num">${startIdx + i + 1}</td>${Array.from({ length: headers.length - 1 }).map(() => `<td></td>`).join("")}</tr>`).join("")}</tbody>
-      </table>`;
-    void TOTAL;
-    const html = `<!doctype html><html lang="sk"><head><meta charset="utf-8"><title>${t("editor.paperTitle")}</title>
-<style>
-  @page { size: A4 portrait; margin: 6mm; }
-  * { box-sizing: border-box; }
-  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #000; margin: 0; padding: 4mm; font-size: 7pt; }
-  header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2mm; border-bottom: 1px solid #000; padding-bottom: 1mm; }
-  header h1 { margin: 0; font-size: 10pt; letter-spacing: 0.5px; }
-  header .meta { font-size: 7pt; display: flex; gap: 4mm; align-items: center; }
-  header .meta span { display: inline-block; min-width: 24mm; border-bottom: 1px solid #000; margin-left: 3px; padding: 0 3px; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; }
-  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  th, td { border: 1px solid #000; padding: 0.4mm 0.6mm; font-size: 6pt; text-align: left; height: 4.7mm; }
-  th { background: #eee; font-weight: 600; text-align: center; font-size: 6.5pt; padding: 0.6mm 0.4mm; }
-  td.num { text-align: center; width: 5mm; background: #fafafa; color: #555; }
-  th:nth-child(1), td:nth-child(1) { width: 5mm; }
-  th:nth-child(2), td:nth-child(2) { width: 18%; }
-  th:nth-child(9), td:nth-child(9) { width: 18%; }
-  .print { position: fixed; top: 8px; right: 8px; }
-  @media print { .print { display: none; } }
-</style></head><body>
-  <button class="print" onclick="window.print()">${t("editor.paperPrint")}</button>
-  <header>
-    <h1>${t("editor.paperHeader")}</h1>
-    <div class="meta">${t("editor.paperDate")}<span></span> ${t("editor.paperObserver")}<span></span></div>
-  </header>
-  <div class="grid">
-    ${renderTable(0)}
-    ${renderTable(ROWS_PER_COL)}
-  </div>
-</body></html>`;
-    const w = window.open("", "_blank");
-    if (!w) { toast.error(t("editor.popupBlocked")); return; }
-    w.document.write(html);
-    w.document.close();
+  const downloadPaperTemplate = async () => {
+    // A real PDF, drawn with vector rect()/line() calls rather than an HTML
+    // table handed to window.print(): browsers/printers can silently drop
+    // hairline table borders under "fit to page" scaling, a real vector line
+    // in the PDF itself can't be dropped that way.
+    const prefs = getPrefs();
+    const labels: PaperTemplateLabels = {
+      title: t("editor.paperHeader"),
+      dateLabel: t("editor.paperDate"),
+      observerLabel: t("editor.paperObserver"),
+      colNum: "#",
+      colStar: t("editor.col.star"),
+      colA: "A",
+      colPasoA: t("editor.col.pasoA"),
+      colPasoB: t("editor.col.pasoB"),
+      colB: "B",
+      colMag: t("editor.paperColMag"),
+      colLimit: t("editor.col.limit"),
+      colUt: "UT",
+      colNote: t("editor.col.note"),
+    };
+    const doc = await buildPaperTemplatePdf(prefs.paperTemplate, labels, obsCode);
+    doc.save(`pozorovaci-papier-${isoDate}.pdf`);
   };
 
   // Format input value for date (UTC)
