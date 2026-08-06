@@ -62,7 +62,7 @@ export default function Pozor() {
               {!isPlusActive && <Lock className="h-3 w-3 opacity-60" />}
             </TabsTrigger>
             <TabsTrigger value="instant">{t("pozor.tab.instant")}</TabsTrigger>
-            <TabsTrigger value="catalog">{t("pozor.tab.catalog")}</TabsTrigger>
+            <TabsTrigger value="catalog">{t("pozor.catalog")}</TabsTrigger>
           </TabsList>
           <TabsContent value="chart" className="mt-4">
             <NightChart targets={targets} settings={settings} setSettings={setSettings} locations={locations} />

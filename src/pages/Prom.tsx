@@ -42,7 +42,7 @@ export default function Prom() {
 
   const doDelete = (name: string) => {
     deletePromStar(name);
-    toast.success(t("prom.toast.deleted"));
+    toast.success(t("catalog.toast.deleted"));
   };
 
   const onExport = () => {
@@ -79,7 +79,7 @@ export default function Prom() {
           </div>
           <div className="flex gap-2 flex-wrap">
             <Input
-              placeholder={t("prom.search")}
+              placeholder={t("catalog.search")}
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               className="w-48"
@@ -90,7 +90,7 @@ export default function Prom() {
             <label className="inline-flex">
               <Button variant="outline" size="sm" asChild>
                 <span className="cursor-pointer">
-                  <Upload className="h-4 w-4 mr-1.5" /> {t("prom.import")}
+                  <Upload className="h-4 w-4 mr-1.5" /> {t("catalog.import")}
                 </span>
               </Button>
               <input
@@ -108,7 +108,7 @@ export default function Prom() {
               <RotateCcw className="h-4 w-4 mr-1.5" /> {t("prom.reset")}
             </Button>
             <Button size="sm" onClick={() => setCreating(true)}>
-              <Plus className="h-4 w-4 mr-1.5" /> {t("prom.add")}
+              <Plus className="h-4 w-4 mr-1.5" /> {t("catalog.add")}
             </Button>
           </div>
         </div>
@@ -121,7 +121,7 @@ export default function Prom() {
           <table className="w-full text-sm">
             <thead className="border-b border-border bg-secondary/40">
               <tr className="text-left">
-                <th className="px-3 py-2 w-48">{t("prom.col.star")}</th>
+                <th className="px-3 py-2 w-48">{t("catalog.col.star")}</th>
                 <th className="px-3 py-2">{t("prom.col.letters")}</th>
                 <th className="px-3 py-2 w-28"></th>
               </tr>
@@ -180,7 +180,7 @@ export default function Prom() {
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("prom.delete.title")}</AlertDialogTitle>
+            <AlertDialogTitle>{t("catalog.delete.title")}</AlertDialogTitle>
             <AlertDialogDescription>
               {t("prom.delete.desc").replace("{name}", String(confirmDelete ?? ""))}
             </AlertDialogDescription>
@@ -274,7 +274,7 @@ function PromDialog({
       renamePromStar(row.name, trimmed);
     }
     upsertPromStar(trimmed, letters);
-    toast.success(t("prom.toast.saved"));
+    toast.success(t("catalog.toast.saved"));
     onClose();
   };
 
@@ -282,7 +282,7 @@ function PromDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{row ? t("prom.dialog.edit") : t("prom.dialog.new")}</DialogTitle>
+          <DialogTitle>{row ? t("catalog.dialog.edit") : t("catalog.dialog.new")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div>
@@ -321,7 +321,7 @@ function PromDialog({
             </Button>
           </div>
           <Button className="w-full" onClick={save}>
-            <Save className="h-4 w-4 mr-1.5" /> {t("prom.dialog.save")}
+            <Save className="h-4 w-4 mr-1.5" /> {t("catalog.dialog.save")}
           </Button>
         </div>
       </DialogContent>

@@ -225,7 +225,7 @@ export default function Sessions() {
                   {!s.is_favorite && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" title={t("sessions.delete")}>
+                        <Button variant="ghost" size="icon" title={t("common.delete")}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </AlertDialogTrigger>
@@ -237,12 +237,12 @@ export default function Sessions() {
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>{t("sessions.cancel")}</AlertDialogCancel>
+                          <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => remove(s.id)}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                           >
-                            {t("sessions.delete")}
+                            {t("common.delete")}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
