@@ -1178,8 +1178,6 @@ const tolgee = Tolgee()
     defaultLanguage: "sk-SK",
     fallbackLanguage: "sk-SK",
     availableLanguages: SUPPORTED_LANGS.map((l) => toTolgee(l.code)),
-    // our keys are flat and contain dots (e.g. "editor.copy")
-    structureDelimiter: "",
     staticData: localeLoaders,
   });
 
