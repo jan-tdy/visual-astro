@@ -92,11 +92,11 @@ export default function SessionEditor() {
   });
   useEffect(() => { try { localStorage.setItem("session_simple_mode", simpleMode ? "1" : "0"); } catch {} }, [simpleMode]);
   const [rawText, setRawText] = useState("");
-  const [rawReport, setRawReport] = useState<{
-    matched: number;
-    unmatched: string[];
-    corrections: { line: string; from: string; to: string; reason: string }[];
-  } | null>(null);
+  const [rawReport, setRawReport] = useState<{ matched: number; unmatched: string[] } | null>(null);
+  // Star names the last apply rewrote. Kept in the session header rather than
+  // inside the raw panel — the observer switches back to the table to check
+  // them, and a warning that vanishes on the way there is no warning at all.
+  const [appliedFixes, setAppliedFixes] = useState<(RawCorrection & { line: string })[]>([]);
   // Per-star statistics from this observer's *other* sessions, used to flag a
   // value that looks mis-transcribed (a "3" read as a "5" on the night sheet).
   const [history, setHistory] = useState<Map<string, StarHistory>>(new Map());
@@ -111,7 +111,9 @@ export default function SessionEditor() {
   const rawPrefilledRef = useRef(false);
   const rawDraftKey = id ? `raw_draft_${id}` : "";
   const rawModeKey = id ? `raw_mode_${id}` : "";
-  // Restore persisted draft + mode on mount (survives refresh / net drops)
+  const rawFixesKey = id ? `raw_fixes_${id}` : "";
+  // Restore persisted draft + mode + pending corrections on mount
+  // (survives refresh / net drops)
   useEffect(() => {
     if (!id) return;
     try {
@@ -119,8 +121,24 @@ export default function SessionEditor() {
       if (saved != null) { setRawText(saved); rawPrefilledRef.current = true; }
       const mode = localStorage.getItem(`raw_mode_${id}`);
       if (mode === "1") setRawMode(true);
+      const fixes = localStorage.getItem(`raw_fixes_${id}`);
+      if (fixes) setAppliedFixes(JSON.parse(fixes));
     } catch {}
   }, [id]);
+  // The corrections outlive the apply that produced them: they stay until the
+  // observer ticks them off, so a name rewritten last night is still flagged
+  // when the session is reopened to export it.
+  const rememberFixes = (fixes: (RawCorrection & { line: string })[]) => {
+    setAppliedFixes(fixes);
+    if (!rawFixesKey) return;
+    try {
+      if (fixes.length) localStorage.setItem(rawFixesKey, JSON.stringify(fixes));
+      else localStorage.removeItem(rawFixesKey);
+    } catch {
+      // Private mode / quota: the list still shows for this visit, it just
+      // won't survive a reload. Not worth interrupting the observer over.
+    }
+  };
   // Persist draft on every change
   useEffect(() => {
     if (!rawDraftKey) return;
@@ -167,7 +185,7 @@ export default function SessionEditor() {
   const applyRaw = () => {
     const lines = rawText.split(/\r?\n/);
     const unmatched: string[] = [];
-    const corrections: { line: string; from: string; to: string; reason: string }[] = [];
+    const corrections: (RawCorrection & { line: string })[] = [];
     let matched = 0;
     let prevStarId: string | null = null;
     // Sledujeme, koľko "+"-zápisov už tento apply zapísal per hviezda,
@@ -177,7 +195,7 @@ export default function SessionEditor() {
       if (!line.trim()) continue;
       const p = parseRawLine(line, matchIndex);
       if (!p) { unmatched.push(line.trim()); continue; }
-      if (p.correction) corrections.push({ line: line.trim(), ...describeCorrection(p.correction) });
+      if (p.correction) corrections.push({ line: line.trim(), ...p.correction });
       const star = p.starToken ? byToken.get(p.starToken) : null;
       const plus = p.plusLevel ?? 0;
       // Ktorú hviezdu použiť
@@ -218,7 +236,8 @@ export default function SessionEditor() {
       }
       matched++;
     }
-    setRawReport({ matched, unmatched, corrections });
+    setRawReport({ matched, unmatched });
+    rememberFixes(corrections);
     if (matched > 0) toast.success(`Uložených ${matched} pozorovaní`);
     if (unmatched.length) toast.error(`Nerozpoznané: ${unmatched.length}`);
     // An autocorrect the observer never notices is worse than none, so it gets
@@ -1176,6 +1195,37 @@ export default function SessionEditor() {
             </div>
           )}
 
+          {appliedFixes.length > 0 && (
+            <div className="mt-3 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-xs text-yellow-700 dark:text-yellow-300">
+              <div className="flex items-start justify-between gap-2">
+                <div className="font-semibold mb-1">
+                  {t("editor.raw.fixTitle").replace("{n}", String(appliedFixes.length))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => rememberFixes([])}
+                  title={t("editor.raw.fixDismiss")}
+                  className="shrink-0 rounded p-0.5 opacity-70 hover:opacity-100 hover:bg-yellow-500/20"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <ul className="list-disc pl-5 space-y-0.5">
+                {appliedFixes.map((f, i) => {
+                  const d = describeCorrection(f);
+                  return (
+                    <li key={i}>
+                      <code className="font-mono">{d.from}</code> → <span className="font-medium">{d.to}</span>
+                      <span className="opacity-80"> ({d.reason})</span>
+                      <span className="opacity-60 font-mono"> · {f.line}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="mt-1.5 opacity-80">{t("editor.raw.fixHint")}</div>
+            </div>
+          )}
+
           {historyWarnings.length > 0 && (
             <div className="mt-3 rounded-md border border-sky-500/40 bg-sky-500/10 p-3 text-xs text-sky-700 dark:text-sky-300">
               <div className="font-semibold mb-1">
@@ -1336,22 +1386,6 @@ export default function SessionEditor() {
             {rawReport && (
               <div className="mt-3 text-xs">
                 <div className="text-primary">{t("editor.raw.saved")} {rawReport.matched}</div>
-                {rawReport.corrections.length > 0 && (
-                  <div className="mt-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-2 text-yellow-700 dark:text-yellow-300">
-                    <div className="font-semibold">
-                      {t("editor.raw.fixTitle").replace("{n}", String(rawReport.corrections.length))}
-                    </div>
-                    <ul className="list-disc pl-5 mt-1 space-y-0.5">
-                      {rawReport.corrections.map((c, i) => (
-                        <li key={i}>
-                          <code className="font-mono">{c.from}</code> → <span className="font-medium">{c.to}</span>
-                          <span className="opacity-80"> ({c.reason})</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="mt-1 opacity-80">{t("editor.raw.fixHint")}</div>
-                  </div>
-                )}
                 {rawReport.unmatched.length > 0 && (
                   <div className="mt-1 text-destructive">
                     {t("editor.raw.unrecognized")} ({rawReport.unmatched.length}):
