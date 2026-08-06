@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildStarMatchIndex, looseDesig, matchStarToken, parseRawLine, splitConstellation } from "@/lib/rawParse";
+import { buildStarMatchIndex, looseDesig, matchStarToken, parseRawLine, replaceStarToken, splitConstellation } from "@/lib/rawParse";
 
 // A miniature catalog in the same normalised form SessionEditor builds
 // (lowercase, spaces stripped) from star names / VSNET / AAVSO codes.
@@ -131,5 +131,38 @@ describe("parseRawLine", () => {
 
   it("returns null when no star can be resolved", () => {
     expect(parseRawLine("qqqqqq123", index)).toBeNull();
+  });
+});
+
+describe("replaceStarToken", () => {
+  it("swaps the star name while keeping paso/UT data", () => {
+    const line = "agdraf3v1g2108";
+    const p = parseRawLine(line, index)!;
+    expect(replaceStarToken(line, p.plusLevel ?? 0, p.matchLen, "mvlyr")).toBe("mvlyrf3v1g2108");
+  });
+
+  it("preserves a leading '+' marker", () => {
+    const line = "+agdraf3v1g2130";
+    const p = parseRawLine(line, index)!;
+    expect(replaceStarToken(line, p.plusLevel ?? 0, p.matchLen, "mvlyr")).toBe("+mvlyrf3v1g2130");
+  });
+
+  it("preserves a trailing note", () => {
+    const line = "agdraf3v1g2108#Hmla nizko";
+    const p = parseRawLine(line, index)!;
+    expect(replaceStarToken(line, p.plusLevel ?? 0, p.matchLen, "mvlyr")).toBe("mvlyrf3v1g2108#Hmla nizko");
+  });
+
+  it("prepends the name when nothing had matched (matchLen 0)", () => {
+    // e.g. assigning a star to a line the parser couldn't resolve at all
+    expect(replaceStarToken("3v1g2130", 0, 0, "mvlyr")).toBe("mvlyr3v1g2130");
+  });
+
+  it("keeps a '+'-only continuation line intact aside from the name", () => {
+    // a '+' line that only carries data (star name omitted) has matchLen 0
+    const line = "+s3v1g2130";
+    const p = parseRawLine(line, index)!;
+    expect(p.matchLen).toBe(0);
+    expect(replaceStarToken(line, p.plusLevel ?? 0, p.matchLen, "mvlyr")).toBe("+mvlyrs3v1g2130");
   });
 });

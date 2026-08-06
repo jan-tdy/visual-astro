@@ -15,7 +15,7 @@ import { getPrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useI18n } from "@/hooks/useI18n";
 import { fetchAllRows } from "@/lib/supabaseFetchAll";
-import { buildStarMatchIndex, parseRawLine, type RawCorrection } from "@/lib/rawParse";
+import { buildStarMatchIndex, parseRawLine, replaceStarToken, type RawCorrection } from "@/lib/rawParse";
 import {
   buildStarHistory, findOutliers,
   type HistoryObs, type HistoryOutlier, type StarHistory,
@@ -108,6 +108,10 @@ export default function SessionEditor() {
     try { return (localStorage.getItem("raw_preview_order") as any) || "asc"; } catch { return "asc"; }
   });
   useEffect(() => { try { localStorage.setItem("raw_preview_order", rawPreviewOrder); } catch {} }, [rawPreviewOrder]);
+  // Inline star-name edit in the raw preview table: which source line (index
+  // into rawText.split) is being edited, and the current search text.
+  const [rawEditingLine, setRawEditingLine] = useState<number | null>(null);
+  const [rawEditQuery, setRawEditQuery] = useState("");
   const rawPrefilledRef = useRef(false);
   const rawDraftKey = id ? `raw_draft_${id}` : "";
   const rawModeKey = id ? `raw_mode_${id}` : "";
@@ -180,6 +184,38 @@ export default function SessionEditor() {
       to: star?.name ?? c.to,
       reason: t(`editor.raw.fix.${c.kind}`),
     };
+  };
+
+  /** Catalog stars whose name/VSNET/AAVSO code contains `query` (case-insensitive). */
+  const searchStars = (query: string): Star[] => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return stars.filter((s) =>
+      s.name.toLowerCase().includes(q) ||
+      (s.vsnet_code?.toLowerCase().includes(q) ?? false) ||
+      (s.aavso_code?.toLowerCase().includes(q) ?? false)
+    );
+  };
+
+  /**
+   * Rewrite the star name on one raw-text line, keeping everything else on
+   * that line untouched — used when the observer clicks a star name in the
+   * raw preview table to fix a wrong/unrecognized match. `plusLevel` and
+   * `matchLen` come from parseRawLine (0/0 when nothing matched at all, in
+   * which case the new name is simply prepended).
+   */
+  const applyRawStarEdit = (lineIndex: number, plusLevel: number, matchLen: number, star: Star) => {
+    setRawText((prev) => {
+      const lines = prev.split(/\r?\n/);
+      const line = lines[lineIndex];
+      if (line == null) return prev;
+      const token = star.name.toLowerCase().replace(/\s+/g, "");
+      const next = [...lines];
+      next[lineIndex] = replaceStarToken(line, plusLevel, matchLen, token);
+      return next.join("\n");
+    });
+    setRawEditingLine(null);
+    setRawEditQuery("");
   };
 
   const applyRaw = () => {
@@ -1445,6 +1481,8 @@ export default function SessionEditor() {
                     bad?: boolean; catIdx: number; order: number;
                     fix?: { from: string; to: string; reason: string };
                     outliers?: HistoryOutlier[];
+                    /** source line + how to splice in a different star name (see applyRawStarEdit) */
+                    lineIndex: number; plusLevel: number; matchLen: number;
                   };
                   const rows: PreviewRow[] = [];
                   const emptyObs = (): Obs => ({ star_id: "", a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null, ut_time: null, note: null });
@@ -1454,13 +1492,13 @@ export default function SessionEditor() {
                     if (!line.trim()) return;
                     const p = parseRawLine(line, matchIndex);
                     if (!p) {
-                      rows.push({ key: `bad-${i}`, name: line.trim(), o: emptyObs(), mag: null as any, bad: true, catIdx: Number.MAX_SAFE_INTEGER, order: i });
+                      rows.push({ key: `bad-${i}`, name: line.trim(), o: emptyObs(), mag: null as any, bad: true, catIdx: Number.MAX_SAFE_INTEGER, order: i, lineIndex: i, plusLevel: 0, matchLen: 0 });
                       return;
                     }
                     const star = p.starToken ? byToken.get(p.starToken) : null;
                     const target = star ?? ((p.plusLevel ?? 0) > 0 ? prevStar : null);
                     if (!target) {
-                      rows.push({ key: `bad-${i}`, name: line.trim(), o: emptyObs(), mag: null as any, bad: true, catIdx: Number.MAX_SAFE_INTEGER, order: i });
+                      rows.push({ key: `bad-${i}`, name: line.trim(), o: emptyObs(), mag: null as any, bad: true, catIdx: Number.MAX_SAFE_INTEGER, order: i, lineIndex: i, plusLevel: p.plusLevel ?? 0, matchLen: p.matchLen });
                       return;
                     }
                     const o: Obs = {
@@ -1475,6 +1513,7 @@ export default function SessionEditor() {
                       mag: computeMagnitude(o, target.name),
                       catIdx: catalogIndex.get(target.id) ?? Number.MAX_SAFE_INTEGER,
                       order: i,
+                      lineIndex: i, plusLevel: p.plusLevel ?? 0, matchLen: p.matchLen,
                       fix: p.correction ? describeCorrection(p.correction) : undefined,
                       outliers: prefs.magCheckEnabled
                         ? findOutliers(o, history.get(target.id), target.name, outlierOpts)
@@ -1559,9 +1598,69 @@ export default function SessionEditor() {
                             const magOff = r.outliers?.some((x) => x.field === "mag" || x.field === "limit");
                             return (
                             <tr key={r.key} className={`border-t border-border/40 ${r.bad ? "text-destructive" : ""}`}>
-                              <td className="px-2 py-1 font-sans font-medium">
-                                {r.bad ? `? ${r.name}` : r.name}
-                                {r.fix && (
+                              <td className="px-2 py-1 font-sans font-medium relative">
+                                {rawEditingLine === r.lineIndex ? (
+                                  <div className="relative">
+                                    <input
+                                      autoFocus
+                                      value={rawEditQuery}
+                                      onChange={(e) => setRawEditQuery(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Escape") {
+                                          setRawEditingLine(null);
+                                          setRawEditQuery("");
+                                        } else if (e.key === "Enter") {
+                                          const matches = searchStars(rawEditQuery);
+                                          if (matches.length === 1) {
+                                            applyRawStarEdit(r.lineIndex, r.plusLevel, r.matchLen, matches[0]);
+                                          }
+                                        }
+                                      }}
+                                      onBlur={() => {
+                                        window.setTimeout(() => {
+                                          setRawEditingLine((v) => (v === r.lineIndex ? null : v));
+                                        }, 150);
+                                      }}
+                                      placeholder={t("editor.raw.editPlaceholder")}
+                                      className="w-full h-6 rounded border border-input bg-background px-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-ring"
+                                    />
+                                    {rawEditQuery.trim() && (
+                                      <div className="absolute z-30 mt-0.5 max-h-48 w-48 overflow-y-auto rounded-md border border-border bg-popover shadow-md">
+                                        {searchStars(rawEditQuery).slice(0, 8).map((s) => (
+                                          <button
+                                            key={s.id}
+                                            type="button"
+                                            onMouseDown={(e) => {
+                                              e.preventDefault();
+                                              applyRawStarEdit(r.lineIndex, r.plusLevel, r.matchLen, s);
+                                            }}
+                                            className="block w-full text-left px-2 py-1 text-xs font-sans hover:bg-accent"
+                                          >
+                                            {s.name}
+                                          </button>
+                                        ))}
+                                        {searchStars(rawEditQuery).length === 0 && (
+                                          <div className="px-2 py-1 text-xs font-sans text-muted-foreground">
+                                            {t("editor.raw.editNoMatch")}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    title={t("editor.raw.editNameTitle")}
+                                    onClick={() => {
+                                      setRawEditingLine(r.lineIndex);
+                                      setRawEditQuery(r.bad ? "" : r.name);
+                                    }}
+                                    className="text-left hover:underline decoration-dotted underline-offset-2"
+                                  >
+                                    {r.bad ? `? ${r.name}` : r.name}
+                                  </button>
+                                )}
+                                {r.fix && rawEditingLine !== r.lineIndex && (
                                   <span
                                     className="ml-1 text-yellow-600 dark:text-yellow-400"
                                     title={`${r.fix.from} → ${r.fix.to} (${r.fix.reason})`}
