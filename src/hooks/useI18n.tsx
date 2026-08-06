@@ -1139,7 +1139,8 @@ type Key = keyof (typeof dict)["sk"];
 // Tolgee and hit "Publish" on the Content Delivery config to push them live.
 // Set this to your Content Delivery URL, e.g. "https://cdn.tolg.ee/<id>".
 const TOLGEE_CDN_URL: string =
-  (import.meta.env.VITE_TOLGEE_CDN_URL as string | undefined) ?? "";
+  (import.meta.env.VITE_TOLGEE_CDN_URL as string | undefined) ??
+  "https://cdn.tolg.ee/aa59fd475e54efc1943b6669f398d193";
 
 // Map our short app lang codes to Tolgee project language tags
 const TOLGEE_MAP: Record<Lang, string> = {
