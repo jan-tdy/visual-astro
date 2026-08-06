@@ -923,7 +923,8 @@ export default function SessionEditor() {
   };
 
   const downloadPaperTemplate = () => {
-    const headers = ["#", t("editor.paperColStar"), "A", t("editor.paperColPasoA"), t("editor.paperColPasoB"), "B", t("editor.paperColLimit"), "UT", t("editor.paperColNote")];
+    // Same headings as the on-screen table — one set of words, one set of keys.
+    const headers = ["#", t("editor.col.star"), "A", t("editor.col.pasoA"), t("editor.col.pasoB"), "B", t("editor.col.limit"), "UT", t("editor.col.note")];
     const ROWS_PER_COL = 50;
     const TOTAL = 100;
     const renderTable = (startIdx: number) => `
@@ -1050,10 +1051,25 @@ export default function SessionEditor() {
     return list;
   })();
 
-  /** "13.45 vs Ø 15.24 (12×)" — the numbers the observer needs to judge the flag. */
-  const describeOutlier = (x: HistoryOutlier) =>
-    `${t(`editor.histField.${x.field}`)} ${x.value.toFixed(2)} · ${t("editor.histAvg")} ${x.stat.mean.toFixed(2)} ` +
-    `(${x.stat.min.toFixed(2)}–${x.stat.max.toFixed(2)}, ${x.stat.n}×)`;
+  // Field labels reuse the table's own column headings rather than carrying a
+  // second set of translations for the same six words. "A" and "B" are literal
+  // here for the same reason they are in the table header: they never translate.
+  const HISTORY_FIELD_LABEL: Record<HistoryOutlier["field"], string> = {
+    mag: "editor.col.mag",
+    a: "",
+    b: "",
+    pasos_a: "editor.col.pasoA",
+    pasos_b: "editor.col.pasoB",
+    limit: "editor.col.limit",
+  };
+
+  /** "Mag 13.45 · priemer 15.24 (14.90–15.60, 12×)" — the numbers behind the flag. */
+  const describeOutlier = (x: HistoryOutlier) => {
+    const key = HISTORY_FIELD_LABEL[x.field];
+    const label = key ? t(key) : x.field.toUpperCase();
+    return `${label} ${x.value.toFixed(2)} · ${t("editor.histAvg")} ${x.stat.mean.toFixed(2)} ` +
+      `(${x.stat.min.toFixed(2)}–${x.stat.max.toFixed(2)}, ${x.stat.n}×)`;
+  };
 
   return (
     <div className={`min-h-screen ${simpleMode ? "simple-mode relative" : ""}`}>
