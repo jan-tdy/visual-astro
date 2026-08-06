@@ -8,12 +8,14 @@ import {
   instantInfo,
   jdToDate,
   minimaTimesInRange,
+  sampleNight,
   sunAltitude,
   twilightTimes,
   utcDate,
 } from "@/lib/pozor";
 
 const piconcillo = getLocation("piconcillo");
+const hlohovec = getLocation("hlohovec");
 
 // Golden values from the original Fortran POZOR program.
 const ARCMIN = 1 / 60;
@@ -124,6 +126,53 @@ describe("twilightTimes", () => {
     ];
     for (const [d, expected] of checks) {
       expect(Math.abs(sunAltitude(d!, piconcillo) - expected)).toBeLessThan(1);
+    }
+  });
+});
+
+describe("sampleNight span", () => {
+  // Hlohovec is far enough north that sunset -> astronomical dusk lasts over two
+  // hours in summer, so the chart window has to follow sunset/sunrise rather than
+  // a fixed pad around darkness (issue #31).
+  const cases: [string, ReturnType<typeof getLocation>, string][] = [
+    ["2026-08-06", hlohovec, "summer at Hlohovec"],
+    ["2026-06-21", hlohovec, "midsummer at Hlohovec"],
+    ["2026-01-15", hlohovec, "winter at Hlohovec"],
+    ["2026-08-06", piconcillo, "summer at Piconcillo"],
+  ];
+
+  for (const [date, loc, what] of cases) {
+    it(`covers sunset through sunrise — ${what}`, () => {
+      const { samples, twilight, fromDate, toDate } = sampleNight(date, loc, [], 10);
+      expect(samples.length).toBeGreaterThan(0);
+      expect(twilight.sunset).not.toBeNull();
+      expect(twilight.sunrise).not.toBeNull();
+      expect(fromDate.getTime()).toBeLessThan(twilight.sunset!.getTime());
+      expect(toDate.getTime()).toBeGreaterThan(twilight.sunrise!.getTime());
+      expect(samples[0].date.getTime()).toBe(fromDate.getTime());
+      expect(samples[samples.length - 1].date.getTime()).toBeLessThanOrEqual(toDate.getTime());
+    });
+  }
+
+  it("keeps the astronomical night inside the sampled span", () => {
+    const { night, fromDate, toDate } = sampleNight("2026-08-06", hlohovec, [], 10);
+    expect(night.start).not.toBeNull();
+    expect(night.end).not.toBeNull();
+    expect(night.start!.getTime()).toBeGreaterThan(fromDate.getTime());
+    expect(night.end!.getTime()).toBeLessThan(toDate.getTime());
+  });
+
+  it("samples the target altitude at every step", () => {
+    const { samples } = sampleNight(
+      "2026-08-06",
+      hlohovec,
+      [{ key: "t", raHours: V2104AQL.raHours, decDeg: V2104AQL.decDeg }],
+      30,
+    );
+    for (const s of samples) {
+      expect(typeof s.targets.t).toBe("number");
+      expect(s.targets.t).toBeGreaterThanOrEqual(-90);
+      expect(s.targets.t).toBeLessThanOrEqual(90);
     }
   });
 });

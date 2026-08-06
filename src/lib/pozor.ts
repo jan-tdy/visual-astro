@@ -425,20 +425,37 @@ export interface SampleTarget {
 }
 
 /**
- * Sample altitudes across the whole dark night (with a padding margin on both
- * sides so the twilight boundaries are visible on the chart).
+ * Sample altitudes across the whole night, from sunset to sunrise (plus a small
+ * padding margin on both sides so the sunset/sunrise boundaries stay visible on
+ * the chart).
+ *
+ * The span must be anchored on sunset/sunrise rather than on astronomical
+ * darkness: the gap between the two grows with latitude and towards midsummer
+ * (~2h at Hlohovec in August, ~4h in June), so a fixed pad around astronomical
+ * night would push sunset and sunrise off the chart entirely.
  */
 export function sampleNight(
   isoDate: string,
   loc: PozorLocation,
   targets: SampleTarget[],
   stepMinutes = 10,
-  padMinutes = 90,
-): { samples: NightSample[]; night: NightInfo; fromDate: Date; toDate: Date } {
+  padMinutes = 30,
+): {
+  samples: NightSample[];
+  night: NightInfo;
+  twilight: TwilightTimes;
+  fromDate: Date;
+  toDate: Date;
+} {
   const night = nightInfo(isoDate, loc);
+  const tw = twilightTimes(isoDate, loc);
   const localNoon = utcDate(isoDate, 12 - loc.lon / 15).getTime();
-  const from = (night.start ? night.start.getTime() : localNoon + 6 * 3600e3) - padMinutes * 60e3;
-  const to = (night.end ? night.end.getTime() : localNoon + 18 * 3600e3) + padMinutes * 60e3;
+  // Fall back to astronomical darkness, then to a fixed evening-to-morning slot,
+  // for places/dates where the Sun never crosses the horizon at all.
+  const fromAnchor = tw.sunset ?? night.start ?? new Date(localNoon + 6 * 3600e3);
+  const toAnchor = tw.sunrise ?? night.end ?? new Date(localNoon + 18 * 3600e3);
+  const from = fromAnchor.getTime() - padMinutes * 60e3;
+  const to = toAnchor.getTime() + padMinutes * 60e3;
   const samples: NightSample[] = [];
   for (let t = from; t <= to; t += stepMinutes * 60e3) {
     const d = new Date(t);
@@ -455,7 +472,7 @@ export function sampleNight(
     }
     samples.push(row);
   }
-  return { samples, night, fromDate: new Date(from), toDate: new Date(to) };
+  return { samples, night, twilight: tw, fromDate: new Date(from), toDate: new Date(to) };
 }
 
 export interface Window {
