@@ -307,6 +307,62 @@ export function replaceStarToken(
   return "+".repeat(plusLevel) + newToken + rest + noteSuffix;
 }
 
+export type RawFields = {
+  a: string | null;
+  pasos_a: number | null;
+  pasos_b: number | null;
+  b: string | null;
+  limit_value: string | null;
+  ut_time: string | null;
+};
+
+/**
+ * Inverse of the data-parsing half of {@link parseRawLine}: turn a set of
+ * fields back into the compact text that parses back to them. Used to
+ * rebuild a line after the observer edits a single value (A, Paso A, Paso B,
+ * B, Limit or UT) in the raw-mode preview table.
+ */
+export function serializeRawFields(f: RawFields): string {
+  if (f.limit_value) {
+    const body = f.limit_value.replace(/^</, "");
+    const ut = f.ut_time ? f.ut_time.replace(":", "") : "";
+    return "<" + body + ut;
+  }
+  const left = (f.a ?? "") + (f.pasos_a != null ? String(f.pasos_a) : "");
+  const rightBody = (f.pasos_b != null ? String(f.pasos_b) : "") + (f.b ?? "");
+  const ut = f.ut_time ? f.ut_time.replace(":", "") : "";
+  const right = rightBody + ut;
+  return right ? left + "v" + right : left;
+}
+
+/**
+ * Rewrite the paso/UT/limit data on one raw-text line, keeping the star name
+ * (and any "+" prefix) exactly as typed — the field-editing counterpart of
+ * {@link replaceStarToken}. Same `plusLevel`/`matchLen` convention.
+ */
+export function replaceRawLineFields(
+  line: string,
+  plusLevel: number,
+  matchLen: number,
+  fields: RawFields,
+): string {
+  const hashIdx = line.indexOf("#");
+  const noteSuffix = hashIdx >= 0 ? line.slice(hashIdx) : "";
+  const body = hashIdx >= 0 ? line.slice(0, hashIdx) : line;
+  let s = body.trim().toLowerCase().replace(/\s+/g, "");
+  for (let i = 0; i < plusLevel && s.startsWith("+"); i++) s = s.slice(1);
+  const starPart = s.slice(0, matchLen);
+  return "+".repeat(plusLevel) + starPart + serializeRawFields(fields) + noteSuffix;
+}
+
+/** Rewrite (or clear) the trailing "#note" on one raw-text line. */
+export function replaceRawLineNote(line: string, newNote: string): string {
+  const hashIdx = line.indexOf("#");
+  const body = hashIdx >= 0 ? line.slice(0, hashIdx) : line;
+  const trimmed = newNote.trim();
+  return trimmed ? `${body}#${trimmed}` : body;
+}
+
 const dashToDot = (v: string | null) => (v ? v.replace(/-/g, ".") : v);
 
 const utFromDigits = (d: string) =>

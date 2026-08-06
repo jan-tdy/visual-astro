@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { buildStarMatchIndex, looseDesig, matchStarToken, parseRawLine, replaceStarToken, splitConstellation } from "@/lib/rawParse";
+import {
+  buildStarMatchIndex, looseDesig, matchStarToken, parseRawLine, replaceStarToken,
+  replaceRawLineFields, replaceRawLineNote, serializeRawFields, splitConstellation,
+  type RawFields,
+} from "@/lib/rawParse";
 
 // A miniature catalog in the same normalised form SessionEditor builds
 // (lowercase, spaces stripped) from star names / VSNET / AAVSO codes.
@@ -164,5 +168,72 @@ describe("replaceStarToken", () => {
     const p = parseRawLine(line, index)!;
     expect(p.matchLen).toBe(0);
     expect(replaceStarToken(line, p.plusLevel ?? 0, p.matchLen, "mvlyr")).toBe("+mvlyrs3v1g2130");
+  });
+});
+
+describe("serializeRawFields", () => {
+  const full: RawFields = { a: "f", pasos_a: 3, pasos_b: 1, b: "g", limit_value: null, ut_time: "21:08" };
+
+  it("round-trips a full A/PasoA/PasoB/B/UT line through parseRawLine", () => {
+    const s = serializeRawFields(full);
+    expect(s).toBe("f3v1g2108");
+    expect(parseRawLine("agdra" + s, index)).toMatchObject({ a: "f", pasos_a: 3, pasos_b: 1, b: "g", ut_time: "21:08" });
+  });
+
+  it("round-trips a limit line with UT", () => {
+    const s = serializeRawFields({ a: null, pasos_a: null, pasos_b: null, b: null, limit_value: "<13.5", ut_time: "21:08" });
+    expect(s).toBe("<13.52108");
+    expect(parseRawLine("agdra" + s, index)).toMatchObject({ limit_value: "<13.5", ut_time: "21:08" });
+  });
+
+  it("round-trips a limit line without UT", () => {
+    const s = serializeRawFields({ a: null, pasos_a: null, pasos_b: null, b: null, limit_value: "<13.5", ut_time: null });
+    expect(parseRawLine("agdra" + s, index)).toMatchObject({ limit_value: "<13.5", ut_time: null });
+  });
+
+  it("omits the 'v' separator when there's nothing on the right", () => {
+    const s = serializeRawFields({ a: "f", pasos_a: 3, pasos_b: null, b: null, limit_value: null, ut_time: null });
+    expect(s).toBe("f3");
+    expect(parseRawLine("agdra" + s, index)).toMatchObject({ a: "f", pasos_a: 3, pasos_b: null, b: null });
+  });
+
+  it("round-trips UT-only data with no pasoB/B (pasoB stays unset)", () => {
+    const s = serializeRawFields({ a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null, ut_time: "21:08" });
+    expect(s).toBe("v2108");
+    expect(parseRawLine("agdra" + s, index)).toMatchObject({ pasos_b: null, b: null, ut_time: "21:08" });
+  });
+});
+
+describe("replaceRawLineFields", () => {
+  it("swaps the data while keeping the star name and note untouched", () => {
+    const line = "agdraf3v1g2108#note here";
+    const p = parseRawLine(line, index)!;
+    const edited = replaceRawLineFields(line, p.plusLevel ?? 0, p.matchLen, {
+      a: "f", pasos_a: 3, pasos_b: 1, b: "g", limit_value: null, ut_time: "22:15",
+    });
+    expect(edited).toBe("agdraf3v1g2215#note here");
+  });
+
+  it("preserves a leading '+' marker", () => {
+    const line = "+agdraf3v1g2130";
+    const p = parseRawLine(line, index)!;
+    const edited = replaceRawLineFields(line, p.plusLevel ?? 0, p.matchLen, {
+      a: "f", pasos_a: 3, pasos_b: 1, b: "g", limit_value: null, ut_time: "21:30",
+    });
+    expect(edited).toBe("+agdraf3v1g2130");
+  });
+});
+
+describe("replaceRawLineNote", () => {
+  it("adds a note to a line with none", () => {
+    expect(replaceRawLineNote("agdraf3v1g2108", "hmla")).toBe("agdraf3v1g2108#hmla");
+  });
+
+  it("replaces an existing note", () => {
+    expect(replaceRawLineNote("agdraf3v1g2108#old", "new note")).toBe("agdraf3v1g2108#new note");
+  });
+
+  it("removes the note entirely when cleared", () => {
+    expect(replaceRawLineNote("agdraf3v1g2108#old", "  ")).toBe("agdraf3v1g2108");
   });
 });
