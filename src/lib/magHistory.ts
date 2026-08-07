@@ -23,7 +23,13 @@ export type HistoryObs = {
 /** The numeric quantities we track per star. */
 export type HistoryField = "mag" | "a" | "b" | "pasos_a" | "pasos_b" | "limit";
 
-export const HISTORY_FIELDS: HistoryField[] = ["mag", "a", "b", "pasos_a", "pasos_b", "limit"];
+/**
+ * Fields actually compared against history. Argelander step counts (pasos_a/
+ * pasos_b) are excluded on purpose: they are freely chosen by the observer on
+ * the night and have no "typical" value to deviate from, so checking them
+ * only produced false "invalid" warnings (see issue #41).
+ */
+export const HISTORY_FIELDS: HistoryField[] = ["mag", "a", "b", "limit"];
 
 export type FieldStat = { n: number; mean: number; sd: number; min: number; max: number };
 export type StarHistory = Partial<Record<HistoryField, FieldStat>>;
