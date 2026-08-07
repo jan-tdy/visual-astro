@@ -20,7 +20,6 @@ import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { getStripeEnvironment, PLUS_PRICE_ID } from "@/lib/stripe";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
-import { DEV_PLUS_KEY } from "@/hooks/useSubscription";
 import { Zap } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
 import { fetchAllRows } from "@/lib/supabaseFetchAll";
