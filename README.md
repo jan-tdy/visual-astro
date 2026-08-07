@@ -50,18 +50,13 @@ npm install
 
 ### Configure environment variables
 
-Copy [`.env.example`](./.env.example) to `.env` and fill in your own Supabase
-project's URL, project ID, and publishable (anon) key (found under
-*Project Settings → API* in the Supabase dashboard):
-
-```sh
-cp .env.example .env
-```
-
-For local Stripe checkout testing, set `VITE_PAYMENTS_CLIENT_TOKEN` to a Stripe
-*publishable* test key (`pk_test_...`) — publishable keys are safe to keep in
-a local `.env.development` file, but `.env*` files are git-ignored and should
-never be committed.
+This is a [Lovable](https://lovable.dev/) project, and its Supabase
+integration manages `.env` (project URL, project ID, and publishable/anon
+key) automatically — you generally don't need to touch it by hand. `.env` and
+`.env.development` are committed with these values for that reason: they're
+the Supabase publishable (anon) key and a Stripe *publishable* test key,
+neither of which is a secret — both are meant to be used client-side and are
+safe to be public.
 
 ### Run the dev server
 
