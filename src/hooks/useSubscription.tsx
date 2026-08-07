@@ -12,8 +12,6 @@ export interface SubscriptionRow {
 }
 
 export const DEV_PLUS_EMAIL = "var@kozmos.sk";
-/** @deprecated kept for backwards compatibility with old localStorage flag */
-export const DEV_PLUS_KEY = "dev_plus_override_v1";
 
 interface ActiveBonus { id: string; reason: string; expires_at: string; seen: boolean }
 
