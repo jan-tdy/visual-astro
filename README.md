@@ -50,16 +50,18 @@ npm install
 
 ### Configure environment variables
 
-Create a `.env` file in the project root with your Supabase project credentials:
+Copy [`.env.example`](./.env.example) to `.env` and fill in your own Supabase
+project's URL, project ID, and publishable (anon) key (found under
+*Project Settings → API* in the Supabase dashboard):
 
 ```sh
-VITE_SUPABASE_URL=your-supabase-url
-VITE_SUPABASE_PROJECT_ID=your-supabase-project-id
-VITE_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
+cp .env.example .env
 ```
 
-For local Stripe checkout testing, `.env.development` provides a test publishable key
-via `VITE_PAYMENTS_CLIENT_TOKEN`.
+For local Stripe checkout testing, set `VITE_PAYMENTS_CLIENT_TOKEN` to a Stripe
+*publishable* test key (`pk_test_...`) — publishable keys are safe to keep in
+a local `.env.development` file, but `.env*` files are git-ignored and should
+never be committed.
 
 ### Run the dev server
 
@@ -105,6 +107,15 @@ the app: authentication-protected data access, Stripe checkout/portal/webhook ha
 paper OCR, and the MCP tool server. See `supabase/config.toml` and `supabase/functions/`
 for details.
 
+## Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md) for how to
+get set up, coding conventions, and the PR process.
+
 ## License
 
-No license has been specified for this project.
+Licensed under the [GNU Affero General Public License v3.0](./LICENSE)
+(AGPL-3.0). This means you're free to use, study, modify, and redistribute
+this code (including running your own instance), but any modified version
+that you run as a network service must also make its source available to its
+users under the same license.
