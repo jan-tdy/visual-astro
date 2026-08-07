@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.tg_guard_dev_plus_override() FROM PUBLIC, anon, authenticated;
