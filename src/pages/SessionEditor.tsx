@@ -130,6 +130,12 @@ export default function SessionEditor() {
   // fire a blur right after — this tells that blur to skip the commit.
   const rawFieldCancelRef = useRef(false);
   const rawPrefilledRef = useRef(false);
+  // Whether rawText holds observer edits that haven't been through "Apply"
+  // yet. Only dirty text is worth protecting across a reload/remount — a
+  // clean text is just a snapshot of the DB and should always be rebuilt
+  // fresh, otherwise observations added later via the table (or by another
+  // tool) stay invisible in raw mode forever, stuck behind a stale draft.
+  const rawDirtyRef = useRef(false);
   const rawDraftKey = id ? `raw_draft_${id}` : "";
   const rawModeKey = id ? `raw_mode_${id}` : "";
   const rawFixesKey = id ? `raw_fixes_${id}` : "";
@@ -140,7 +146,7 @@ export default function SessionEditor() {
     if (!id) return;
     try {
       const saved = localStorage.getItem(`raw_draft_${id}`);
-      if (saved != null) { setRawText(saved); rawPrefilledRef.current = true; }
+      if (saved != null) { setRawText(saved); rawPrefilledRef.current = true; rawDirtyRef.current = true; }
       const mode = localStorage.getItem(`raw_mode_${id}`);
       if (mode === "1") setRawMode(true);
       const fixes = localStorage.getItem(`raw_fixes_${id}`);
@@ -178,7 +184,10 @@ export default function SessionEditor() {
   // Persist draft on every change
   useEffect(() => {
     if (!rawDraftKey) return;
-    try { localStorage.setItem(rawDraftKey, rawText); } catch {}
+    try {
+      if (rawDirtyRef.current && rawText.trim()) localStorage.setItem(rawDraftKey, rawText);
+      else localStorage.removeItem(rawDraftKey);
+    } catch {}
   }, [rawText, rawDraftKey]);
   useEffect(() => {
     if (!rawModeKey) return;
@@ -237,6 +246,7 @@ export default function SessionEditor() {
    * which case the new name is simply prepended).
    */
   const applyRawStarEdit = (lineIndex: number, plusLevel: number, matchLen: number, star: Star) => {
+    rawDirtyRef.current = true;
     setRawText((prev) => {
       const lines = prev.split(/\r?\n/);
       const line = lines[lineIndex];
@@ -261,6 +271,7 @@ export default function SessionEditor() {
     lineIndex: number, plusLevel: number, matchLen: number, o: Obs,
     field: RawEditField, rawValue: string,
   ) => {
+    rawDirtyRef.current = true;
     setRawText((prev) => {
       const lines = prev.split(/\r?\n/);
       const line = lines[lineIndex];
@@ -354,6 +365,10 @@ export default function SessionEditor() {
       }
       matched++;
     }
+    // Everything that matched is now saved to the DB, so this text is no
+    // longer "unsaved work" — the next time raw mode is (re)entered it can
+    // be safely rebuilt from the observations instead of restored verbatim.
+    rawDirtyRef.current = false;
     setRawReport({ matched, unmatched });
     rememberFixes(corrections);
     rememberUnmatched(unmatched);
@@ -402,14 +417,19 @@ export default function SessionEditor() {
     return lines.join("\n");
   };
 
-  // Pri prepnutí do RAW módu naplň textarea existujúcimi UT riadkami
+  // Pri prepnutí do RAW módu naplň textarea existujúcimi UT riadkami.
+  // A dirty draft (unsaved edits from before a reload, or mid-visit typing)
+  // is kept as-is; anything else is rebuilt from the current observations
+  // every time raw mode is entered, so it can never go stale relative to
+  // rows added since the draft was last built (e.g. via the table).
   useEffect(() => {
     if (!rawMode) { rawPrefilledRef.current = false; return; }
     if (rawPrefilledRef.current) return;
-    if (rawText.trim()) { rawPrefilledRef.current = true; return; }
-    const built = buildRawFromObs();
-    if (built.trim()) setRawText(built + "\n");
     rawPrefilledRef.current = true;
+    if (rawDirtyRef.current && rawText.trim()) return;
+    const built = buildRawFromObs();
+    setRawText(built.trim() ? built + "\n" : "");
+    rawDirtyRef.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawMode]);
 
@@ -1514,7 +1534,7 @@ export default function SessionEditor() {
             </div>
             <textarea
               value={rawText}
-              onChange={(e) => setRawText(e.target.value)}
+              onChange={(e) => { rawDirtyRef.current = true; setRawText(e.target.value); }}
               spellCheck={false}
               autoFocus
               placeholder={"agdraf3v1g2108\nmvlyr12-51v312-92110\n..."}
