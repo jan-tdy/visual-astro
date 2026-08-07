@@ -181,7 +181,7 @@ export async function buildPaperTemplatePdf(
 
   const safeLabels = Object.fromEntries(
     Object.entries(labels).map(([k, v]) => [k, pdfSafe(v)]),
-  ) as PaperTemplateLabels;
+  ) as unknown as PaperTemplateLabels;
   observer = pdfSafe(observer);
   labels = safeLabels;
 
