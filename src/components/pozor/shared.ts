@@ -39,12 +39,7 @@ export const EMPTY_TARGET: Omit<CcdTarget, "id"> = {
 };
 
 export const sortTargets = (items: CcdTarget[]) =>
-  [...items].sort(
-    (a, b) =>
-      a.constellation.localeCompare(b.constellation) ||
-      a.sort_order - b.sort_order ||
-      a.name.localeCompare(b.name),
-  );
+  [...items].sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
 
 /** Load the active CCD catalogue's targets (independent of the visual `stars` table). */
 export function useCcdTargets(catalogId: string) {
@@ -63,7 +58,6 @@ export function useCcdTargets(catalogId: string) {
         .from("ccd_targets")
         .select("id,catalog_id,name,constellation,ra_hours,dec_deg,epoch_jd,period_days,filters,notes,sort_order")
         .eq("catalog_id", catalogId)
-        .order("constellation")
         .order("sort_order")
         .range(from, to),
     );
