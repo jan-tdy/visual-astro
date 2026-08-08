@@ -195,9 +195,7 @@ export function CcdCatalog({
 
   const move = async (x: CcdTarget, dir: -1 | 1) => {
     if (!isOwnCatalog) return;
-    const siblings = targets
-      .filter((s) => s.constellation === x.constellation)
-      .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
+    const siblings = sortTargets(targets);
     const idx = siblings.findIndex((s) => s.id === x.id);
     const next = idx + dir;
     if (idx < 0 || next < 0 || next >= siblings.length) return;
