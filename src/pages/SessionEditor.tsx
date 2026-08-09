@@ -1280,7 +1280,10 @@ export default function SessionEditor() {
 
           <div className="mt-3 flex items-center gap-2">
             <label className="text-xs text-muted-foreground shrink-0">{t("editor.exportSummary")}</label>
-            <code className="flex-1 min-w-0 truncate rounded-md border border-input bg-muted/40 px-2 py-1.5 font-mono text-xs">
+            <code
+              title={exportSummary}
+              className="flex-1 min-w-0 truncate rounded-md border border-input bg-muted/40 px-2 py-1.5 font-mono text-xs"
+            >
               {exportSummary}
             </code>
             <Button
