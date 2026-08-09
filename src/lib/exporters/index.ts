@@ -108,11 +108,18 @@ export interface SessionSummaryContext {
   obsCode: string;
 }
 
+// Guards an outburst star name against the summary's own field/list delimiters
+// (comma separates fields, ";" separates star names, "[]" wraps the list).
+function sanitizeStarName(s: string): string {
+  return s.replace(/[[\];,]/g, " ").trim();
+}
+
 /**
  * A copyable one-line recap of the session: observer code + observation count,
- * start/end UT (crossing midnight is flagged "nxtday"), and counts of rows
- * noted OUTBURST / ACTIVE.
- * e.g. "DPV-26, start2300ut, end-0200utnxtday, outburst-0005, active-0001".
+ * start/end UT (crossing midnight is flagged "nxtday"), counts of rows noted
+ * OUTBURST / ACTIVE, and — when any row is noted OUTBURST — the distinct star
+ * names in outburst, appended in brackets and separated by ";".
+ * e.g. "DPV-26, start2300ut, end-0200utnxtday, outburst-0002[T CrB;U Sco], active-0001".
  */
 export function buildExportSummary(rows: ExportRow[], ctx: SessionSummaryContext): string {
   const clocks = rows
@@ -136,17 +143,24 @@ export function buildExportSummary(rows: ExportRow[], ctx: SessionSummaryContext
 
   let outburst = 0;
   let active = 0;
+  const outburstStars: string[] = [];
   for (const r of rows) {
     const note = (r.note ?? "").trim().toUpperCase();
-    if (note === "OUTBURST") outburst++;
-    else if (note === "ACTIVE") active++;
+    if (note === "OUTBURST") {
+      outburst++;
+      const name = sanitizeStarName(r.star_name ?? "");
+      if (name && !outburstStars.includes(name)) outburstStars.push(name);
+    } else if (note === "ACTIVE") active++;
   }
+  const outburstField = outburstStars.length
+    ? `outburst-${padNum(outburst, 4)}[${outburstStars.join(";")}]`
+    : `outburst-${padNum(outburst, 4)}`;
 
   return [
     `${ctx.obsCode.toUpperCase()}-${rows.length}`,
     `start${startStr}ut`,
     `end-${endStr}ut${nextDay ? "nxtday" : ""}`,
-    `outburst-${padNum(outburst, 4)}`,
+    outburstField,
     `active-${padNum(active, 4)}`,
   ].join(", ");
 }

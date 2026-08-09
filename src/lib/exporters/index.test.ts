@@ -62,11 +62,30 @@ describe("buildExportSummary", () => {
       { ...baseRow, ut_time: "22:30", note: null },
     ];
     const out = buildExportSummary(rows, { obsCode: "dpv" });
-    expect(out).toBe("DPV-2, start2000ut, end-2230ut, outburst-0001, active-0000");
+    expect(out).toBe("DPV-2, start2000ut, end-2230ut, outburst-0001[R Cyg], active-0000");
   });
 
   it("falls back to all-zero times when no rows have a UT time", () => {
     const out = buildExportSummary([], { obsCode: "DPV" });
     expect(out).toBe("DPV-0, start0000ut, end-0000ut, outburst-0000, active-0000");
+  });
+
+  it("includes distinct outburst star names in brackets, case-insensitively, deduped", () => {
+    const rows: ExportRow[] = [
+      { ...baseRow, star_name: "T CrB", ut_time: "21:00", note: "OUTBURST" },
+      { ...baseRow, star_name: "U Sco", ut_time: "21:30", note: "outburst" },
+      { ...baseRow, star_name: "T CrB", ut_time: "22:00", note: "Outburst" },
+      { ...baseRow, star_name: "R Cyg", ut_time: "22:30", note: null },
+    ];
+    const out = buildExportSummary(rows, { obsCode: "DPV" });
+    expect(out).toBe("DPV-4, start2100ut, end-2230ut, outburst-0003[T CrB;U Sco], active-0000");
+  });
+
+  it("sanitizes star names that contain the summary's own delimiters", () => {
+    const out = buildExportSummary(
+      [{ ...baseRow, star_name: "T CrB, [weird]", ut_time: "21:00", note: "outburst" }],
+      { obsCode: "DPV" },
+    );
+    expect(out).toBe("DPV-1, start2100ut, end-2100ut, outburst-0001[T CrB   weird], active-0000");
   });
 });
