@@ -116,30 +116,87 @@ Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
           ]},
         ],
         response_format: { type: 'json_object' },
+        stream: true,
       }),
     });
 
-    if (!aiRes.ok) {
-      const txt = await aiRes.text();
+    if (!aiRes.ok || !aiRes.body) {
+      const txt = await aiRes.text().catch(() => '');
       return new Response(JSON.stringify({ error: `AI error ${aiRes.status}: ${txt}` }), {
         status: aiRes.status === 429 || aiRes.status === 402 ? aiRes.status : 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const data = await aiRes.json();
-    const content = data?.choices?.[0]?.message?.content ?? '{}';
-    let parsed: any = {};
-    try { parsed = JSON.parse(content); } catch { parsed = { observations: [] }; }
 
-    // Increment usage counter (best effort)
-    if (usageRow) {
-      await supabase.from('ocr_usage').update({ count: used + 1 }).eq('id', (usageRow as any).id);
-    } else {
-      await supabase.from('ocr_usage').insert({ user_id: userId, used_on: monthStart, count: 1 });
-    }
+    // Relay the model's streamed output to the client as it arrives, so the
+    // UI can show live progress instead of a single opaque wait. We forward
+    // our own small SSE protocol (progress/done/error), not the raw
+    // upstream chunks, so the client never needs to know about the AI
+    // gateway's wire format.
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        const send = (obj: unknown) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+        const reader = aiRes.body!.getReader();
+        let buf = '';
+        let full = '';
+        let lastCount = 0;
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            const lines = buf.split('\n');
+            buf = lines.pop() ?? '';
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed.startsWith('data:')) continue;
+              const payload = trimmed.slice(5).trim();
+              if (!payload || payload === '[DONE]') continue;
+              try {
+                const evt = JSON.parse(payload);
+                const delta = evt?.choices?.[0]?.delta?.content;
+                if (typeof delta === 'string' && delta) {
+                  full += delta;
+                  // Each observation object starts with "star_name" per the
+                  // schema in the system prompt, so counting occurrences is
+                  // a cheap live proxy for "rows recognized so far".
+                  const count = (full.match(/"star_name"/g) ?? []).length;
+                  if (count !== lastCount) {
+                    lastCount = count;
+                    send({ type: 'progress', count });
+                  }
+                }
+              } catch {
+                // Partial line split across chunks — ignore, it'll complete
+                // on a later read.
+              }
+            }
+          }
 
-    return new Response(JSON.stringify({ ...parsed, used: used + 1, monthlyLimit, dailyLimit: monthlyLimit, isPlus }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          let parsed: any = {};
+          try { parsed = JSON.parse(full); } catch { parsed = { observations: [] }; }
+          const observations = Array.isArray(parsed?.observations) ? parsed.observations : [];
+
+          // Increment usage counter (best effort)
+          if (usageRow) {
+            await supabase.from('ocr_usage').update({ count: used + 1 }).eq('id', (usageRow as any).id);
+          } else {
+            await supabase.from('ocr_usage').insert({ user_id: userId, used_on: monthStart, count: 1 });
+          }
+
+          send({ type: 'done', observations, used: used + 1, monthlyLimit, dailyLimit: monthlyLimit, isPlus });
+        } catch (e) {
+          send({ type: 'error', message: (e as Error).message });
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
     });
   } catch (e) {
     return new Response(JSON.stringify({ error: (e as Error).message }), {

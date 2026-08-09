@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
   import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus, ScanLine, Printer, Search, PanelLeftClose, PanelLeftOpen, Table as TableIcon, Type, ArrowUp, ArrowDown, Sparkles, Minus, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
@@ -85,6 +87,18 @@ export default function SessionEditor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const paperInputRef = useRef<HTMLInputElement>(null);
   const [ocrBusy, setOcrBusy] = useState(false);
+  const [ocrDialogOpen, setOcrDialogOpen] = useState(false);
+  const [ocrPhase, setOcrPhase] = useState<"scanning" | "done" | "error">("scanning");
+  const [ocrLongWait, setOcrLongWait] = useState(false);
+  const [ocrShowLog, setOcrShowLog] = useState(false);
+  const [ocrLog, setOcrLog] = useState<string[]>([]);
+  const [ocrResult, setOcrResult] = useState<{ matched: number; skipped: number } | null>(null);
+  const [ocrErrorMsg, setOcrErrorMsg] = useState("");
+  const ocrLongWaitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const appendOcrLog = (msg: string) => {
+    const ts = new Date().toLocaleTimeString(undefined, { hour12: false });
+    setOcrLog((prev) => [...prev, `[${ts}] ${msg}`]);
+  };
   // JSON export: by default only rows with a UT time (actual observations), not every
   // touched-but-empty row — exporting everything is effectively just the star catalog.
   const [exportJsonOnlyFilled, setExportJsonOnlyFilled] = useState(true);
@@ -1004,15 +1018,17 @@ export default function SessionEditor() {
           } else {
             toast.error(error.message);
           }
-          return;
+          return null;
         }
       }
       toast.success(
         t("editor.importDone").replace("{matched}", String(matched)) +
           (skipped ? t("editor.importSkipped").replace("{skipped}", String(skipped)) : ""),
       );
+      return { matched, skipped };
     } catch (e: any) {
       toast.error(t("editor.importErr") + ": " + e.message);
+      return null;
     }
   };
 
@@ -1028,36 +1044,101 @@ export default function SessionEditor() {
   }
 
   const handleOcrFile = async (file: File) => {
+    setOcrBusy(true);
+    setOcrDialogOpen(true);
+    setOcrPhase("scanning");
+    setOcrLongWait(false);
+    setOcrLog([]);
+    setOcrResult(null);
+    setOcrErrorMsg("");
+    if (ocrLongWaitTimerRef.current) clearTimeout(ocrLongWaitTimerRef.current);
+    ocrLongWaitTimerRef.current = setTimeout(() => setOcrLongWait(true), 45000);
+    appendOcrLog(t("editor.ocrDialog.logStart"));
     try {
-      setOcrBusy(true);
-      toast.info(t("editor.ocrStart"));
       const dataUrl: string = await new Promise((resolve, reject) => {
         const fr = new FileReader();
         fr.onload = () => resolve(String(fr.result));
         fr.onerror = () => reject(fr.error);
         fr.readAsDataURL(file);
       });
-      const { data, error } = await supabase.functions.invoke("paper-ocr", { body: { image: dataUrl } });
-      if (error) {
-        const ctx: any = (error as any).context;
-        let msg = error.message;
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) throw new Error(t("editor.ocrUnknown"));
+
+      // supabase.functions.invoke() buffers the whole response before
+      // resolving, which is what we need to get away from here — a plain
+      // fetch lets us read the edge function's SSE stream chunk by chunk
+      // as the model produces it.
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paper-ocr`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ image: dataUrl }),
+      });
+
+      if (!res.ok || !res.body) {
+        let msg = t("editor.ocrUnknown");
         try {
-          const body = ctx?.body ? await new Response(ctx.body).json() : null;
+          const body = await res.json();
           if (body?.error) msg = body.error;
         } catch {}
         throw new Error(msg);
       }
-      if ((data as any)?.error) throw new Error((data as any).error);
-      const obsArr = (data as any)?.observations ?? [];
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let obsArr: any[] = [];
+      let used: number | undefined;
+      let lim: number | undefined;
+      let finished = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const events = buf.split("\n\n");
+        buf = events.pop() ?? "";
+        for (const evt of events) {
+          const line = evt.trim();
+          if (!line.startsWith("data:")) continue;
+          const payload = line.slice(5).trim();
+          if (!payload) continue;
+          let msg: any;
+          try { msg = JSON.parse(payload); } catch { continue; }
+          if (msg.type === "progress") {
+            appendOcrLog(t("editor.ocrDialog.logProgress").replace("{n}", String(msg.count)));
+          } else if (msg.type === "done") {
+            obsArr = Array.isArray(msg.observations) ? msg.observations : [];
+            used = msg.used;
+            lim = msg.dailyLimit;
+            finished = true;
+          } else if (msg.type === "error") {
+            throw new Error(msg.message);
+          }
+        }
+      }
+      if (!finished) throw new Error(t("editor.ocrUnknown"));
+
+      appendOcrLog(t("editor.ocrDialog.logDone"));
       const blob = new Blob([JSON.stringify({ observations: obsArr })], { type: "application/json" });
-      await handleImportFile(new File([blob], "ocr.json", { type: "application/json" }));
-      const used = (data as any)?.used;
-      const lim = (data as any)?.dailyLimit;
+      const result = await handleImportFile(new File([blob], "ocr.json", { type: "application/json" }));
       if (used && lim) toast.info(`${t("editor.ocrCount")}: ${used}/${lim}`);
+      setOcrResult(result ?? { matched: 0, skipped: 0 });
+      setOcrPhase("done");
     } catch (e: any) {
-      toast.error(t("editor.ocrFailed") + ": " + (e?.message ?? t("editor.ocrUnknown")));
+      const msg = e?.message ?? t("editor.ocrUnknown");
+      appendOcrLog(t("editor.ocrDialog.logError").replace("{msg}", msg));
+      setOcrErrorMsg(msg);
+      setOcrPhase("error");
+      toast.error(t("editor.ocrFailed") + ": " + msg);
     } finally {
       setOcrBusy(false);
+      if (ocrLongWaitTimerRef.current) { clearTimeout(ocrLongWaitTimerRef.current); ocrLongWaitTimerRef.current = null; }
     }
   };
 
@@ -2047,6 +2128,88 @@ export default function SessionEditor() {
           </Card>
         </div>
       )}
+
+      <Dialog
+        open={ocrDialogOpen}
+        onOpenChange={(open) => {
+          // Scanning still in flight: the request keeps running in the
+          // background regardless, so closing here would just strand the
+          // observer without a way to see the result — block it until we
+          // reach "done" or "error".
+          if (!open && ocrPhase === "scanning") return;
+          setOcrDialogOpen(open);
+        }}
+      >
+        <DialogContent
+          className="sm:max-w-md"
+          onPointerDownOutside={(e) => { if (ocrPhase === "scanning") e.preventDefault(); }}
+          onEscapeKeyDown={(e) => { if (ocrPhase === "scanning") e.preventDefault(); }}
+        >
+          <DialogHeader>
+            <DialogTitle>
+              {ocrPhase === "done" ? t("editor.ocrDialog.doneTitle")
+                : ocrPhase === "error" ? t("editor.ocrDialog.errorTitle")
+                : t("editor.ocrDialog.title")}
+            </DialogTitle>
+            <DialogDescription>
+              {ocrPhase === "scanning" && (
+                <>
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+                    {t("editor.ocrDialog.wait")}
+                  </span>
+                  {ocrLongWait && (
+                    <span className="block mt-2 text-amber-600 dark:text-amber-400">
+                      {t("editor.ocrDialog.longWait")}
+                    </span>
+                  )}
+                </>
+              )}
+              {ocrPhase === "done" && ocrResult && (
+                <span>
+                  {t("editor.importDone").replace("{matched}", String(ocrResult.matched))}
+                  {ocrResult.skipped ? t("editor.importSkipped").replace("{skipped}", String(ocrResult.skipped)) : ""}
+                </span>
+              )}
+              {ocrPhase === "error" && <span>{ocrErrorMsg}</span>}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div>
+            <Button size="sm" variant="ghost" onClick={() => setOcrShowLog((v) => !v)}>
+              {ocrShowLog ? t("editor.ocrDialog.hideLog") : t("editor.ocrDialog.showLog")}
+            </Button>
+            {ocrShowLog && (
+              <ScrollArea className="h-32 mt-2 rounded border border-border bg-muted/40 p-2">
+                {ocrLog.length === 0 ? (
+                  <div className="text-xs text-muted-foreground">{t("editor.ocrDialog.logEmpty")}</div>
+                ) : (
+                  <div className="text-xs font-mono space-y-0.5">
+                    {ocrLog.map((line, i) => <div key={i}>{line}</div>)}
+                  </div>
+                )}
+              </ScrollArea>
+            )}
+          </div>
+
+          {ocrPhase !== "scanning" && (
+            <DialogFooter>
+              {ocrPhase === "done" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setRawMode(true); setOcrDialogOpen(false); }}
+                >
+                  <Type className="h-3.5 w-3.5 mr-1" /> {t("editor.ocrDialog.openRaw")}
+                </Button>
+              )}
+              <Button size="sm" onClick={() => setOcrDialogOpen(false)}>
+                {t("editor.ocrDialog.close")}
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
