@@ -94,6 +94,7 @@ export default function SessionEditor() {
   const [ocrShowLog, setOcrShowLog] = useState(false);
   const [ocrLog, setOcrLog] = useState<string[]>([]);
   const [ocrResult, setOcrResult] = useState<{ matched: number; skipped: number } | null>(null);
+  const [ocrPartialWarning, setOcrPartialWarning] = useState(false);
   const [ocrErrorMsg, setOcrErrorMsg] = useState("");
   const ocrLongWaitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const appendOcrLog = (msg: string) => {
@@ -1051,6 +1052,7 @@ export default function SessionEditor() {
     setOcrLongWait(false);
     setOcrLog([]);
     setOcrResult(null);
+    setOcrPartialWarning(false);
     setOcrErrorMsg("");
     if (ocrLongWaitTimerRef.current) clearTimeout(ocrLongWaitTimerRef.current);
     ocrLongWaitTimerRef.current = setTimeout(() => setOcrLongWait(true), 45000);
@@ -1101,42 +1103,64 @@ export default function SessionEditor() {
         const decoder = new TextDecoder();
         let buf = "";
         let obsArr: any[] = [];
+        // Last set of fully-parsed rows we heard about via a progress event —
+        // our fallback if the connection drops (e.g. the edge function's
+        // wall-clock limit) before a "done" event ever arrives. The AI often
+        // does finish in that case, we just never get told: better to keep
+        // whatever rows it had already produced than to lose the scan entirely.
+        let lastPartial: any[] = [];
         let used: number | undefined;
         let lim: number | undefined;
         let finished = false;
+        let streamError: string | null = null;
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buf += decoder.decode(value, { stream: true });
-          const events = buf.split("\n\n");
-          buf = events.pop() ?? "";
-          for (const evt of events) {
-            const line = evt.trim();
-            if (!line.startsWith("data:")) continue;
-            const payload = line.slice(5).trim();
-            if (!payload) continue;
-            let msg: any;
-            try { msg = JSON.parse(payload); } catch { continue; }
-            if (msg.type === "progress") {
-              appendOcrLog(
-                t("editor.ocrDialog.logProgressPart").replace("{part}", String(part)).replace("{n}", String(msg.count)),
-              );
-            } else if (msg.type === "done") {
-              obsArr = Array.isArray(msg.observations) ? msg.observations : [];
-              used = msg.used;
-              lim = msg.dailyLimit;
-              finished = true;
-            } else if (msg.type === "error") {
-              throw new Error(msg.message);
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            const events = buf.split("\n\n");
+            buf = events.pop() ?? "";
+            for (const evt of events) {
+              const line = evt.trim();
+              if (!line.startsWith("data:")) continue;
+              const payload = line.slice(5).trim();
+              if (!payload) continue;
+              let msg: any;
+              try { msg = JSON.parse(payload); } catch { continue; }
+              if (msg.type === "progress") {
+                if (Array.isArray(msg.partial)) lastPartial = msg.partial;
+                appendOcrLog(
+                  t("editor.ocrDialog.logProgressPart").replace("{part}", String(part)).replace("{n}", String(msg.count)),
+                );
+              } else if (msg.type === "done") {
+                obsArr = Array.isArray(msg.observations) ? msg.observations : [];
+                used = msg.used;
+                lim = msg.dailyLimit;
+                finished = true;
+              } else if (msg.type === "error") {
+                streamError = msg.message || t("editor.ocrUnknown");
+              }
             }
+            if (streamError) break;
           }
+        } catch (readErr: any) {
+          streamError = readErr?.message || null;
         }
-        if (!finished) throw new Error(t("editor.ocrUnknown"));
-        appendOcrLog(
-          t("editor.ocrDialog.logDonePart").replace("{part}", String(part)).replace("{n}", String(obsArr.length)),
-        );
-        return { observations: obsArr, used, lim };
+
+        if (finished) {
+          appendOcrLog(
+            t("editor.ocrDialog.logDonePart").replace("{part}", String(part)).replace("{n}", String(obsArr.length)),
+          );
+          return { observations: obsArr, used, lim, salvaged: false };
+        }
+        if (lastPartial.length > 0) {
+          appendOcrLog(
+            t("editor.ocrDialog.logSalvagedPart").replace("{part}", String(part)).replace("{n}", String(lastPartial.length)),
+          );
+          return { observations: lastPartial, used: undefined, lim: undefined, salvaged: true };
+        }
+        throw new Error(streamError || t("editor.ocrDialog.timeoutHint"));
       };
 
       const part1 = await runPart(leftHalf, 1);
@@ -1150,6 +1174,7 @@ export default function SessionEditor() {
       const result = await handleImportFile(new File([blob], "ocr.json", { type: "application/json" }));
       if (used && lim) toast.info(`${t("editor.ocrCount")}: ${used}/${lim}`);
       setOcrResult(result ?? { matched: 0, skipped: 0 });
+      setOcrPartialWarning(part1.salvaged || part2.salvaged);
       setOcrPhase("done");
     } catch (e: any) {
       const msg = e?.message ?? t("editor.ocrUnknown");
@@ -2190,6 +2215,11 @@ export default function SessionEditor() {
                 <span>
                   {t("editor.importDone").replace("{matched}", String(ocrResult.matched))}
                   {ocrResult.skipped ? t("editor.importSkipped").replace("{skipped}", String(ocrResult.skipped)) : ""}
+                </span>
+              )}
+              {ocrPhase === "done" && ocrPartialWarning && (
+                <span className="block mt-2 text-amber-600 dark:text-amber-400">
+                  {t("editor.ocrDialog.partialWarning")}
                 </span>
               )}
               {ocrPhase === "error" && <span>{ocrErrorMsg}</span>}
