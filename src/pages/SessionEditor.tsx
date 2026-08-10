@@ -22,6 +22,7 @@ import {
   replaceRawLineFields, replaceRawLineNote, type RawCorrection, type RawFields,
 } from "@/lib/rawParse";
 import { buildPaperTemplatePdf, type PaperTemplateLabels } from "@/lib/paperTemplatePdf";
+import { splitImageIntoHalves } from "@/lib/imageSplit";
 import {
   buildStarHistory, findOutliers,
   type HistoryObs, type HistoryOutlier, type StarHistory,
@@ -1053,7 +1054,6 @@ export default function SessionEditor() {
     setOcrErrorMsg("");
     if (ocrLongWaitTimerRef.current) clearTimeout(ocrLongWaitTimerRef.current);
     ocrLongWaitTimerRef.current = setTimeout(() => setOcrLongWait(true), 45000);
-    appendOcrLog(t("editor.ocrDialog.logStart"));
     try {
       const dataUrl: string = await new Promise((resolve, reject) => {
         const fr = new FileReader();
@@ -1066,63 +1066,84 @@ export default function SessionEditor() {
       const token = sessionData?.session?.access_token;
       if (!token) throw new Error(t("editor.ocrUnknown"));
 
-      // supabase.functions.invoke() buffers the whole response before
-      // resolving, which is what we need to get away from here — a plain
-      // fetch lets us read the edge function's SSE stream chunk by chunk
-      // as the model produces it.
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paper-ocr`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
-        body: JSON.stringify({ image: dataUrl }),
-      });
+      appendOcrLog(t("editor.ocrDialog.logStart"));
+      const [leftHalf, rightHalf] = await splitImageIntoHalves(dataUrl);
 
-      if (!res.ok || !res.body) {
-        let msg = t("editor.ocrUnknown");
-        try {
-          const body = await res.json();
-          if (body?.error) msg = body.error;
-        } catch {}
-        throw new Error(msg);
-      }
+      // Each half is its own paper-ocr call (own wall-clock budget, smaller
+      // output less likely to get truncated) — see supabase/functions/paper-ocr
+      // for how the two calls are billed as one scan on the Free plan.
+      const runPart = async (partImage: string, part: 1 | 2) => {
+        appendOcrLog(t("editor.ocrDialog.logStartPart").replace("{part}", String(part)));
+        // supabase.functions.invoke() buffers the whole response before
+        // resolving, which is what we need to get away from here — a plain
+        // fetch lets us read the edge function's SSE stream chunk by chunk
+        // as the model produces it.
+        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paper-ocr`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ image: partImage, splitPart: part, splitTotal: 2 }),
+        });
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
-      let obsArr: any[] = [];
-      let used: number | undefined;
-      let lim: number | undefined;
-      let finished = false;
+        if (!res.ok || !res.body) {
+          let msg = t("editor.ocrUnknown");
+          try {
+            const body = await res.json();
+            if (body?.error) msg = body.error;
+          } catch {}
+          throw new Error(msg);
+        }
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const events = buf.split("\n\n");
-        buf = events.pop() ?? "";
-        for (const evt of events) {
-          const line = evt.trim();
-          if (!line.startsWith("data:")) continue;
-          const payload = line.slice(5).trim();
-          if (!payload) continue;
-          let msg: any;
-          try { msg = JSON.parse(payload); } catch { continue; }
-          if (msg.type === "progress") {
-            appendOcrLog(t("editor.ocrDialog.logProgress").replace("{n}", String(msg.count)));
-          } else if (msg.type === "done") {
-            obsArr = Array.isArray(msg.observations) ? msg.observations : [];
-            used = msg.used;
-            lim = msg.dailyLimit;
-            finished = true;
-          } else if (msg.type === "error") {
-            throw new Error(msg.message);
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+        let obsArr: any[] = [];
+        let used: number | undefined;
+        let lim: number | undefined;
+        let finished = false;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const events = buf.split("\n\n");
+          buf = events.pop() ?? "";
+          for (const evt of events) {
+            const line = evt.trim();
+            if (!line.startsWith("data:")) continue;
+            const payload = line.slice(5).trim();
+            if (!payload) continue;
+            let msg: any;
+            try { msg = JSON.parse(payload); } catch { continue; }
+            if (msg.type === "progress") {
+              appendOcrLog(
+                t("editor.ocrDialog.logProgressPart").replace("{part}", String(part)).replace("{n}", String(msg.count)),
+              );
+            } else if (msg.type === "done") {
+              obsArr = Array.isArray(msg.observations) ? msg.observations : [];
+              used = msg.used;
+              lim = msg.dailyLimit;
+              finished = true;
+            } else if (msg.type === "error") {
+              throw new Error(msg.message);
+            }
           }
         }
-      }
-      if (!finished) throw new Error(t("editor.ocrUnknown"));
+        if (!finished) throw new Error(t("editor.ocrUnknown"));
+        appendOcrLog(
+          t("editor.ocrDialog.logDonePart").replace("{part}", String(part)).replace("{n}", String(obsArr.length)),
+        );
+        return { observations: obsArr, used, lim };
+      };
+
+      const part1 = await runPart(leftHalf, 1);
+      const part2 = await runPart(rightHalf, 2);
+      const obsArr = [...part1.observations, ...part2.observations];
+      const used = part2.used ?? part1.used;
+      const lim = part2.lim ?? part1.lim;
 
       appendOcrLog(t("editor.ocrDialog.logDone"));
       const blob = new Blob([JSON.stringify({ observations: obsArr })], { type: "application/json" });

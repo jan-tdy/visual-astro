@@ -52,6 +52,23 @@ Deno.serve(async (req) => {
     const isPlus = subActive || devOverride || bonusActive;
     const monthlyLimit = isPlus ? 40 : 5;
 
+    const { image, splitPart, splitTotal } = await req.json();
+    if (!image || typeof image !== 'string') {
+      return new Response(JSON.stringify({ error: 'image (data URL) required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    // A "split scan" is the client cutting one paper photo into left/right
+    // halves and calling this function once per half (see SessionEditor's
+    // handleOcrFile), which sidesteps the edge function wall-clock limit and
+    // avoids the model truncating its JSON output on a large page. On the
+    // Free plan the two halves together are billed as a single scan — only
+    // part 1 is quota-checked and charged, part 2 rides along for free. On
+    // Plus each half is billed normally (2 scans), same as calling this
+    // function twice for unrelated images.
+    const isSplitScan = splitTotal === 2 && (splitPart === 1 || splitPart === 2);
+    const skipQuota = isSplitScan && !isPlus && splitPart === 2;
+
     // Mesačný agregát: prvý deň mesiaca ako "bucket" v ocr_usage.used_on
     const now = new Date();
     const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
@@ -63,18 +80,11 @@ Deno.serve(async (req) => {
       .eq('used_on', monthStart)
       .maybeSingle();
     const used = (usageRow as any)?.count ?? 0;
-    if (used >= monthlyLimit) {
+    if (!skipQuota && used >= monthlyLimit) {
       return new Response(JSON.stringify({
         error: `Mesačný limit AI skenov vyčerpaný (${used}/${monthlyLimit}). ${isPlus ? '' : 'Upgraduj na Plus pre 40 skenov mesačne.'}`,
         limitReached: true, used, monthlyLimit, dailyLimit: monthlyLimit, isPlus,
       }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
-    const { image } = await req.json();
-    if (!image || typeof image !== 'string') {
-      return new Response(JSON.stringify({ error: 'image (data URL) required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
     }
     const key = Deno.env.get('LOVABLE_API_KEY');
     if (!key) {
@@ -87,7 +97,9 @@ Deno.serve(async (req) => {
 Text je takmer vždy písaný rukou ceruzkou, často nečitateľne — interpretuj ho najlepšie ako vieš.
 Papier obsahuje tabuľku s pevnými stĺpcami v poradí:
 poradie (#), hviezda, A, Paso A, Paso B, B, Limit, UT (čas hh:mm), Nota.
-Papier môže byť dvojstĺpcový (ľavá aj pravá polovica - prejdi obe).
+${isSplitScan
+  ? `Tento obrázok je ${splitPart === 1 ? 'ĽAVÁ' : 'PRAVÁ'} polovica dvojstĺpcového papiera (časť ${splitPart}/${splitTotal} rozdeleného skenu) — obsahuje len jeden stĺpec tabuľky. Ak polovica neobsahuje žiadne vyplnené riadky, vráť prázdne pole observations.`
+  : 'Papier môže byť dvojstĺpcový (ľavá aj pravá polovica - prejdi obe).'}
 Pravidlá:
 - Stĺpce "A" a "B" sú porovnávacie hviezdy (zvyčajne 1–3 znaky, písmená a číslice, napr. "a", "B2", "12").
 - "Paso A" a "Paso B" sú celé čísla (typicky 1–20).
@@ -179,14 +191,21 @@ Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
           try { parsed = JSON.parse(full); } catch { parsed = { observations: [] }; }
           const observations = Array.isArray(parsed?.observations) ? parsed.observations : [];
 
-          // Increment usage counter (best effort)
-          if (usageRow) {
-            await supabase.from('ocr_usage').update({ count: used + 1 }).eq('id', (usageRow as any).id);
-          } else {
-            await supabase.from('ocr_usage').insert({ user_id: userId, used_on: monthStart, count: 1 });
+          // Increment usage counter (best effort) — skipped for the second
+          // half of a Free-plan split scan, see skipQuota above.
+          if (!skipQuota) {
+            if (usageRow) {
+              await supabase.from('ocr_usage').update({ count: used + 1 }).eq('id', (usageRow as any).id);
+            } else {
+              await supabase.from('ocr_usage').insert({ user_id: userId, used_on: monthStart, count: 1 });
+            }
           }
 
-          send({ type: 'done', observations, used: used + 1, monthlyLimit, dailyLimit: monthlyLimit, isPlus });
+          send({
+            type: 'done', observations,
+            used: skipQuota ? used : used + 1,
+            monthlyLimit, dailyLimit: monthlyLimit, isPlus,
+          });
         } catch (e) {
           send({ type: 'error', message: (e as Error).message });
         } finally {
