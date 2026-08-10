@@ -94,7 +94,6 @@ export default function SessionEditor() {
   const [ocrShowLog, setOcrShowLog] = useState(false);
   const [ocrLog, setOcrLog] = useState<string[]>([]);
   const [ocrResult, setOcrResult] = useState<{ matched: number; skipped: number } | null>(null);
-  const [ocrPartialWarning, setOcrPartialWarning] = useState(false);
   const [ocrErrorMsg, setOcrErrorMsg] = useState("");
   const ocrLongWaitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const appendOcrLog = (msg: string) => {
@@ -1052,7 +1051,6 @@ export default function SessionEditor() {
     setOcrLongWait(false);
     setOcrLog([]);
     setOcrResult(null);
-    setOcrPartialWarning(false);
     setOcrErrorMsg("");
     if (ocrLongWaitTimerRef.current) clearTimeout(ocrLongWaitTimerRef.current);
     ocrLongWaitTimerRef.current = setTimeout(() => setOcrLongWait(true), 45000);
@@ -1071,19 +1069,24 @@ export default function SessionEditor() {
       appendOcrLog(t("editor.ocrDialog.logStart"));
       const quadrants = await splitImageIntoQuadrants(dataUrl);
       const total = quadrants.length;
-      // Ties the four calls together for DB checkpoint recovery below — the
-      // edge function upserts progress rows keyed by (scanId, part).
+      // Ties each call to its DB job row — see runPart below.
       const scanId = crypto.randomUUID();
 
-      // Each crop is its own paper-ocr call (own connection budget, smaller
-      // output less likely to get truncated) — see supabase/functions/paper-ocr
-      // for how the calls are billed as one scan on the Free plan.
+      const POLL_INTERVAL_MS = 3000;
+      const POLL_HEARTBEAT_MS = 9000;
+      const POLL_TIMEOUT_MS = 6 * 60 * 1000;
+
+      // Each crop is its own paper-ocr call. The edge function's own AI call
+      // doesn't actually stream (Lovable's own request log shows it as
+      // "Buffered" — the model just takes as long as it takes, then answers
+      // all at once), and the proxy in front of the edge function has been
+      // observed dropping the client's connection around ~90s regardless —
+      // well before the model was done and well under Supabase's own
+      // execution budget. So paper-ocr now replies immediately and keeps
+      // working in the background; we poll its ocr_scan_progress row for
+      // the result instead of waiting on one long HTTP request.
       const runPart = async (partImage: string, part: number) => {
         appendOcrLog(t("editor.ocrDialog.logStartPart").replace("{part}", String(part)).replace("{total}", String(total)));
-        // supabase.functions.invoke() buffers the whole response before
-        // resolving, which is what we need to get away from here — a plain
-        // fetch lets us read the edge function's SSE stream chunk by chunk
-        // as the model produces it.
         const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paper-ocr`, {
           method: "POST",
           headers: {
@@ -1094,7 +1097,7 @@ export default function SessionEditor() {
           body: JSON.stringify({ image: partImage, splitPart: part, splitTotal: total, scanId }),
         });
 
-        if (!res.ok || !res.body) {
+        if (!res.ok) {
           let msg = t("editor.ocrUnknown");
           try {
             const body = await res.json();
@@ -1103,91 +1106,44 @@ export default function SessionEditor() {
           throw new Error(msg);
         }
 
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buf = "";
-        let obsArr: any[] = [];
-        // Last set of fully-parsed rows we heard about via a progress event —
-        // our fallback if the connection drops (e.g. the edge function's
-        // wall-clock limit) before a "done" event ever arrives. The AI often
-        // does finish in that case, we just never get told: better to keep
-        // whatever rows it had already produced than to lose the scan entirely.
-        let lastPartial: any[] = [];
-        let used: number | undefined;
-        let lim: number | undefined;
-        let finished = false;
-        let streamError: string | null = null;
+        const startedAt = Date.now();
+        let lastHeartbeatAt = startedAt;
+        while (true) {
+          const elapsed = Date.now() - startedAt;
+          if (elapsed > POLL_TIMEOUT_MS) throw new Error(t("editor.ocrDialog.timeoutHint"));
 
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buf += decoder.decode(value, { stream: true });
-            const events = buf.split("\n\n");
-            buf = events.pop() ?? "";
-            for (const evt of events) {
-              const line = evt.trim();
-              if (!line.startsWith("data:")) continue;
-              const payload = line.slice(5).trim();
-              if (!payload) continue;
-              let msg: any;
-              try { msg = JSON.parse(payload); } catch { continue; }
-              if (msg.type === "progress") {
-                if (Array.isArray(msg.partial)) lastPartial = msg.partial;
-                appendOcrLog(
-                  t("editor.ocrDialog.logProgressPart")
-                    .replace("{part}", String(part)).replace("{total}", String(total)).replace("{n}", String(msg.count)),
-                );
-              } else if (msg.type === "done") {
-                obsArr = Array.isArray(msg.observations) ? msg.observations : [];
-                used = msg.used;
-                lim = msg.dailyLimit;
-                finished = true;
-              } else if (msg.type === "error") {
-                streamError = msg.message || t("editor.ocrUnknown");
-              }
-            }
-            if (streamError) break;
-          }
-        } catch (readErr: any) {
-          streamError = readErr?.message || null;
-        }
-
-        if (finished) {
-          appendOcrLog(
-            t("editor.ocrDialog.logDonePart")
-              .replace("{part}", String(part)).replace("{total}", String(total)).replace("{n}", String(obsArr.length)),
-          );
-          return { observations: obsArr, used, lim, salvaged: false };
-        }
-
-        // The stream never reached "done" — most likely Lovable Cloud's proxy
-        // buffered the whole SSE response and the connection got cut before
-        // it could forward anything, so `lastPartial` here is often still
-        // empty even though the AI kept producing rows the whole time. Query
-        // the checkpoint the edge function was writing on the DB side
-        // (independent of this HTTP response) and use whichever set is bigger.
-        let dbPartial: any[] = [];
-        try {
-          const { data: checkpoint } = await supabase
+          const { data: row } = await supabase
             .from("ocr_scan_progress")
-            .select("observations")
+            .select("status, observations, error_message, used, monthly_limit")
             .eq("scan_id", scanId)
             .eq("part", part)
             .maybeSingle();
-          if (checkpoint && Array.isArray(checkpoint.observations)) dbPartial = checkpoint.observations;
-          await supabase.from("ocr_scan_progress").delete().eq("scan_id", scanId).eq("part", part);
-        } catch { /* recovery is best effort — fall through to lastPartial */ }
-        const salvaged = dbPartial.length >= lastPartial.length ? dbPartial : lastPartial;
 
-        if (salvaged.length > 0) {
-          appendOcrLog(
-            t("editor.ocrDialog.logSalvagedPart")
-              .replace("{part}", String(part)).replace("{total}", String(total)).replace("{n}", String(salvaged.length)),
-          );
-          return { observations: salvaged, used: undefined, lim: undefined, salvaged: true };
+          if (row?.status === "done") {
+            const obsArr: any[] = Array.isArray(row.observations) ? row.observations : [];
+            appendOcrLog(
+              t("editor.ocrDialog.logDonePart")
+                .replace("{part}", String(part)).replace("{total}", String(total)).replace("{n}", String(obsArr.length)),
+            );
+            await supabase.from("ocr_scan_progress").delete().eq("scan_id", scanId).eq("part", part);
+            return { observations: obsArr, used: row.used ?? undefined, lim: row.monthly_limit ?? undefined };
+          }
+          if (row?.status === "error") {
+            const msg = row.error_message || t("editor.ocrUnknown");
+            await supabase.from("ocr_scan_progress").delete().eq("scan_id", scanId).eq("part", part);
+            throw new Error(msg);
+          }
+
+          if (Date.now() - lastHeartbeatAt >= POLL_HEARTBEAT_MS) {
+            lastHeartbeatAt = Date.now();
+            appendOcrLog(
+              t("editor.ocrDialog.logWaitingPart")
+                .replace("{part}", String(part)).replace("{total}", String(total))
+                .replace("{s}", String(Math.floor((Date.now() - startedAt) / 1000))),
+            );
+          }
+          await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
         }
-        throw new Error(streamError || t("editor.ocrDialog.timeoutHint"));
       };
 
       const results = [];
@@ -1203,7 +1159,6 @@ export default function SessionEditor() {
       const result = await handleImportFile(new File([blob], "ocr.json", { type: "application/json" }));
       if (used && lim) toast.info(`${t("editor.ocrCount")}: ${used}/${lim}`);
       setOcrResult(result ?? { matched: 0, skipped: 0 });
-      setOcrPartialWarning(results.some((r) => r.salvaged));
       setOcrPhase("done");
     } catch (e: any) {
       const msg = e?.message ?? t("editor.ocrUnknown");
@@ -2244,11 +2199,6 @@ export default function SessionEditor() {
                 <span>
                   {t("editor.importDone").replace("{matched}", String(ocrResult.matched))}
                   {ocrResult.skipped ? t("editor.importSkipped").replace("{skipped}", String(ocrResult.skipped)) : ""}
-                </span>
-              )}
-              {ocrPhase === "done" && ocrPartialWarning && (
-                <span className="block mt-2 text-amber-600 dark:text-amber-400">
-                  {t("editor.ocrDialog.partialWarning")}
                 </span>
               )}
               {ocrPhase === "error" && <span>{ocrErrorMsg}</span>}

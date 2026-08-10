@@ -1,12 +1,11 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-// The model's JSON output can end up incomplete — either the connection gets
-// cut (e.g. the platform's wall-clock limit) or the model itself stops mid-
-// object (hit its own output limit). Rather than discard everything because
-// the outer `{ "observations": [...] }` never closed, walk the accumulated
-// text and pull out whichever individual observation objects DID finish
-// (each is self-contained JSON), skipping only the trailing, still-open one.
+// The model's JSON output can end up incomplete if it hits its own output
+// limit mid-object. Rather than discard everything because the outer
+// `{ "observations": [...] }` never closed, walk the text and pull out
+// whichever individual observation objects DID finish (each is
+// self-contained JSON), skipping only the trailing, still-open one.
 function extractPartialObservations(text: string): unknown[] {
   const marker = '"observations"';
   const markerIdx = text.indexOf(marker);
@@ -114,12 +113,17 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    if (!scanId || typeof scanId !== 'string') {
+      return new Response(JSON.stringify({ error: 'scanId required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const part = typeof splitPart === 'number' ? splitPart : 1;
     // A "split scan" is the client cutting one paper photo into several crops
     // (currently a 2x2 grid) and calling this function once per crop (see
-    // SessionEditor's handleOcrFile), which keeps each AI call short enough
-    // to reliably finish inside the platform's connection limit and avoids
-    // the model truncating its JSON output on a large page. On the Free plan
-    // all crops together are billed as a single scan — only part 1 is
+    // SessionEditor's handleOcrFile), which keeps each AI call's *content*
+    // small enough for the model to answer quickly. On the Free plan all
+    // crops together are billed as a single scan — only part 1 is
     // quota-checked and charged, the rest ride along for free. On Plus each
     // crop is billed normally (N scans for an N-way split), same as calling
     // this function N times for unrelated images.
@@ -170,143 +174,100 @@ Vráť VÝHRADNE JSON objekt v tvare:
 { "observations": [ { "star_name": string, "a": string|null, "pasos_a": number|null, "pasos_b": number|null, "b": string|null, "limit_value": string|null, "ut_time": string|null, "note": string|null } ] }
 Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
 
-    const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${key}`,
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-pro',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: [
-            { type: 'text', text: 'Prečítaj túto ručne písanú tabuľku (ceruzkou) a vráť JSON. Snaž sa rozlúštiť aj nečitateľné políčka.' },
-            { type: 'image_url', image_url: { url: image } },
-          ]},
-        ],
-        response_format: { type: 'json_object' },
-        stream: true,
-      }),
+    // Claim the job row right away so the client can start polling immediately
+    // instead of waiting on this HTTP response — see processInBackground
+    // below for why. If a row from a previous attempt at the same
+    // (scanId, part) is somehow still around, this resets it to pending.
+    await supabase.from('ocr_scan_progress').upsert({
+      scan_id: scanId, part, user_id: userId, status: 'pending',
+      observations: [], error_message: null, updated_at: new Date().toISOString(),
     });
 
-    if (!aiRes.ok || !aiRes.body) {
-      const txt = await aiRes.text().catch(() => '');
-      return new Response(JSON.stringify({ error: `AI error ${aiRes.status}: ${txt}` }), {
-        status: aiRes.status === 429 || aiRes.status === 402 ? aiRes.status : 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // The AI gateway does not actually stream its response through to us —
+    // Lovable's own request log shows it as "Buffered": the model can take
+    // 60-140s+ to answer and nothing comes back until it's fully done. The
+    // proxy in front of this edge function has been observed to give up on
+    // the client's HTTP connection at roughly that same ~90s mark, well
+    // before Supabase's own execution limit (150-400s) would ever kick in —
+    // so a synchronous request/response here loses the race almost by
+    // design. Instead: respond to the client immediately, do the actual
+    // work in the background (EdgeRuntime.waitUntil keeps this isolate
+    // alive well past the response), and let the client poll ocr_scan_progress
+    // for the result — each poll is a cheap DB read, never a slow request.
+    const processInBackground = async () => {
+      try {
+        const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${key}`,
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-pro',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: [
+                { type: 'text', text: 'Prečítaj túto ručne písanú tabuľku (ceruzkou) a vráť JSON. Snaž sa rozlúštiť aj nečitateľné políčka.' },
+                { type: 'image_url', image_url: { url: image } },
+              ]},
+            ],
+            response_format: { type: 'json_object' },
+          }),
+        });
 
-    // Relay the model's streamed output to the client as it arrives, so the
-    // UI can show live progress instead of a single opaque wait. We forward
-    // our own small SSE protocol (progress/done/error), not the raw
-    // upstream chunks, so the client never needs to know about the AI
-    // gateway's wire format.
-    const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        const send = (obj: unknown) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
-        const reader = aiRes.body!.getReader();
-        let buf = '';
-        let full = '';
-        let lastCount = 0;
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buf += decoder.decode(value, { stream: true });
-            const lines = buf.split('\n');
-            buf = lines.pop() ?? '';
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (!trimmed.startsWith('data:')) continue;
-              const payload = trimmed.slice(5).trim();
-              if (!payload || payload === '[DONE]') continue;
-              try {
-                const evt = JSON.parse(payload);
-                const delta = evt?.choices?.[0]?.delta?.content;
-                if (typeof delta === 'string' && delta) {
-                  full += delta;
-                  // Each observation object starts with "star_name" per the
-                  // schema in the system prompt, so counting occurrences is
-                  // a cheap live proxy for "rows recognized so far".
-                  const count = (full.match(/"star_name"/g) ?? []).length;
-                  if (count !== lastCount) {
-                    lastCount = count;
-                    const partial = extractPartialObservations(full);
-                    // Forward whichever rows have fully parsed so far — if the
-                    // connection drops before "done" ever ships, the client
-                    // still has the last progress event's partial results.
-                    send({ type: 'progress', count, partial });
-                    // Also checkpoint to the DB: Lovable Cloud's proxy has been
-                    // observed to buffer this SSE response rather than forward
-                    // it live, so the "progress" event above may never actually
-                    // reach the browser. A DB row survives that — the client
-                    // can query it directly (its own RLS-scoped read) if the
-                    // response never arrives at all.
-                    if (scanId && isSplitScan) {
-                      try {
-                        await supabase.from('ocr_scan_progress').upsert({
-                          scan_id: scanId, part: splitPart, user_id: userId,
-                          observations: partial, updated_at: new Date().toISOString(),
-                        });
-                      } catch { /* best effort, never block the scan on this */ }
-                    }
-                  }
-                }
-              } catch {
-                // Partial line split across chunks — ignore, it'll complete
-                // on a later read.
-              }
-            }
-          }
-
-          let observations: unknown[];
-          try {
-            const parsed = JSON.parse(full);
-            observations = Array.isArray(parsed?.observations) ? parsed.observations : [];
-          } catch {
-            // Whole-text parse failed — most likely the model got cut off
-            // mid-object (its own output limit, not our connection). Salvage
-            // whatever rows did complete instead of returning nothing.
-            observations = extractPartialObservations(full);
-          }
-
-          // Increment usage counter (best effort) — skipped for parts after
-          // the first in a Free-plan split scan, see skipQuota above.
-          if (!skipQuota) {
-            if (usageRow) {
-              await supabase.from('ocr_usage').update({ count: used + 1 }).eq('id', (usageRow as any).id);
-            } else {
-              await supabase.from('ocr_usage').insert({ user_id: userId, used_on: monthStart, count: 1 });
-            }
-          }
-
-          // We made it to a clean "done" — the checkpoint row has served its
-          // purpose (the client already has this result directly). Leaving it
-          // around would just be clutter that only a wall-clock kill (which
-          // skips this whole finally-adjacent block) is meant to leave behind.
-          if (scanId && isSplitScan) {
-            try { await supabase.from('ocr_scan_progress').delete().eq('scan_id', scanId).eq('part', splitPart); } catch { /* best effort */ }
-          }
-
-          send({
-            type: 'done', observations,
-            used: skipQuota ? used : used + 1,
-            monthlyLimit, dailyLimit: monthlyLimit, isPlus,
+        if (!aiRes.ok) {
+          const txt = await aiRes.text().catch(() => '');
+          await supabase.from('ocr_scan_progress').upsert({
+            scan_id: scanId, part, user_id: userId, status: 'error',
+            error_message: `AI error ${aiRes.status}: ${txt}`, updated_at: new Date().toISOString(),
           });
-        } catch (e) {
-          send({ type: 'error', message: (e as Error).message });
-        } finally {
-          controller.close();
+          return;
         }
-      },
-    });
 
-    return new Response(stream, {
-      headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
+        const data = await aiRes.json();
+        const content = data?.choices?.[0]?.message?.content ?? '';
+        let observations: unknown[];
+        try {
+          const parsed = JSON.parse(content);
+          observations = Array.isArray(parsed?.observations) ? parsed.observations : [];
+        } catch {
+          // Whole-text parse failed — most likely the model got cut off
+          // mid-object (its own output limit). Salvage whatever rows did
+          // complete instead of returning nothing.
+          observations = extractPartialObservations(content);
+        }
+
+        // Increment usage counter (best effort) — skipped for parts after
+        // the first in a Free-plan split scan, see skipQuota above.
+        if (!skipQuota) {
+          if (usageRow) {
+            await supabase.from('ocr_usage').update({ count: used + 1 }).eq('id', (usageRow as any).id);
+          } else {
+            await supabase.from('ocr_usage').insert({ user_id: userId, used_on: monthStart, count: 1 });
+          }
+        }
+
+        await supabase.from('ocr_scan_progress').upsert({
+          scan_id: scanId, part, user_id: userId, status: 'done', observations,
+          used: skipQuota ? used : used + 1, monthly_limit: monthlyLimit, is_plus: isPlus,
+          updated_at: new Date().toISOString(),
+        });
+      } catch (e) {
+        try {
+          await supabase.from('ocr_scan_progress').upsert({
+            scan_id: scanId, part, user_id: userId, status: 'error',
+            error_message: (e as Error).message, updated_at: new Date().toISOString(),
+          });
+        } catch { /* best effort — client's poll will eventually time out */ }
+      }
+    };
+
+    // EdgeRuntime is a Supabase/Deno Deploy global (not declared in any lib
+    // this project's tsc checks — this file isn't part of that project).
+    EdgeRuntime.waitUntil(processInBackground());
+
+    return new Response(JSON.stringify({ scanId, part, status: 'pending' }), {
+      status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
     return new Response(JSON.stringify({ error: (e as Error).message }), {
