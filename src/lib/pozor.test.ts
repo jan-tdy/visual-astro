@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
+import * as Astronomy from "astronomy-engine";
 import {
   altAz,
   airmass,
   dateToJD,
+  duskTime,
   getLocation,
   helioCorrection,
   instantInfo,
   jdToDate,
   minimaTimesInRange,
+  moonPhaseAt,
   sampleNight,
   sunAltitude,
   twilightTimes,
@@ -16,6 +19,7 @@ import {
 
 const piconcillo = getLocation("piconcillo");
 const hlohovec = getLocation("hlohovec");
+const kolonica = getLocation("kolonica");
 
 // Golden values from the original Fortran POZOR program.
 const ARCMIN = 1 / 60;
@@ -235,5 +239,47 @@ describe("minimaTimesInRange", () => {
     const from = utcDate("2026-01-01", 0);
     const to = utcDate("2026-01-10", 0);
     expect(minimaTimesInRange({ epochJd, periodDays: 0 }, from, to)).toEqual([]);
+  });
+});
+
+describe("duskTime", () => {
+  it("matches astronomical dusk (-18°) when the Sun gets that low that night", () => {
+    const tw = twilightTimes("2026-01-15", piconcillo);
+    expect(tw.astroDusk).not.toBeNull();
+    const d = duskTime("2026-01-15", piconcillo);
+    expect(d).not.toBeNull();
+    expect(Math.abs(d!.getTime() - tw.astroDusk!.getTime())).toBeLessThan(1000);
+  });
+
+  it("falls back to nautical dusk (-12°) when astronomical darkness never occurs", () => {
+    // Kolonica (48.9°N) is far enough north that the Sun never reaches −18° around
+    // the summer solstice.
+    const tw = twilightTimes("2026-06-21", kolonica);
+    expect(tw.astroDusk).toBeNull();
+    expect(tw.nauticalDusk).not.toBeNull();
+    const d = duskTime("2026-06-21", kolonica);
+    expect(d).not.toBeNull();
+    expect(Math.abs(d!.getTime() - tw.nauticalDusk!.getTime())).toBeLessThan(1000);
+  });
+});
+
+describe("moonPhaseAt", () => {
+  it("matches Astronomy.Illumination / Astronomy.MoonPhase directly", () => {
+    const date = utcDate("2026-03-10", 20);
+    const info = moonPhaseAt(date);
+    const time = Astronomy.MakeTime(date);
+    expect(info.pct).toBeCloseTo(Astronomy.Illumination(Astronomy.Body.Moon, time).phase_fraction * 100, 6);
+    expect(info.angleDeg).toBeCloseTo(Astronomy.MoonPhase(time), 6);
+  });
+
+  it("stays within range and keeps waxing consistent with the phase angle", () => {
+    for (const iso of ["2026-01-01", "2026-04-15", "2026-07-30", "2026-11-11"]) {
+      const info = moonPhaseAt(utcDate(iso, 22));
+      expect(info.pct).toBeGreaterThanOrEqual(0);
+      expect(info.pct).toBeLessThanOrEqual(100);
+      expect(info.angleDeg).toBeGreaterThanOrEqual(0);
+      expect(info.angleDeg).toBeLessThan(360);
+      expect(info.waxing).toBe(info.angleDeg < 180);
+    }
   });
 });

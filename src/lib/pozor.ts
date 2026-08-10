@@ -353,6 +353,42 @@ export function sunAltitude(date: Date, loc: PozorLocation): number {
   return hor.altitude;
 }
 
+export interface MoonPhaseInfo {
+  /** Illuminated fraction in percent. */
+  pct: number;
+  /** Phase angle 0–360° (0 = new, 180 = full, growing towards 360 = next new). */
+  angleDeg: number;
+  /** True while the angle is in [0, 180), i.e. between new and full moon. */
+  waxing: boolean;
+}
+
+/** Moon illumination % and waxing/waning state at a specific instant. */
+export function moonPhaseAt(date: Date): MoonPhaseInfo {
+  const time = Astronomy.MakeTime(date);
+  const pct = Astronomy.Illumination(Astronomy.Body.Moon, time).phase_fraction * 100;
+  const angleDeg = Astronomy.MoonPhase(time);
+  return { pct, angleDeg, waxing: angleDeg < 180 };
+}
+
+/**
+ * Astronomical dusk (Sun at −18°) for the evening of `isoDate`, falling back to
+ * nautical dusk (−12°) when the Sun never gets that low that night (e.g. near
+ * the summer solstice at higher latitudes). Returns null if neither occurs.
+ */
+export function duskTime(isoDate: string, loc: PozorLocation): Date | null {
+  const observer = observerOf(loc);
+  const noonLocal = utcDate(isoDate, 12 - loc.lon / 15);
+  const search = (altDeg: number): Date | null => {
+    try {
+      const r = Astronomy.SearchAltitude(Astronomy.Body.Sun, observer, -1, noonLocal, 1, altDeg);
+      return r ? r.date : null;
+    } catch {
+      return null;
+    }
+  };
+  return search(-18) ?? search(-12);
+}
+
 /* ------------------------------------------------------------------ */
 /* Twilight crossing times                                             */
 /* ------------------------------------------------------------------ */
