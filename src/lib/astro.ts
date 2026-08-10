@@ -57,30 +57,43 @@ export interface ObsInput {
 
 import { getPromStar } from "./promStore";
 
+// AAVSO comparison stars are labelled with their magnitude and the decimal
+// point dropped, which is how they appear both on the charts and on the
+// observer's sheet: "105" is a 10.5-mag star, "79" is 7.9. Taken literally
+// those produce magnitudes like 85.50 for T CrB instead of 8.55 (see
+// resolveCompValue below).
+//
+// The split is physical rather than a guess about notation: a visual
+// observer can record something bright (magnitude 3), but nothing past
+// about this value is visible through the telescope at all, so a literal
+// reading above it cannot be a magnitude and must be a label. Below it the
+// literal reading is kept — "12" stays 12.0 rather than becoming 1.2. This
+// is a real ambiguity zone (a two-digit label and a two-digit magnitude look
+// identical), so it's user-tunable in Settings rather than fixed in code —
+// see UserPrefs.compLabelThreshold, which is what everything in the app
+// actually passes here; this constant is only the fallback when no
+// preference is available (tests, and the server-side MCP tools, which have
+// no access to a particular browser's local setting).
+export const DEFAULT_COMP_LABEL_THRESHOLD = 20;
+
 /**
  * Resolve a comparator value: either a numeric string ("4.02") or a single letter
  * ("a", "B", "za") that maps to a magnitude in the per-star comparator table
  * (sheet "prom" of the original ODS). Returns NaN if not resolvable.
  */
-export function resolveCompValue(starName: string | undefined, raw: string | null | undefined): number {
+export function resolveCompValue(
+  starName: string | undefined,
+  raw: string | null | undefined,
+  labelThreshold: number = DEFAULT_COMP_LABEL_THRESHOLD,
+): number {
   if (raw == null) return NaN;
   const s = String(raw).trim();
   if (!s) return NaN;
   const direct = parseFloat(s);
   if (Number.isFinite(direct) && /^-?\d/.test(s)) {
-    // AAVSO comparison stars are labelled with their magnitude and the decimal
-    // point dropped, which is how they appear both on the charts and on the
-    // observer's sheet: "105" is a 10.5-mag star, "79" is 7.9. Taken literally
-    // those produce magnitudes like 85.50 for T CrB instead of 8.55.
-    //
-    // The split is physical rather than a guess about notation: a visual
-    // observer can record something bright (magnitude 3), but nothing past
-    // about 20 is visible through the telescope at all, so a literal reading
-    // above that cannot be a magnitude and must be a label. Below it the
-    // literal reading is a real magnitude and is kept — "12" stays 12.0
-    // rather than becoming 1.2. Values carrying an explicit decimal point are
-    // magnitudes already and are never touched.
-    if (!s.includes(".") && Math.abs(direct) > 20) return direct / 10;
+    // Values carrying an explicit decimal point are magnitudes already and
+    // are never rescaled — see DEFAULT_COMP_LABEL_THRESHOLD above.
+    if (!s.includes(".") && Math.abs(direct) > labelThreshold) return direct / 10;
     return direct;
   }
   if (!starName) return NaN;
@@ -95,12 +108,16 @@ export function resolveCompValue(starName: string | undefined, raw: string | nul
  *   mag = A + (Pasos A / (Pasos A + Pasos B)) * (B - A)
  * Returns a string formatted to 2 decimals, or a "<x.x" limit, or null if not estimable.
  */
-export function computeMagnitude(o: ObsInput, starName?: string): { value: string | null; numeric: number | null } {
+export function computeMagnitude(
+  o: ObsInput,
+  starName?: string,
+  labelThreshold: number = DEFAULT_COMP_LABEL_THRESHOLD,
+): { value: string | null; numeric: number | null } {
   if (o.limit_value && o.limit_value.trim()) {
     return { value: o.limit_value.trim(), numeric: null };
   }
-  const aNum = resolveCompValue(starName, o.a ?? null);
-  const bNum = resolveCompValue(starName, o.b ?? null);
+  const aNum = resolveCompValue(starName, o.a ?? null, labelThreshold);
+  const bNum = resolveCompValue(starName, o.b ?? null, labelThreshold);
   const pa = o.pasos_a ?? null;
   const pb = o.pasos_b ?? null;
   if (

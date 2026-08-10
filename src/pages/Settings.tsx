@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, Sparkles, Database, RefreshCw, ExternalLink, Lock, Upload, Copy, Cpu, TriangleAlert, LineChart as LineChartIcon, FileText } from "lucide-react";
+import { Check, Sparkles, Database, RefreshCw, ExternalLink, Lock, Upload, Copy, Cpu, TriangleAlert, LineChart as LineChartIcon, FileText, ScanLine } from "lucide-react";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
 import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
@@ -345,6 +345,31 @@ export default function Settings() {
                   onValueChange={([v]) => setPrefs({ magCheckTolerance: v })}
                 />
                 <p className="text-xs text-muted-foreground">{t("settings.magToleranceDesc")}</p>
+              </div>
+            </Card>
+
+            <Card className="p-6 space-y-5 mt-4">
+              <div className="flex items-center gap-2">
+                <ScanLine className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-lg font-semibold">{t("settings.aiScanTuning")}</h2>
+              </div>
+              <p className="text-xs text-muted-foreground -mt-3">{t("settings.aiScanTuningDesc")}</p>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>{t("settings.compLabelThreshold")}</Label>
+                  <span className="text-xs font-mono text-muted-foreground">
+                    &gt; {prefs.compLabelThreshold} → ÷10
+                  </span>
+                </div>
+                <Slider
+                  min={15}
+                  max={40}
+                  step={1}
+                  value={[prefs.compLabelThreshold]}
+                  onValueChange={([v]) => setPrefs({ compLabelThreshold: v })}
+                />
+                <p className="text-xs text-muted-foreground">{t("settings.compLabelThresholdDesc")}</p>
               </div>
             </Card>
 

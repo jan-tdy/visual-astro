@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_MAG_TOLERANCE } from "@/lib/magHistory";
+import { DEFAULT_COMP_LABEL_THRESHOLD } from "@/lib/astro";
 
 export interface PaperColumnCfg {
   visible: boolean;
@@ -36,6 +37,7 @@ export interface UserPrefs {
   defaultConstellation: string;  // predvolené súhvezdie po otvorení session
   magCheckEnabled: boolean;      // porovnávať magnitúdy s priemerom minulých sessions
   magCheckTolerance: number;     // o koľko mag sa smie líšiť bez upozornenia (0.2–5.0)
+  compLabelThreshold: number;    // nad touto hodnotou je "A"/"B" bez desatinnej čiarky štítok hviezdy (÷10), nie magnitúda (15–40)
   openPortalAfterExport: {
     aavso: boolean;
     vsnet: boolean;
@@ -77,6 +79,7 @@ const DEFAULTS: UserPrefs = {
   defaultConstellation: "AND",
   magCheckEnabled: true,
   magCheckTolerance: DEFAULT_MAG_TOLERANCE,
+  compLabelThreshold: DEFAULT_COMP_LABEL_THRESHOLD,
   openPortalAfterExport: { aavso: false, vsnet: false },
   portalUrls: {
     aavso: SUBMISSION_PORTALS.aavso.url,

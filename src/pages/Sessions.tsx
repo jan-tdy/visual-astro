@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Loader2, Plus, Trash2, Copy, Star, StarOff, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD } from "@/lib/astro";
+import { getPrefs } from "@/hooks/usePrefs";
 import { seedCatalogIfNeeded } from "@/lib/seed";
 import { useI18n } from "@/hooks/useI18n";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -60,6 +61,7 @@ export default function Sessions() {
     } else {
       const { data: starRows } = await supabase.from("stars").select("id, name");
       const starNameById = new Map((starRows ?? []).map((s) => [s.id, s.name]));
+      const compLabelThreshold = getPrefs().compLabelThreshold;
       setSessions(
         (data ?? []).map((s: any) => ({
           ...s,
@@ -68,7 +70,7 @@ export default function Sessions() {
           obs_count: (s.observations ?? []).filter(
             (o: any) =>
               o.ut_time && String(o.ut_time).trim() &&
-              computeMagnitude(o, starNameById.get(o.star_id)).value !== null,
+              computeMagnitude(o, starNameById.get(o.star_id), compLabelThreshold).value !== null,
           ).length,
         })),
       );

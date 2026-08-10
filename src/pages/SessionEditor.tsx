@@ -557,7 +557,7 @@ export default function SessionEditor() {
       );
       if (cancelled || error) return;
       const names = new Map(stars.map((s) => [s.id, s.name]));
-      setHistory(buildStarHistory(data, names));
+      setHistory(buildStarHistory(data, names, getPrefs().compLabelThreshold));
     })();
     return () => { cancelled = true; };
   }, [user, id, stars]);
@@ -902,7 +902,7 @@ export default function SessionEditor() {
 
   const exportFile = (kind: "vsnet" | "aavso", preview = false) => {
     const rows = buildExportRows();
-    const ctx = { observedAt, jd, obsCode };
+    const ctx = { observedAt, jd, obsCode, compLabelThreshold: getPrefs().compLabelThreshold };
     let text = "", filename = "", name = "";
     if (kind === "vsnet") {
       text = buildVSNET(rows, ctx);
@@ -1162,10 +1162,12 @@ export default function SessionEditor() {
     return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
   })();
 
+  const compLabelThreshold = getPrefs().compLabelThreshold;
+
   const filledCount = Object.values(obsByStar).filter(
     (o) => {
       const s = stars.find((x) => x.id === o.star_id);
-      return !!(o.ut_time && o.ut_time.trim()) && computeMagnitude(o, s?.name).value !== null;
+      return !!(o.ut_time && o.ut_time.trim()) && computeMagnitude(o, s?.name, compLabelThreshold).value !== null;
     },
   ).length;
 
@@ -1178,7 +1180,7 @@ export default function SessionEditor() {
       if (!o.ut_time || !o.ut_time.trim()) continue;
       const s = byId.get(o.star_id);
       if (!s) continue;
-      if (computeMagnitude(o, s.name).value === null) {
+      if (computeMagnitude(o, s.name, compLabelThreshold).value === null) {
         list.push({ name: s.name, row: "" });
       }
     }
@@ -1187,7 +1189,7 @@ export default function SessionEditor() {
       if (!s) continue;
       arr.forEach((o, i) => {
         if (!o.ut_time || !o.ut_time.trim()) return;
-        if (computeMagnitude(o, s.name).value === null) {
+        if (computeMagnitude(o, s.name, compLabelThreshold).value === null) {
           list.push({ name: s.name, row: ` (riadok ${i + 2})` });
         }
       });
@@ -1221,7 +1223,7 @@ export default function SessionEditor() {
   const historyWarnings: { name: string; row: string; outliers: HistoryOutlier[] }[] = (() => {
     const prefs = getPrefs();
     if (!prefs.magCheckEnabled || history.size === 0) return [];
-    const opts = { tolerance: prefs.magCheckTolerance };
+    const opts = { tolerance: prefs.magCheckTolerance, compLabelThreshold: prefs.compLabelThreshold };
     const list: { name: string; row: string; outliers: HistoryOutlier[] }[] = [];
     const byId = new Map(stars.map((s) => [s.id, s]));
     const check = (o: Obs, row: string) => {
@@ -1649,7 +1651,7 @@ export default function SessionEditor() {
                 {(() => {
                   // Live preview: parse the current raw text without touching DB.
                   const prefs = getPrefs();
-                  const outlierOpts = { tolerance: prefs.magCheckTolerance };
+                  const outlierOpts = { tolerance: prefs.magCheckTolerance, compLabelThreshold: prefs.compLabelThreshold };
                   const catalogIndex = new Map<string, number>();
                   stars.forEach((s, i) => catalogIndex.set(s.id, i));
                   type PreviewRow = {
@@ -1687,7 +1689,7 @@ export default function SessionEditor() {
                     };
                     rows.push({
                       key: `r-${i}`, name: target.name, o,
-                      mag: computeMagnitude(o, target.name),
+                      mag: computeMagnitude(o, target.name, prefs.compLabelThreshold),
                       catIdx: catalogIndex.get(target.id) ?? Number.MAX_SAFE_INTEGER,
                       order: i,
                       lineIndex: i, plusLevel: p.plusLevel ?? 0, matchLen: p.matchLen,
@@ -1953,7 +1955,7 @@ export default function SessionEditor() {
                   <tbody>
                     {grouped.map[c].map((s) => {
                       const o = obsByStar[s.id];
-                      const mag = computeMagnitude(o ?? { a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null }, s.name);
+                      const mag = computeMagnitude(o ?? { a: null, pasos_a: null, pasos_b: null, b: null, limit_value: null }, s.name, compLabelThreshold);
                       const r = flatIndex[s.id];
                       const extras = extraByStar[s.id] ?? [];
                       return (
@@ -2020,7 +2022,7 @@ export default function SessionEditor() {
                           </td>
                         </tr>
                         {extras.map((eo, ei) => {
-                          const emag = computeMagnitude(eo, s.name);
+                          const emag = computeMagnitude(eo, s.name, compLabelThreshold);
                           return (
                             <tr key={`${s.id}-extra-${ei}`} className="border-b border-border/40 bg-secondary/10">
                               <td className="px-2 py-1 text-muted-foreground sticky left-0 bg-card pl-6">↳ {s.name}</td>

@@ -25,6 +25,13 @@ describe("resolveCompValue — AAVSO label convention", () => {
     expect(resolveCompValue(undefined, "250")).toBe(25);
     expect(resolveCompValue(undefined, "147")).toBe(14.7);
   });
+
+  it("honors a custom threshold (Settings: comparison-star label threshold)", () => {
+    // A lower threshold means more two-digit values read as labels.
+    expect(resolveCompValue(undefined, "12", 10)).toBe(1.2);
+    // A higher threshold keeps a normally-rescaled value literal instead.
+    expect(resolveCompValue(undefined, "25", 30)).toBe(25);
+  });
 });
 
 describe("computeMagnitude", () => {

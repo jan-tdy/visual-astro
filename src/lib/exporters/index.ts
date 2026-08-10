@@ -1,4 +1,4 @@
-import { applyUtTimeToDate, computeMagnitude, vsnetDate, resolveCompValue, type ObsInput } from "../astro";
+import { applyUtTimeToDate, computeMagnitude, DEFAULT_COMP_LABEL_THRESHOLD, vsnetDate, resolveCompValue, type ObsInput } from "../astro";
 
 export interface ExportRow extends ObsInput {
   star_name: string;
@@ -13,10 +13,12 @@ export interface ExportContext {
   observedAt: Date;
   jd: number;
   obsCode: string;
+  /** Comparison-star label threshold from Settings. Falls back to the default. */
+  compLabelThreshold?: number;
 }
 
-function magOrLimit(r: ExportRow): string | null {
-  const m = computeMagnitude(r, r.star_name);
+function magOrLimit(r: ExportRow, compLabelThreshold: number): string | null {
+  const m = computeMagnitude(r, r.star_name, compLabelThreshold);
   // A "fainter-than" value is the user's raw limit_value text, so it needs the same
   // CSV-delimiter guard as the other free-text fields below.
   return m.value == null ? null : csvSafe(m.value);
@@ -38,9 +40,10 @@ function rowDate(row: ExportRow, ctx: ExportContext): Date {
 }
 
 export function buildVSNET(rows: ExportRow[], ctx: ExportContext): string {
+  const compLabelThreshold = ctx.compLabelThreshold ?? DEFAULT_COMP_LABEL_THRESHOLD;
   const lines: string[] = [];
   for (const r of rows) {
-    const mag = magOrLimit(r);
+    const mag = magOrLimit(r, compLabelThreshold);
     if (!mag) continue;
     if (!r.vsnet_code) continue;
     const code = r.vsnet_code.trim().padEnd(8, " ");
@@ -53,6 +56,7 @@ export function buildVSNET(rows: ExportRow[], ctx: ExportContext): string {
 }
 
 export function buildAAVSO(rows: ExportRow[], ctx: ExportContext): string {
+  const compLabelThreshold = ctx.compLabelThreshold ?? DEFAULT_COMP_LABEL_THRESHOLD;
   const header = [
     "#TYPE=Visual",
     `#OBSCODE=${ctx.obsCode}`,
@@ -63,13 +67,13 @@ export function buildAAVSO(rows: ExportRow[], ctx: ExportContext): string {
   ].join("\n");
   const body: string[] = [];
   for (const r of rows) {
-    const mag = magOrLimit(r);
+    const mag = magOrLimit(r, compLabelThreshold);
     if (!mag) continue;
     if (!r.aavso_code) continue;
     const isLimit = !!(r.limit_value && r.limit_value.trim());
     // Resolve A/B (which may be a letter) to numeric magnitudes for the AAVSO comp fields.
-    const aVal = resolveCompValue(r.star_name, r.a ?? null);
-    const bVal = resolveCompValue(r.star_name, r.b ?? null);
+    const aVal = resolveCompValue(r.star_name, r.a ?? null, compLabelThreshold);
+    const bVal = resolveCompValue(r.star_name, r.b ?? null, compLabelThreshold);
     const comp1 = isLimit
       ? (Number.isFinite(bVal) ? bVal.toFixed(2) : csvSafe((r.limit_value ?? "").replace("<", "")))
       : (Number.isFinite(aVal) ? aVal.toFixed(2) : csvSafe(r.a ?? ""));
