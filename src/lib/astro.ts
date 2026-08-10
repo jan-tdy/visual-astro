@@ -67,7 +67,22 @@ export function resolveCompValue(starName: string | undefined, raw: string | nul
   const s = String(raw).trim();
   if (!s) return NaN;
   const direct = parseFloat(s);
-  if (Number.isFinite(direct) && /^-?\d/.test(s)) return direct;
+  if (Number.isFinite(direct) && /^-?\d/.test(s)) {
+    // AAVSO comparison stars are labelled with their magnitude and the decimal
+    // point dropped, which is how they appear both on the charts and on the
+    // observer's sheet: "105" is a 10.5-mag star, "79" is 7.9. Taken literally
+    // those produce magnitudes like 85.50 for T CrB instead of 8.55.
+    //
+    // The split is physical rather than a guess about notation: a visual
+    // observer can record something bright (magnitude 3), but nothing past
+    // about 20 is visible through the telescope at all, so a literal reading
+    // above that cannot be a magnitude and must be a label. Below it the
+    // literal reading is a real magnitude and is kept — "12" stays 12.0
+    // rather than becoming 1.2. Values carrying an explicit decimal point are
+    // magnitudes already and are never touched.
+    if (!s.includes(".") && Math.abs(direct) > 20) return direct / 10;
+    return direct;
+  }
   if (!starName) return NaN;
   const tbl = getPromStar(starName);
   if (!tbl) return NaN;

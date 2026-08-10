@@ -1,5 +1,47 @@
 import { describe, it, expect } from "vitest";
-import { applyUtTimeToDate, parseLimitMagnitude } from "@/lib/astro";
+import { applyUtTimeToDate, computeMagnitude, parseLimitMagnitude, resolveCompValue } from "@/lib/astro";
+
+describe("resolveCompValue — AAVSO label convention", () => {
+  it("reads a decimal-less label as the magnitude with the point restored", () => {
+    expect(resolveCompValue(undefined, "105")).toBe(10.5);
+    expect(resolveCompValue(undefined, "79")).toBe(7.9);
+    expect(resolveCompValue(undefined, "160")).toBe(16);
+  });
+
+  it("leaves an explicit decimal magnitude untouched", () => {
+    expect(resolveCompValue(undefined, "13.1")).toBe(13.1);
+    expect(resolveCompValue(undefined, "9.4")).toBe(9.4);
+  });
+
+  it("keeps a value that is already an observable magnitude", () => {
+    // Anything up to ~20 is a magnitude a visual observer could actually
+    // record, including genuinely bright stars, so it is read literally.
+    expect(resolveCompValue(undefined, "12")).toBe(12);
+    expect(resolveCompValue(undefined, "8")).toBe(8);
+    expect(resolveCompValue(undefined, "3")).toBe(3);
+  });
+
+  it("rescales a value too faint to be seen through the telescope", () => {
+    expect(resolveCompValue(undefined, "250")).toBe(25);
+    expect(resolveCompValue(undefined, "147")).toBe(14.7);
+  });
+});
+
+describe("computeMagnitude", () => {
+  it("interpolates T CrB from its sheet row to a real magnitude", () => {
+    // "79 1V3 105" off the observing sheet: literal comparators would give
+    // 85.50, which is the bug this guards against.
+    expect(computeMagnitude({ a: "79", pasos_a: 1, pasos_b: 3, b: "105" }).value).toBe("8.55");
+  });
+
+  it("handles comparators written with decimal points", () => {
+    expect(computeMagnitude({ a: "13.1", pasos_a: 2, pasos_b: 0, b: "13.4" }).value).toBe("13.40");
+  });
+
+  it("returns a limit as-is", () => {
+    expect(computeMagnitude({ limit_value: "<16.0" }).value).toBe("<16.0");
+  });
+});
 
 describe("parseLimitMagnitude", () => {
   it("parses a plain fainter-than string", () => {

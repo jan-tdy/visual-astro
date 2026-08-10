@@ -2935,7 +2935,10 @@ function resolveCompValue(starName, raw) {
   const s = String(raw).trim();
   if (!s) return NaN;
   const direct = parseFloat(s);
-  if (Number.isFinite(direct) && /^-?\d/.test(s)) return direct;
+  if (Number.isFinite(direct) && /^-?\d/.test(s)) {
+    if (!s.includes(".") && Math.abs(direct) > 20) return direct / 10;
+    return direct;
+  }
   if (!starName) return NaN;
   const tbl = getPromStar(starName);
   if (!tbl) return NaN;

@@ -151,18 +151,48 @@ Deno.serve(async (req) => {
 
     const systemPrompt = `Si expert OCR asistent pre RUČNE písané (ceruzkou) pozorovateľské papiere premenných hviezd.
 Text je takmer vždy písaný rukou ceruzkou, často nečitateľne — interpretuj ho najlepšie ako vieš.
-Papier obsahuje tabuľku s pevnými stĺpcami v poradí:
-poradie (#), hviezda, A, Paso A, Paso B, B, Limit, UT (čas hh:mm), Nota.
 ${isSplitScan
   ? `Tento obrázok je výrez papiera (${splitPositionLabel(splitPart, splitTotal)}, časť ${splitPart}/${splitTotal} rozdeleného skenu) — obsahuje len časť tabuľky. Ak výrez neobsahuje žiadne vyplnené riadky, vráť prázdne pole observations.`
   : 'Papier môže byť dvojstĺpcový (ľavá aj pravá polovica - prejdi obe).'}
-Pravidlá:
-- Stĺpce "A" a "B" sú porovnávacie hviezdy (zvyčajne 1–3 znaky, písmená a číslice, napr. "a", "B2", "12").
-- "Paso A" a "Paso B" sú celé čísla (typicky 1–20).
-- "Limit" má prefix "<" (napr. "<14.9").
-- "UT" je čas vo formáte hh:mm (24h).
-- "Hviezda" je názov premennej (napr. "RX And", "SS Cyg", "V404 Cyg").
-- Ignoruj úplne prázdne riadky.
+
+Papier môže mať jeden z DVOCH formátov — najprv zisti ktorý:
+
+FORMÁT 1 (najčastejší, ručne kreslená tabuľka) — 4 stĺpce:
+  Hviezda | Odhad | Čas | Pozn.
+Stĺpec "Odhad" je JEDEN zložený zápis, ktorý treba rozobrať. Má dva tvary:
+  a) Stupňový odhad: A <pasosA>V<pasosB> B
+     Písmeno "V" (niekedy vyzerá ako "v") je oddeľovač v STREDE zápisu.
+     - pasosA = JEDNA číslica TESNE PRED "V"
+     - pasosB = JEDNA číslica TESNE ZA "V"
+     - A = celý zvyšok PRED pasosA
+     - B = celý zvyšok ZA pasosB
+     Príklady (toto je najčastejší zdroj chýb, drž sa ich presne):
+       "79 1V3 105"    -> a="79",   pasos_a=1, pasos_b=3, b="105"
+       "122 4V1 121"   -> a="122",  pasos_a=4, pasos_b=1, b="121"
+       "136 2V1 160"   -> a="136",  pasos_a=2, pasos_b=1, b="160"
+       "108 1V1 109"   -> a="108",  pasos_a=1, pasos_b=1, b="109"
+       "13.1 2V0 13.4" -> a="13.1", pasos_a=2, pasos_b=0, b="13.4"
+       "C 1V2 6"       -> a="C",    pasos_a=1, pasos_b=2, b="6"
+     POZOR: A a B sú zvyčajne TROJCIFERNÉ (napr. 122, 136, 160). Nikdy neber
+     poslednú číslicu z trojciferného A ako pasosA — "122 4V1 121" je
+     a="122", pasos_a=4, NIE a="12", pasos_a=2.
+     Ak je pasosB napísané ako "0", zapíš pasos_b=0 (nie 1, nie null).
+  b) Medza jasnosti: začína "<" (napr. "<16.0", "<15.7")
+     -> limit_value="<16.0", a/b/pasos nechaj null.
+Stĺpec "Čas" je zvyčajne bez dvojbodky, 4 číslice: "2124" -> ut_time="21:24".
+
+FORMÁT 2 (predtlačená šablóna z aplikácie) — samostatné stĺpce:
+  poradie (#), hviezda, A, Paso A, Paso B, B, Limit, UT (hh:mm), Nota.
+Tu čítaj hodnoty priamo z príslušných stĺpcov, nič nerozoberaj.
+
+Spoločné pravidlá:
+- "Hviezda" je názov premennej (napr. "RX And", "SS Cyg", "V404 Cyg", "T CrB").
+  Zachovaj medzeru medzi označením a súhvezdím.
+- A a B sú porovnávacie hviezdy: buď číslo (napr. "105", "79", "13.1"), alebo
+  písmeno z mapy jasností (napr. "a", "C", "d3"). Prepíš PRESNE ako je napísané —
+  desatinnú čiarku NEDOPĹŇAJ a NEODSTRAŇUJ ("105" nechaj "105", nie "10.5").
+- pasos_a / pasos_b sú celé čísla 0–20.
+- Ignoruj úplne prázdne riadky. Preškrtnuté riadky vynechaj.
 - Ak si pri ručnom písme neistý, urob najpravdepodobnejší odhad, nevynechávaj riadok.
 Vráť VÝHRADNE JSON objekt v tvare:
 { "observations": [ { "star_name": string, "a": string|null, "pasos_a": number|null, "pasos_b": number|null, "b": string|null, "limit_value": string|null, "ut_time": string|null, "note": string|null } ] }
