@@ -1,6 +1,49 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
+// The model's JSON output can end up incomplete — either the connection gets
+// cut (e.g. the platform's wall-clock limit) or the model itself stops mid-
+// object (hit its own output limit). Rather than discard everything because
+// the outer `{ "observations": [...] }` never closed, walk the accumulated
+// text and pull out whichever individual observation objects DID finish
+// (each is self-contained JSON), skipping only the trailing, still-open one.
+function extractPartialObservations(text: string): unknown[] {
+  const marker = '"observations"';
+  const markerIdx = text.indexOf(marker);
+  if (markerIdx === -1) return [];
+  const bracketIdx = text.indexOf('[', markerIdx);
+  if (bracketIdx === -1) return [];
+  const results: unknown[] = [];
+  let depth = 0;
+  let start = -1;
+  let inStr = false;
+  let esc = false;
+  for (let i = bracketIdx + 1; i < text.length; i++) {
+    const c = text[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (c === '\\') esc = true;
+      else if (c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') { inStr = true; continue; }
+    if (c === '{') {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (c === '}') {
+      depth--;
+      if (depth === 0 && start >= 0) {
+        const chunk = text.slice(start, i + 1);
+        try { results.push(JSON.parse(chunk)); } catch { /* cut off mid-object, skip */ }
+        start = -1;
+      }
+    } else if (c === ']' && depth === 0) {
+      break;
+    }
+  }
+  return results;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
@@ -177,7 +220,10 @@ Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
                   const count = (full.match(/"star_name"/g) ?? []).length;
                   if (count !== lastCount) {
                     lastCount = count;
-                    send({ type: 'progress', count });
+                    // Forward whichever rows have fully parsed so far — if the
+                    // connection drops before "done" ever ships, the client
+                    // still has the last progress event's partial results.
+                    send({ type: 'progress', count, partial: extractPartialObservations(full) });
                   }
                 }
               } catch {
@@ -187,9 +233,16 @@ Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
             }
           }
 
-          let parsed: any = {};
-          try { parsed = JSON.parse(full); } catch { parsed = { observations: [] }; }
-          const observations = Array.isArray(parsed?.observations) ? parsed.observations : [];
+          let observations: unknown[];
+          try {
+            const parsed = JSON.parse(full);
+            observations = Array.isArray(parsed?.observations) ? parsed.observations : [];
+          } catch {
+            // Whole-text parse failed — most likely the model got cut off
+            // mid-object (its own output limit, not our connection). Salvage
+            // whatever rows did complete instead of returning nothing.
+            observations = extractPartialObservations(full);
+          }
 
           // Increment usage counter (best effort) — skipped for the second
           // half of a Free-plan split scan, see skipQuota above.
