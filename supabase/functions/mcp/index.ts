@@ -2930,24 +2930,28 @@ function vsnetDate(d) {
   const dayWithFrac = (day + frac).toFixed(3).padStart(6, "0");
   return `${y}${m}${dayWithFrac}`;
 }
-function resolveCompValue(starName, raw) {
+var DEFAULT_COMP_LABEL_THRESHOLD = 20;
+function resolveCompValue(starName, raw, labelThreshold = DEFAULT_COMP_LABEL_THRESHOLD) {
   if (raw == null) return NaN;
   const s = String(raw).trim();
   if (!s) return NaN;
   const direct = parseFloat(s);
-  if (Number.isFinite(direct) && /^-?\d/.test(s)) return direct;
+  if (Number.isFinite(direct) && /^-?\d/.test(s)) {
+    if (!s.includes(".") && Math.abs(direct) > labelThreshold) return direct / 10;
+    return direct;
+  }
   if (!starName) return NaN;
   const tbl = getPromStar(starName);
   if (!tbl) return NaN;
   const v = tbl[s.toLowerCase()];
   return typeof v === "number" ? v : NaN;
 }
-function computeMagnitude(o, starName) {
+function computeMagnitude(o, starName, labelThreshold = DEFAULT_COMP_LABEL_THRESHOLD) {
   if (o.limit_value && o.limit_value.trim()) {
     return { value: o.limit_value.trim(), numeric: null };
   }
-  const aNum = resolveCompValue(starName, o.a ?? null);
-  const bNum = resolveCompValue(starName, o.b ?? null);
+  const aNum = resolveCompValue(starName, o.a ?? null, labelThreshold);
+  const bNum = resolveCompValue(starName, o.b ?? null, labelThreshold);
   const pa = o.pasos_a ?? null;
   const pb = o.pasos_b ?? null;
   if (Number.isFinite(aNum) && Number.isFinite(bNum) && pa !== null && pb !== null && pa + pb > 0) {
@@ -3543,8 +3547,8 @@ import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.26.1";
 import { z as z12 } from "npm:zod@^3.25.76";
 
 // src/lib/exporters/index.ts
-function magOrLimit(r) {
-  const m = computeMagnitude(r, r.star_name);
+function magOrLimit(r, compLabelThreshold) {
+  const m = computeMagnitude(r, r.star_name, compLabelThreshold);
   return m.value == null ? null : csvSafe(m.value);
 }
 function csvSafe(s) {
@@ -3557,9 +3561,10 @@ function rowDate(row, ctx) {
   return d;
 }
 function buildVSNET(rows, ctx) {
+  const compLabelThreshold = ctx.compLabelThreshold ?? DEFAULT_COMP_LABEL_THRESHOLD;
   const lines = [];
   for (const r of rows) {
-    const mag = magOrLimit(r);
+    const mag = magOrLimit(r, compLabelThreshold);
     if (!mag) continue;
     if (!r.vsnet_code) continue;
     const code = r.vsnet_code.trim().padEnd(8, " ");
@@ -3571,6 +3576,7 @@ function buildVSNET(rows, ctx) {
   return lines.join("\n") + "\n";
 }
 function buildAAVSO(rows, ctx) {
+  const compLabelThreshold = ctx.compLabelThreshold ?? DEFAULT_COMP_LABEL_THRESHOLD;
   const header = [
     "#TYPE=Visual",
     `#OBSCODE=${ctx.obsCode}`,
@@ -3581,12 +3587,12 @@ function buildAAVSO(rows, ctx) {
   ].join("\n");
   const body = [];
   for (const r of rows) {
-    const mag = magOrLimit(r);
+    const mag = magOrLimit(r, compLabelThreshold);
     if (!mag) continue;
     if (!r.aavso_code) continue;
     const isLimit = !!(r.limit_value && r.limit_value.trim());
-    const aVal = resolveCompValue(r.star_name, r.a ?? null);
-    const bVal = resolveCompValue(r.star_name, r.b ?? null);
+    const aVal = resolveCompValue(r.star_name, r.a ?? null, compLabelThreshold);
+    const bVal = resolveCompValue(r.star_name, r.b ?? null, compLabelThreshold);
     const comp1 = isLimit ? Number.isFinite(bVal) ? bVal.toFixed(2) : csvSafe((r.limit_value ?? "").replace("<", "")) : Number.isFinite(aVal) ? aVal.toFixed(2) : csvSafe(r.a ?? "");
     const comp2 = isLimit ? "na" : Number.isFinite(bVal) ? bVal.toFixed(2) : csvSafe(r.b ?? "");
     const jd = ctx.jd + (rowDate(r, ctx).getTime() - ctx.observedAt.getTime()) / 864e5;

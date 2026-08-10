@@ -9,7 +9,7 @@
  * again. Variables do vary, and a genuine outburst is exactly the observation
  * worth keeping, so these are *checks*, never corrections.
  */
-import { computeMagnitude, parseLimitMagnitude, resolveCompValue } from "./astro";
+import { computeMagnitude, DEFAULT_COMP_LABEL_THRESHOLD, parseLimitMagnitude, resolveCompValue } from "./astro";
 
 export type HistoryObs = {
   star_id: string;
@@ -55,15 +55,16 @@ export function fieldValue(
   o: HistoryObs,
   field: HistoryField,
   starName?: string,
+  compLabelThreshold: number = DEFAULT_COMP_LABEL_THRESHOLD,
 ): number | null {
   switch (field) {
     case "mag": {
-      const m = computeMagnitude(o, starName);
+      const m = computeMagnitude(o, starName, compLabelThreshold);
       return m.numeric;
     }
     case "a":
     case "b": {
-      const v = resolveCompValue(starName, o[field] ?? null);
+      const v = resolveCompValue(starName, o[field] ?? null, compLabelThreshold);
       return Number.isFinite(v) ? v : null;
     }
     case "pasos_a":
@@ -98,6 +99,7 @@ function statOf(values: number[]): FieldStat | undefined {
 export function buildStarHistory(
   rows: HistoryObs[],
   starNameById: Map<string, string>,
+  compLabelThreshold: number = DEFAULT_COMP_LABEL_THRESHOLD,
 ): Map<string, StarHistory> {
   const raw = new Map<string, Record<HistoryField, number[]>>();
   for (const row of rows) {
@@ -108,7 +110,7 @@ export function buildStarHistory(
     }
     const name = starNameById.get(row.star_id);
     for (const f of HISTORY_FIELDS) {
-      const v = fieldValue(row, f, name);
+      const v = fieldValue(row, f, name, compLabelThreshold);
       if (v !== null) bucket[f].push(v);
     }
   }
@@ -136,6 +138,8 @@ export type OutlierOptions = {
   /** Magnitude tolerance from Settings (mag). Falls back to the default. */
   tolerance?: number;
   minHistory?: number;
+  /** Comparison-star label threshold from Settings. Falls back to the default. */
+  compLabelThreshold?: number;
 };
 
 /** The band around the historical mean that a value may occupy without comment. */
@@ -158,11 +162,12 @@ export function findOutliers(
   if (!hist) return [];
   const tolerance = opts.tolerance ?? DEFAULT_MAG_TOLERANCE;
   const minHistory = opts.minHistory ?? MIN_HISTORY;
+  const compLabelThreshold = opts.compLabelThreshold ?? DEFAULT_COMP_LABEL_THRESHOLD;
   const out: HistoryOutlier[] = [];
   for (const field of HISTORY_FIELDS) {
     const stat = hist[field];
     if (!stat || stat.n < minHistory) continue;
-    const value = fieldValue(o, field, starName);
+    const value = fieldValue(o, field, starName, compLabelThreshold);
     if (value === null) continue;
     const threshold = thresholdFor(field, stat, tolerance);
     if (Math.abs(value - stat.mean) > threshold) {

@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { applyUtTimeToDate, computeMagnitude, dateToJD, parseLimitMagnitude } from "@/lib/astro";
+import { getPrefs } from "@/hooks/usePrefs";
 import { useI18n } from "@/hooks/useI18n";
 import {
   ResponsiveContainer, ComposedChart, Line, BarChart, Bar, Scatter,
@@ -237,13 +238,14 @@ export default function Graphs() {
   const lightCurve = useMemo(() => {
     if (!selectedStar) return [];
     const starName = starById[selectedStar]?.name;
+    const compLabelThreshold = getPrefs().compLabelThreshold;
     const points: { jd: number; date: string; mag: number }[] = [];
     realObs
       .filter(o => o.star_id === selectedStar)
       .forEach(o => {
         const dt = sessionById[o.session_id]?.observed_at_utc;
         if (!dt) return;
-        const { numeric } = computeMagnitude(o, starName);
+        const { numeric } = computeMagnitude(o, starName, compLabelThreshold);
         if (numeric == null) return;
         const d = new Date(dt);
         if (isNaN(d.getTime())) return;
