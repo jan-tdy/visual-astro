@@ -1069,22 +1069,14 @@ export default function SessionEditor() {
       appendOcrLog(t("editor.ocrDialog.logStart"));
       const quadrants = await splitImageIntoQuadrants(dataUrl);
       const total = quadrants.length;
-      // Ties each call to its DB job row — see runPart below.
-      const scanId = crypto.randomUUID();
 
-      const POLL_INTERVAL_MS = 3000;
-      const POLL_HEARTBEAT_MS = 9000;
-      const POLL_TIMEOUT_MS = 6 * 60 * 1000;
-
-      // Each crop is its own paper-ocr call. The edge function's own AI call
-      // doesn't actually stream (Lovable's own request log shows it as
-      // "Buffered" — the model just takes as long as it takes, then answers
-      // all at once), and the proxy in front of the edge function has been
-      // observed dropping the client's connection around ~90s regardless —
-      // well before the model was done and well under Supabase's own
-      // execution budget. So paper-ocr now replies immediately and keeps
-      // working in the background; we poll its ocr_scan_progress row for
-      // the result instead of waiting on one long HTTP request.
+      // One paper-ocr call per crop, awaited normally. Earlier versions of
+      // this went through SSE relaying and then a background job + DB
+      // polling, both to survive a single AI call that took 86-140s — long
+      // enough to outlive the proxy's ~90s client connection limit. That
+      // duration turned out to be the model choice rather than anything
+      // inherent, and paper-ocr now answers in seconds, so the plain call is
+      // both the simplest and the most reliable option available.
       const runPart = async (partImage: string, part: number) => {
         appendOcrLog(t("editor.ocrDialog.logStartPart").replace("{part}", String(part)).replace("{total}", String(total)));
         const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paper-ocr`, {
@@ -1094,73 +1086,22 @@ export default function SessionEditor() {
             Authorization: `Bearer ${token}`,
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ image: partImage, splitPart: part, splitTotal: total, scanId }),
+          body: JSON.stringify({ image: partImage, splitPart: part, splitTotal: total }),
         });
 
-        if (!res.ok) {
-          let msg = t("editor.ocrUnknown");
-          try {
-            const body = await res.json();
-            if (body?.error) msg = body.error;
-          } catch {}
-          throw new Error(msg);
-        }
+        const bodyText = await res.text();
+        let body: any = null;
+        try { body = JSON.parse(bodyText); } catch { /* handled below */ }
 
-        const startedAt = Date.now();
-        let lastHeartbeatAt = startedAt;
-        let consecutivePollFailures = 0;
-        while (true) {
-          const elapsed = Date.now() - startedAt;
-          if (elapsed > POLL_TIMEOUT_MS) throw new Error(t("editor.ocrDialog.timeoutHint"));
+        if (!res.ok) throw new Error(body?.error || t("editor.ocrUnknown"));
+        if (!body) throw new Error(t("editor.ocrUnknown"));
 
-          // A single poll is just a cheap DB read, but the underlying fetch
-          // (including the supabase-js client's own token-refresh calls) can
-          // still hit a transient network hiccup. That's not the scan
-          // failing — it's one tick failing — so retry on the next tick
-          // instead of letting it blow up the whole scan. Only give up after
-          // several in a row, since that's no longer "transient".
-          let row: { status: string; observations: unknown; error_message: string | null; used: number | null; monthly_limit: number | null } | null = null;
-          try {
-            const res = await supabase
-              .from("ocr_scan_progress")
-              .select("status, observations, error_message, used, monthly_limit")
-              .eq("scan_id", scanId)
-              .eq("part", part)
-              .maybeSingle();
-            row = res.data;
-            consecutivePollFailures = 0;
-          } catch {
-            consecutivePollFailures += 1;
-            if (consecutivePollFailures >= 5) throw new Error(t("editor.ocrDialog.timeoutHint"));
-            await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
-            continue;
-          }
-
-          if (row?.status === "done") {
-            const obsArr: any[] = Array.isArray(row.observations) ? row.observations : [];
-            appendOcrLog(
-              t("editor.ocrDialog.logDonePart")
-                .replace("{part}", String(part)).replace("{total}", String(total)).replace("{n}", String(obsArr.length)),
-            );
-            await supabase.from("ocr_scan_progress").delete().eq("scan_id", scanId).eq("part", part);
-            return { observations: obsArr, used: row.used ?? undefined, lim: row.monthly_limit ?? undefined };
-          }
-          if (row?.status === "error") {
-            const msg = row.error_message || t("editor.ocrUnknown");
-            await supabase.from("ocr_scan_progress").delete().eq("scan_id", scanId).eq("part", part);
-            throw new Error(msg);
-          }
-
-          if (Date.now() - lastHeartbeatAt >= POLL_HEARTBEAT_MS) {
-            lastHeartbeatAt = Date.now();
-            appendOcrLog(
-              t("editor.ocrDialog.logWaitingPart")
-                .replace("{part}", String(part)).replace("{total}", String(total))
-                .replace("{s}", String(Math.floor((Date.now() - startedAt) / 1000))),
-            );
-          }
-          await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
-        }
+        const obsArr: any[] = Array.isArray(body.observations) ? body.observations : [];
+        appendOcrLog(
+          t("editor.ocrDialog.logDonePart")
+            .replace("{part}", String(part)).replace("{total}", String(total)).replace("{n}", String(obsArr.length)),
+        );
+        return { observations: obsArr, used: body.used, lim: body.dailyLimit };
       };
 
       const results = [];
