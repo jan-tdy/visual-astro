@@ -171,24 +171,39 @@ export type Database = {
       }
       ocr_scan_progress: {
         Row: {
+          error_message: string | null
+          is_plus: boolean | null
+          monthly_limit: number | null
           observations: Json
           part: number
           scan_id: string
+          status: string
           updated_at: string
+          used: number | null
           user_id: string
         }
         Insert: {
+          error_message?: string | null
+          is_plus?: boolean | null
+          monthly_limit?: number | null
           observations?: Json
           part: number
           scan_id: string
+          status?: string
           updated_at?: string
+          used?: number | null
           user_id: string
         }
         Update: {
+          error_message?: string | null
+          is_plus?: boolean | null
+          monthly_limit?: number | null
           observations?: Json
           part?: number
           scan_id?: string
+          status?: string
           updated_at?: string
+          used?: number | null
           user_id?: string
         }
         Relationships: []
