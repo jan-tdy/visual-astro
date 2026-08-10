@@ -195,23 +195,26 @@ export function CcdCatalog({
 
   const move = async (x: CcdTarget, dir: -1 | 1) => {
     if (!isOwnCatalog) return;
-    const siblings = sortTargets(targets);
-    const idx = siblings.findIndex((s) => s.id === x.id);
-    const next = idx + dir;
-    if (idx < 0 || next < 0 || next >= siblings.length) return;
-    const reordered = siblings.slice();
-    const [moved] = reordered.splice(idx, 1);
-    reordered.splice(next, 0, moved);
-    for (let i = 0; i < reordered.length; i++) {
-      const { error } = await supabase
-        .from("ccd_targets")
-        .update({ sort_order: (i + 1) * 10 })
-        .eq("id", reordered[i].id);
-      if (error) {
-        toast.error(error.message);
-        break;
-      }
+    // Swap with the neighbor in the *displayed* (filtered) order, not the full catalog —
+    // otherwise an active search swaps a row with one the user can't see, so the visible
+    // list appears unchanged and the arrows look broken.
+    const idx = filtered.findIndex((s) => s.id === x.id);
+    const otherIdx = idx + dir;
+    if (idx < 0 || otherIdx < 0 || otherIdx >= filtered.length) return;
+    const other = filtered[otherIdx];
+    const { error: err1 } = await supabase
+      .from("ccd_targets")
+      .update({ sort_order: other.sort_order })
+      .eq("id", x.id);
+    if (err1) {
+      toast.error(err1.message);
+      return;
     }
+    const { error: err2 } = await supabase
+      .from("ccd_targets")
+      .update({ sort_order: x.sort_order })
+      .eq("id", other.id);
+    if (err2) toast.error(err2.message);
     reload();
   };
 
