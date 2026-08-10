@@ -107,18 +107,12 @@ Deno.serve(async (req) => {
     const isPlus = subActive || devOverride || bonusActive;
     const monthlyLimit = isPlus ? 40 : 5;
 
-    const { image, splitPart, splitTotal, scanId } = await req.json();
+    const { image, splitPart, splitTotal } = await req.json();
     if (!image || typeof image !== 'string') {
       return new Response(JSON.stringify({ error: 'image (data URL) required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    if (!scanId || typeof scanId !== 'string') {
-      return new Response(JSON.stringify({ error: 'scanId required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const part = typeof splitPart === 'number' ? splitPart : 1;
     // A "split scan" is the client cutting one paper photo into several crops
     // (currently a 2x2 grid) and calling this function once per crop (see
     // SessionEditor's handleOcrFile), which keeps each AI call's *content*
@@ -174,101 +168,91 @@ Vráť VÝHRADNE JSON objekt v tvare:
 { "observations": [ { "star_name": string, "a": string|null, "pasos_a": number|null, "pasos_b": number|null, "b": string|null, "limit_value": string|null, "ut_time": string|null, "note": string|null } ] }
 Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
 
-    // Claim the job row right away so the client can start polling immediately
-    // instead of waiting on this HTTP response — see processInBackground
-    // below for why. If a row from a previous attempt at the same
-    // (scanId, part) is somehow still around, this resets it to pending.
-    await supabase.from('ocr_scan_progress').upsert({
-      scan_id: scanId, part, user_id: userId, status: 'pending',
-      observations: [], error_message: null, updated_at: new Date().toISOString(),
+    // Model choice is what actually keeps this function inside its time
+    // budget, and it's worth spelling out because two previous rewrites
+    // failed by ignoring it. On gemini-2.5-pro a single crop took 86-140s
+    // (Lovable's AI activity log), most of it extended thinking that an OCR
+    // transcription task doesn't need. That is longer than the ~90s the
+    // proxy in front of this function allows a client request to live, so a
+    // synchronous call lost. Moving the work to EdgeRuntime.waitUntil() lost
+    // too — the isolate gets torn down once the response is sent, killing the
+    // in-flight body read (surfaced as "Unexpected end of JSON input" at
+    // ~52s). Flash answers a small crop in seconds instead, which puts the
+    // whole call comfortably inside the request path and makes both of those
+    // failure modes unreachable rather than merely less likely.
+    const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: [
+            { type: 'text', text: 'Prečítaj túto ručne písanú tabuľku (ceruzkou) a vráť JSON. Snaž sa rozlúštiť aj nečitateľné políčka.' },
+            { type: 'image_url', image_url: { url: image } },
+          ]},
+        ],
+        response_format: { type: 'json_object' },
+      }),
     });
 
-    // The AI gateway does not actually stream its response through to us —
-    // Lovable's own request log shows it as "Buffered": the model can take
-    // 60-140s+ to answer and nothing comes back until it's fully done. The
-    // proxy in front of this edge function has been observed to give up on
-    // the client's HTTP connection at roughly that same ~90s mark, well
-    // before Supabase's own execution limit (150-400s) would ever kick in —
-    // so a synchronous request/response here loses the race almost by
-    // design. Instead: respond to the client immediately, do the actual
-    // work in the background (EdgeRuntime.waitUntil keeps this isolate
-    // alive well past the response), and let the client poll ocr_scan_progress
-    // for the result — each poll is a cheap DB read, never a slow request.
-    const processInBackground = async () => {
-      try {
-        const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${key}`,
-          },
-          body: JSON.stringify({
-            model: 'google/gemini-2.5-pro',
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: [
-                { type: 'text', text: 'Prečítaj túto ručne písanú tabuľku (ceruzkou) a vráť JSON. Snaž sa rozlúštiť aj nečitateľné políčka.' },
-                { type: 'image_url', image_url: { url: image } },
-              ]},
-            ],
-            response_format: { type: 'json_object' },
-          }),
-        });
+    if (!aiRes.ok) {
+      const txt = await aiRes.text().catch(() => '');
+      return new Response(JSON.stringify({ error: `AI error ${aiRes.status}: ${txt}` }), {
+        status: aiRes.status === 429 || aiRes.status === 402 ? aiRes.status : 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-        if (!aiRes.ok) {
-          const txt = await aiRes.text().catch(() => '');
-          await supabase.from('ocr_scan_progress').upsert({
-            scan_id: scanId, part, user_id: userId, status: 'error',
-            error_message: `AI error ${aiRes.status}: ${txt}`, updated_at: new Date().toISOString(),
-          });
-          return;
-        }
+    // Read the body as text first rather than aiRes.json(). If the response
+    // is empty or truncated, JSON.parse's own message ("Unexpected end of
+    // JSON input") says nothing about where it came from — which cost real
+    // debugging time once already. Naming the source here keeps any future
+    // occurrence self-explanatory in the client's error log.
+    const raw = await aiRes.text();
+    if (!raw.trim()) {
+      return new Response(JSON.stringify({ error: 'AI gateway vrátila prázdnu odpoveď. Skús to prosím znova.' }), {
+        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    let content = '';
+    try {
+      content = JSON.parse(raw)?.choices?.[0]?.message?.content ?? '';
+    } catch {
+      return new Response(JSON.stringify({ error: 'AI gateway vrátila neplatnú odpoveď. Skús to prosím znova.' }), {
+        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-        const data = await aiRes.json();
-        const content = data?.choices?.[0]?.message?.content ?? '';
-        let observations: unknown[];
-        try {
-          const parsed = JSON.parse(content);
-          observations = Array.isArray(parsed?.observations) ? parsed.observations : [];
-        } catch {
-          // Whole-text parse failed — most likely the model got cut off
-          // mid-object (its own output limit). Salvage whatever rows did
-          // complete instead of returning nothing.
-          observations = extractPartialObservations(content);
-        }
+    let observations: unknown[];
+    try {
+      const parsed = JSON.parse(content);
+      observations = Array.isArray(parsed?.observations) ? parsed.observations : [];
+    } catch {
+      // Whole-text parse failed — most likely the model got cut off
+      // mid-object (its own output limit). Salvage whatever rows did
+      // complete instead of returning nothing.
+      observations = extractPartialObservations(content);
+    }
 
-        // Increment usage counter (best effort) — skipped for parts after
-        // the first in a Free-plan split scan, see skipQuota above.
-        if (!skipQuota) {
-          if (usageRow) {
-            await supabase.from('ocr_usage').update({ count: used + 1 }).eq('id', (usageRow as any).id);
-          } else {
-            await supabase.from('ocr_usage').insert({ user_id: userId, used_on: monthStart, count: 1 });
-          }
-        }
-
-        await supabase.from('ocr_scan_progress').upsert({
-          scan_id: scanId, part, user_id: userId, status: 'done', observations,
-          used: skipQuota ? used : used + 1, monthly_limit: monthlyLimit, is_plus: isPlus,
-          updated_at: new Date().toISOString(),
-        });
-      } catch (e) {
-        try {
-          await supabase.from('ocr_scan_progress').upsert({
-            scan_id: scanId, part, user_id: userId, status: 'error',
-            error_message: (e as Error).message, updated_at: new Date().toISOString(),
-          });
-        } catch { /* best effort — client's poll will eventually time out */ }
+    // Increment usage counter (best effort) — skipped for parts after
+    // the first in a Free-plan split scan, see skipQuota above.
+    if (!skipQuota) {
+      if (usageRow) {
+        await supabase.from('ocr_usage').update({ count: used + 1 }).eq('id', (usageRow as any).id);
+      } else {
+        await supabase.from('ocr_usage').insert({ user_id: userId, used_on: monthStart, count: 1 });
       }
-    };
+    }
 
-    // EdgeRuntime is a Supabase/Deno Deploy global (not declared in any lib
-    // this project's tsc checks — this file isn't part of that project).
-    EdgeRuntime.waitUntil(processInBackground());
-
-    return new Response(JSON.stringify({ scanId, part, status: 'pending' }), {
-      status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(JSON.stringify({
+      observations,
+      used: skipQuota ? used : used + 1,
+      monthlyLimit, dailyLimit: monthlyLimit, isPlus,
+    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
     return new Response(JSON.stringify({ error: (e as Error).message }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
