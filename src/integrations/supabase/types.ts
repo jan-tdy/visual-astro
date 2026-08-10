@@ -169,6 +169,30 @@ export type Database = {
           },
         ]
       }
+      ocr_scan_progress: {
+        Row: {
+          observations: Json
+          part: number
+          scan_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          observations?: Json
+          part: number
+          scan_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          observations?: Json
+          part?: number
+          scan_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ocr_usage: {
         Row: {
           count: number

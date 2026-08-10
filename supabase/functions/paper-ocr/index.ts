@@ -44,6 +44,19 @@ function extractPartialObservations(text: string): unknown[] {
   return results;
 }
 
+// Slovak label for where a split's part sits on the page — used only in the
+// prompt so the model doesn't get confused about why it's looking at a crop
+// instead of the whole table.
+function splitPositionLabel(part: number, total: number): string {
+  if (total === 4) {
+    return ['vľavo hore', 'vpravo hore', 'vľavo dole', 'vpravo dole'][part - 1] ?? `časť ${part}`;
+  }
+  if (total === 2) {
+    return part === 1 ? 'ĽAVÁ polovica' : 'PRAVÁ polovica';
+  }
+  return `časť ${part}/${total}`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
@@ -95,22 +108,24 @@ Deno.serve(async (req) => {
     const isPlus = subActive || devOverride || bonusActive;
     const monthlyLimit = isPlus ? 40 : 5;
 
-    const { image, splitPart, splitTotal } = await req.json();
+    const { image, splitPart, splitTotal, scanId } = await req.json();
     if (!image || typeof image !== 'string') {
       return new Response(JSON.stringify({ error: 'image (data URL) required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    // A "split scan" is the client cutting one paper photo into left/right
-    // halves and calling this function once per half (see SessionEditor's
-    // handleOcrFile), which sidesteps the edge function wall-clock limit and
-    // avoids the model truncating its JSON output on a large page. On the
-    // Free plan the two halves together are billed as a single scan — only
-    // part 1 is quota-checked and charged, part 2 rides along for free. On
-    // Plus each half is billed normally (2 scans), same as calling this
-    // function twice for unrelated images.
-    const isSplitScan = splitTotal === 2 && (splitPart === 1 || splitPart === 2);
-    const skipQuota = isSplitScan && !isPlus && splitPart === 2;
+    // A "split scan" is the client cutting one paper photo into several crops
+    // (currently a 2x2 grid) and calling this function once per crop (see
+    // SessionEditor's handleOcrFile), which keeps each AI call short enough
+    // to reliably finish inside the platform's connection limit and avoids
+    // the model truncating its JSON output on a large page. On the Free plan
+    // all crops together are billed as a single scan — only part 1 is
+    // quota-checked and charged, the rest ride along for free. On Plus each
+    // crop is billed normally (N scans for an N-way split), same as calling
+    // this function N times for unrelated images.
+    const isSplitScan = typeof splitTotal === 'number' && splitTotal >= 2 &&
+      typeof splitPart === 'number' && splitPart >= 1 && splitPart <= splitTotal;
+    const skipQuota = isSplitScan && !isPlus && splitPart > 1;
 
     // Mesačný agregát: prvý deň mesiaca ako "bucket" v ocr_usage.used_on
     const now = new Date();
@@ -141,7 +156,7 @@ Text je takmer vždy písaný rukou ceruzkou, často nečitateľne — interpret
 Papier obsahuje tabuľku s pevnými stĺpcami v poradí:
 poradie (#), hviezda, A, Paso A, Paso B, B, Limit, UT (čas hh:mm), Nota.
 ${isSplitScan
-  ? `Tento obrázok je ${splitPart === 1 ? 'ĽAVÁ' : 'PRAVÁ'} polovica dvojstĺpcového papiera (časť ${splitPart}/${splitTotal} rozdeleného skenu) — obsahuje len jeden stĺpec tabuľky. Ak polovica neobsahuje žiadne vyplnené riadky, vráť prázdne pole observations.`
+  ? `Tento obrázok je výrez papiera (${splitPositionLabel(splitPart, splitTotal)}, časť ${splitPart}/${splitTotal} rozdeleného skenu) — obsahuje len časť tabuľky. Ak výrez neobsahuje žiadne vyplnené riadky, vráť prázdne pole observations.`
   : 'Papier môže byť dvojstĺpcový (ľavá aj pravá polovica - prejdi obe).'}
 Pravidlá:
 - Stĺpce "A" a "B" sú porovnávacie hviezdy (zvyčajne 1–3 znaky, písmená a číslice, napr. "a", "B2", "12").
@@ -220,10 +235,25 @@ Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
                   const count = (full.match(/"star_name"/g) ?? []).length;
                   if (count !== lastCount) {
                     lastCount = count;
+                    const partial = extractPartialObservations(full);
                     // Forward whichever rows have fully parsed so far — if the
                     // connection drops before "done" ever ships, the client
                     // still has the last progress event's partial results.
-                    send({ type: 'progress', count, partial: extractPartialObservations(full) });
+                    send({ type: 'progress', count, partial });
+                    // Also checkpoint to the DB: Lovable Cloud's proxy has been
+                    // observed to buffer this SSE response rather than forward
+                    // it live, so the "progress" event above may never actually
+                    // reach the browser. A DB row survives that — the client
+                    // can query it directly (its own RLS-scoped read) if the
+                    // response never arrives at all.
+                    if (scanId && isSplitScan) {
+                      try {
+                        await supabase.from('ocr_scan_progress').upsert({
+                          scan_id: scanId, part: splitPart, user_id: userId,
+                          observations: partial, updated_at: new Date().toISOString(),
+                        });
+                      } catch { /* best effort, never block the scan on this */ }
+                    }
                   }
                 }
               } catch {
@@ -244,14 +274,22 @@ Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
             observations = extractPartialObservations(full);
           }
 
-          // Increment usage counter (best effort) — skipped for the second
-          // half of a Free-plan split scan, see skipQuota above.
+          // Increment usage counter (best effort) — skipped for parts after
+          // the first in a Free-plan split scan, see skipQuota above.
           if (!skipQuota) {
             if (usageRow) {
               await supabase.from('ocr_usage').update({ count: used + 1 }).eq('id', (usageRow as any).id);
             } else {
               await supabase.from('ocr_usage').insert({ user_id: userId, used_on: monthStart, count: 1 });
             }
+          }
+
+          // We made it to a clean "done" — the checkpoint row has served its
+          // purpose (the client already has this result directly). Leaving it
+          // around would just be clutter that only a wall-clock kill (which
+          // skips this whole finally-adjacent block) is meant to leave behind.
+          if (scanId && isSplitScan) {
+            try { await supabase.from('ocr_scan_progress').delete().eq('scan_id', scanId).eq('part', splitPart); } catch { /* best effort */ }
           }
 
           send({
