@@ -1108,16 +1108,33 @@ export default function SessionEditor() {
 
         const startedAt = Date.now();
         let lastHeartbeatAt = startedAt;
+        let consecutivePollFailures = 0;
         while (true) {
           const elapsed = Date.now() - startedAt;
           if (elapsed > POLL_TIMEOUT_MS) throw new Error(t("editor.ocrDialog.timeoutHint"));
 
-          const { data: row } = await supabase
-            .from("ocr_scan_progress")
-            .select("status, observations, error_message, used, monthly_limit")
-            .eq("scan_id", scanId)
-            .eq("part", part)
-            .maybeSingle();
+          // A single poll is just a cheap DB read, but the underlying fetch
+          // (including the supabase-js client's own token-refresh calls) can
+          // still hit a transient network hiccup. That's not the scan
+          // failing — it's one tick failing — so retry on the next tick
+          // instead of letting it blow up the whole scan. Only give up after
+          // several in a row, since that's no longer "transient".
+          let row: { status: string; observations: unknown; error_message: string | null; used: number | null; monthly_limit: number | null } | null = null;
+          try {
+            const res = await supabase
+              .from("ocr_scan_progress")
+              .select("status, observations, error_message, used, monthly_limit")
+              .eq("scan_id", scanId)
+              .eq("part", part)
+              .maybeSingle();
+            row = res.data;
+            consecutivePollFailures = 0;
+          } catch {
+            consecutivePollFailures += 1;
+            if (consecutivePollFailures >= 5) throw new Error(t("editor.ocrDialog.timeoutHint"));
+            await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+            continue;
+          }
 
           if (row?.status === "done") {
             const obsArr: any[] = Array.isArray(row.observations) ? row.observations : [];
