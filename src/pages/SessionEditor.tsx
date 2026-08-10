@@ -22,7 +22,7 @@ import {
   replaceRawLineFields, replaceRawLineNote, type RawCorrection, type RawFields,
 } from "@/lib/rawParse";
 import { buildPaperTemplatePdf, type PaperTemplateLabels } from "@/lib/paperTemplatePdf";
-import { splitImageIntoHalves } from "@/lib/imageSplit";
+import { splitImageIntoQuadrants } from "@/lib/imageSplit";
 import {
   buildStarHistory, findOutliers,
   type HistoryObs, type HistoryOutlier, type StarHistory,
@@ -1069,13 +1069,17 @@ export default function SessionEditor() {
       if (!token) throw new Error(t("editor.ocrUnknown"));
 
       appendOcrLog(t("editor.ocrDialog.logStart"));
-      const [leftHalf, rightHalf] = await splitImageIntoHalves(dataUrl);
+      const quadrants = await splitImageIntoQuadrants(dataUrl);
+      const total = quadrants.length;
+      // Ties the four calls together for DB checkpoint recovery below — the
+      // edge function upserts progress rows keyed by (scanId, part).
+      const scanId = crypto.randomUUID();
 
-      // Each half is its own paper-ocr call (own wall-clock budget, smaller
+      // Each crop is its own paper-ocr call (own connection budget, smaller
       // output less likely to get truncated) — see supabase/functions/paper-ocr
-      // for how the two calls are billed as one scan on the Free plan.
-      const runPart = async (partImage: string, part: 1 | 2) => {
-        appendOcrLog(t("editor.ocrDialog.logStartPart").replace("{part}", String(part)));
+      // for how the calls are billed as one scan on the Free plan.
+      const runPart = async (partImage: string, part: number) => {
+        appendOcrLog(t("editor.ocrDialog.logStartPart").replace("{part}", String(part)).replace("{total}", String(total)));
         // supabase.functions.invoke() buffers the whole response before
         // resolving, which is what we need to get away from here — a plain
         // fetch lets us read the edge function's SSE stream chunk by chunk
@@ -1087,7 +1091,7 @@ export default function SessionEditor() {
             Authorization: `Bearer ${token}`,
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ image: partImage, splitPart: part, splitTotal: 2 }),
+          body: JSON.stringify({ image: partImage, splitPart: part, splitTotal: total, scanId }),
         });
 
         if (!res.ok || !res.body) {
@@ -1131,7 +1135,8 @@ export default function SessionEditor() {
               if (msg.type === "progress") {
                 if (Array.isArray(msg.partial)) lastPartial = msg.partial;
                 appendOcrLog(
-                  t("editor.ocrDialog.logProgressPart").replace("{part}", String(part)).replace("{n}", String(msg.count)),
+                  t("editor.ocrDialog.logProgressPart")
+                    .replace("{part}", String(part)).replace("{total}", String(total)).replace("{n}", String(msg.count)),
                 );
               } else if (msg.type === "done") {
                 obsArr = Array.isArray(msg.observations) ? msg.observations : [];
@@ -1150,31 +1155,55 @@ export default function SessionEditor() {
 
         if (finished) {
           appendOcrLog(
-            t("editor.ocrDialog.logDonePart").replace("{part}", String(part)).replace("{n}", String(obsArr.length)),
+            t("editor.ocrDialog.logDonePart")
+              .replace("{part}", String(part)).replace("{total}", String(total)).replace("{n}", String(obsArr.length)),
           );
           return { observations: obsArr, used, lim, salvaged: false };
         }
-        if (lastPartial.length > 0) {
+
+        // The stream never reached "done" — most likely Lovable Cloud's proxy
+        // buffered the whole SSE response and the connection got cut before
+        // it could forward anything, so `lastPartial` here is often still
+        // empty even though the AI kept producing rows the whole time. Query
+        // the checkpoint the edge function was writing on the DB side
+        // (independent of this HTTP response) and use whichever set is bigger.
+        let dbPartial: any[] = [];
+        try {
+          const { data: checkpoint } = await supabase
+            .from("ocr_scan_progress")
+            .select("observations")
+            .eq("scan_id", scanId)
+            .eq("part", part)
+            .maybeSingle();
+          if (checkpoint && Array.isArray(checkpoint.observations)) dbPartial = checkpoint.observations;
+          await supabase.from("ocr_scan_progress").delete().eq("scan_id", scanId).eq("part", part);
+        } catch { /* recovery is best effort — fall through to lastPartial */ }
+        const salvaged = dbPartial.length >= lastPartial.length ? dbPartial : lastPartial;
+
+        if (salvaged.length > 0) {
           appendOcrLog(
-            t("editor.ocrDialog.logSalvagedPart").replace("{part}", String(part)).replace("{n}", String(lastPartial.length)),
+            t("editor.ocrDialog.logSalvagedPart")
+              .replace("{part}", String(part)).replace("{total}", String(total)).replace("{n}", String(salvaged.length)),
           );
-          return { observations: lastPartial, used: undefined, lim: undefined, salvaged: true };
+          return { observations: salvaged, used: undefined, lim: undefined, salvaged: true };
         }
         throw new Error(streamError || t("editor.ocrDialog.timeoutHint"));
       };
 
-      const part1 = await runPart(leftHalf, 1);
-      const part2 = await runPart(rightHalf, 2);
-      const obsArr = [...part1.observations, ...part2.observations];
-      const used = part2.used ?? part1.used;
-      const lim = part2.lim ?? part1.lim;
+      const results = [];
+      for (let i = 0; i < quadrants.length; i++) {
+        results.push(await runPart(quadrants[i], i + 1));
+      }
+      const obsArr = results.flatMap((r) => r.observations);
+      const used = results.map((r) => r.used).reverse().find((v) => v !== undefined);
+      const lim = results.map((r) => r.lim).reverse().find((v) => v !== undefined);
 
       appendOcrLog(t("editor.ocrDialog.logDone"));
       const blob = new Blob([JSON.stringify({ observations: obsArr })], { type: "application/json" });
       const result = await handleImportFile(new File([blob], "ocr.json", { type: "application/json" }));
       if (used && lim) toast.info(`${t("editor.ocrCount")}: ${used}/${lim}`);
       setOcrResult(result ?? { matched: 0, skipped: 0 });
-      setOcrPartialWarning(part1.salvaged || part2.salvaged);
+      setOcrPartialWarning(results.some((r) => r.salvaged));
       setOcrPhase("done");
     } catch (e: any) {
       const msg = e?.message ?? t("editor.ocrUnknown");
