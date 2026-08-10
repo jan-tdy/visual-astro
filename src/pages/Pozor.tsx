@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Lock } from "lucide-react";
 import { AppHeader } from "@/components/app/AppHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +14,7 @@ import { NightChart } from "@/components/pozor/NightChart";
 import { Journal } from "@/components/pozor/Journal";
 import { Minima } from "@/components/pozor/Minima";
 import { InstantInfo } from "@/components/pozor/InstantInfo";
+import { MoonCalendar } from "@/components/pozor/MoonCalendar";
 import {
   useCcdCatalogs, useCcdTargets, usePozorLocations, usePozorSettings,
 } from "@/components/pozor/shared";
@@ -31,6 +33,7 @@ export default function Pozor() {
   const { targets, loading: targetsLoading, reload: reloadTargets } = useCcdTargets(catalogId);
   const { settings, setSettings } = usePozorSettings();
   const { locations } = usePozorLocations();
+  const [moonYear, setMoonYear] = useState(new Date().getFullYear());
   const activeCatalog = catalogs.find((c) => c.id === catalogId);
   const isOwnCatalog = !activeCatalog || activeCatalog.user_id === user?.id;
   const ownCatalogsCount = catalogs.filter((c) => c.user_id === user?.id).length;
@@ -62,6 +65,7 @@ export default function Pozor() {
               {!isPlusActive && <Lock className="h-3 w-3 opacity-60" />}
             </TabsTrigger>
             <TabsTrigger value="instant">{t("pozor.tab.instant")}</TabsTrigger>
+            <TabsTrigger value="moon">{t("pozor.tab.moon")}</TabsTrigger>
             <TabsTrigger value="catalog">{t("pozor.catalog")}</TabsTrigger>
           </TabsList>
           <TabsContent value="chart" className="mt-4">
@@ -88,6 +92,15 @@ export default function Pozor() {
           </TabsContent>
           <TabsContent value="instant" className="mt-4">
             <InstantInfo targets={targets} settings={settings} setSettings={setSettings} locations={locations} />
+          </TabsContent>
+          <TabsContent value="moon" className="mt-4">
+            <MoonCalendar
+              year={moonYear}
+              setYear={setMoonYear}
+              settings={settings}
+              setSettings={setSettings}
+              locations={locations}
+            />
           </TabsContent>
           <TabsContent value="catalog" className="mt-4">
             <CcdCatalog
