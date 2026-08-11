@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppHeader } from "@/components/app/AppHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { downloadText } from "@/lib/exporters";
 import { usePrefs } from "@/hooks/usePrefs";
 import { useI18n } from "@/hooks/useI18n";
+import { supabase } from "@/integrations/supabase/client";
 import { JdConverter } from "@/components/tools/JdConverter";
 import {
   parseSIPS,
@@ -17,6 +18,42 @@ import {
   parseVSNET,
   buildAAVSOFromVSNET,
 } from "@/lib/sips";
+
+/** Look up a star's chart_id in the catalog by AAVSO code, VSNET code, or name (case-insensitive). */
+async function fetchCatalogChartId(code: string): Promise<string | null> {
+  if (/[,()]/.test(code)) return null; // would break the .or() filter syntax below
+  const { data } = await supabase
+    .from("stars")
+    .select("chart_id")
+    .or(`aavso_code.ilike.${code},vsnet_code.ilike.${code},name.ilike.${code}`)
+    .limit(1)
+    .maybeSingle();
+  return data?.chart_id?.trim() || null;
+}
+
+/**
+ * Debounced auto-fill of a chart-id field from the star catalog, keyed off the AAVSO
+ * code field. Only touches the field while it still holds our own previous auto-fill —
+ * once the observer edits it by hand, further catalog lookups leave it alone.
+ */
+function useCatalogChartId(code: string, chartId: string, setChartId: (v: string) => void) {
+  const chartIdRef = useRef(chartId);
+  const autoFilledRef = useRef("");
+  chartIdRef.current = chartId;
+
+  useEffect(() => {
+    const trimmed = code.trim();
+    if (!trimmed) return;
+    const handle = setTimeout(async () => {
+      const current = chartIdRef.current.trim();
+      if (current && current !== autoFilledRef.current) return;
+      const found = await fetchCatalogChartId(trimmed);
+      autoFilledRef.current = found ?? "";
+      if (found || current) setChartId(found ?? "");
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [code, setChartId]);
+}
 
 export default function Tools() {
   const { prefs } = usePrefs();
@@ -37,6 +74,10 @@ export default function Tools() {
   const [ascii3ObsCode, setAscii3ObsCode] = useState("");
   const [ascii3ChartId, setAscii3ChartId] = useState("");
   const [ascii3Filter, setAscii3Filter] = useState("");
+
+  useCatalogChartId(aavsoCode, chartId, setChartId);
+  useCatalogChartId(vsnetAavsoCode, vsnetChartId, setVsnetChartId);
+  useCatalogChartId(ascii3AavsoCode, ascii3ChartId, setAscii3ChartId);
 
   const parsed = useMemo(
     () =>
@@ -155,6 +196,7 @@ export default function Tools() {
               <div className="space-y-1">
                 <Label htmlFor="chart">{t("tools.chart")}</Label>
                 <Input id="chart" value={chartId} onChange={(e) => setChartId(e.target.value)} placeholder={t("tools.chart.ph")} />
+                <p className="text-xs text-muted-foreground">{t("tools.chart.hint")}</p>
               </div>
             </div>
 
@@ -239,6 +281,7 @@ export default function Tools() {
               <div className="space-y-1">
                 <Label htmlFor="vsnet-chart">{t("tools.chart")}</Label>
                 <Input id="vsnet-chart" value={vsnetChartId} onChange={(e) => setVsnetChartId(e.target.value)} placeholder={t("tools.chart.ph")} />
+                <p className="text-xs text-muted-foreground">{t("tools.chart.hint")}</p>
               </div>
             </div>
 
@@ -318,6 +361,7 @@ export default function Tools() {
               <div className="space-y-1">
                 <Label htmlFor="ascii3-chart">{t("tools.chart")}</Label>
                 <Input id="ascii3-chart" value={ascii3ChartId} onChange={(e) => setAscii3ChartId(e.target.value)} placeholder={t("tools.chart.ph")} />
+                <p className="text-xs text-muted-foreground">{t("tools.chart.hint")}</p>
               </div>
             </div>
 
