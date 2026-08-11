@@ -8,7 +8,7 @@ export default defineTool({
   name: "convert_sips",
   title: "Convert SIPS Standard to VSNET/AAVSO",
   description:
-    "Convert a SIPS Standard photometry file (JD, magnitude, error, with optional '#' header lines) into VSNET or AAVSO Extended CCD format.",
+    "Convert a SIPS Standard photometry file (JD, magnitude, error, with optional '#' header lines) into VSNET or AAVSO Extended CCD format. Also handles plain headerless ASCII JD/mag/error triplets — pass the 'filter' override since there is no header to detect it from.",
   inputSchema: {
     data: z.string().min(1).describe("Raw SIPS Standard file content."),
     format: z.enum(["vsnet", "aavso"]).describe("Output format."),

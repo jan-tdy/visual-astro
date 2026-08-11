@@ -36,6 +36,22 @@ export function vsnetDateFromJD(jd: number): string {
   return `${y}${mo}${dayWithFrac}`;
 }
 
+/** Inverse of {@link vsnetDateFromJD}: parse a VSNET date token (YYYYMMDD.DDD, UT) into a Julian Date. */
+export function vsnetDateToJD(token: string): number | null {
+  const m = token.trim().match(/^(\d{4})(\d{2})(\d{1,2}(?:\.\d+)?)$/);
+  if (!m) return null;
+  const year = parseInt(m[1], 10);
+  const month = parseInt(m[2], 10);
+  const dayFrac = parseFloat(m[3]);
+  if (month < 1 || month > 12 || dayFrac < 1 || dayFrac >= 32) return null;
+  let y = year;
+  let mo = month;
+  if (mo <= 2) { y -= 1; mo += 12; }
+  const A = Math.floor(y / 100);
+  const B = 2 - A + Math.floor(A / 4);
+  return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (mo + 1)) + dayFrac + B - 1524.5;
+}
+
 export interface SipsRow { jd: number; mag: number; err: number }
 export interface SipsParsed {
   rows: SipsRow[];
@@ -149,6 +165,79 @@ export function buildAAVSOFromSIPS(
       r.mag.toFixed(4),
       r.err > 0 ? r.err.toFixed(4) : "na",
       filt,
+      "NO",
+      "STD",
+      "ENSEMBLE", "na", "na", "na",
+      "na",
+      "na",
+      chart,
+      "na",
+    ].join(","));
+  }
+  return header + "\n" + body.join("\n") + "\n";
+}
+
+export interface VsnetRow {
+  jd: number;
+  mag: number;
+  fainterThan: boolean;
+  filter: string | null;
+}
+
+export interface VsnetParsed {
+  rows: VsnetRow[];
+  errors: string[];
+}
+
+/** Parse a VSNET-format observation file: `CODE YYYYMMDD.DDD MAG OBSCODE [FILTER]` per line. */
+export function parseVSNET(
+  text: string,
+  msgs: { badLine: (line: number) => string } = {
+    badLine: (n) => `Line ${n}: unrecognized VSNET row`,
+  },
+): VsnetParsed {
+  const rows: VsnetRow[] = [];
+  const errors: string[] = [];
+  const lines = text.split(/\r?\n/);
+  lines.forEach((raw, i) => {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) return;
+    const parts = line.split(/\s+/);
+    if (parts.length < 3) { errors.push(msgs.badLine(i + 1)); return; }
+    const [, dateToken, magToken, , filterToken] = parts;
+    const jd = vsnetDateToJD(dateToken);
+    const fainterThan = magToken.startsWith("<");
+    const mag = parseFloat(fainterThan ? magToken.slice(1) : magToken);
+    if (jd == null || !Number.isFinite(mag)) { errors.push(msgs.badLine(i + 1)); return; }
+    rows.push({ jd, mag, fainterThan, filter: filterToken ?? null });
+  });
+  return { rows, errors };
+}
+
+export function buildAAVSOFromVSNET(
+  rows: VsnetRow[],
+  aavsoCode: string,
+  obsCode: string,
+  chartId: string,
+): string {
+  const header = [
+    "#TYPE=Extended",
+    `#OBSCODE=${obsCode.trim()}`,
+    "#SOFTWARE=Visual-Astro (japysoft)",
+    "#DELIM=,",
+    "#DATE=JD",
+    "#OBSTYPE=CCD",
+  ].join("\n");
+  const chart = chartId.trim() || "na";
+  const body: string[] = [];
+  for (const r of rows) {
+    const magStr = (r.fainterThan ? "<" : "") + r.mag.toFixed(4);
+    body.push([
+      aavsoCode.trim(),
+      r.jd.toFixed(6),
+      magStr,
+      "na",
+      aavsoFilter(r.filter),
       "NO",
       "STD",
       "ENSEMBLE", "na", "na", "na",
