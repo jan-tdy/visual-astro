@@ -3012,12 +3012,12 @@ function toIsoDate(d) {
   return d.toISOString().slice(0, 10);
 }
 function jdToDate(jd) {
-  const z26 = Math.floor(jd + 0.5);
-  const f = jd + 0.5 - z26;
-  let a = z26;
-  if (z26 >= 2299161) {
-    const alpha = Math.floor((z26 - 186721625e-2) / 36524.25);
-    a = z26 + 1 + alpha - Math.floor(alpha / 4);
+  const z27 = Math.floor(jd + 0.5);
+  const f = jd + 0.5 - z27;
+  let a = z27;
+  if (z27 >= 2299161) {
+    const alpha = Math.floor((z27 - 186721625e-2) / 36524.25);
+    a = z27 + 1 + alpha - Math.floor(alpha / 4);
   }
   const b = a + 1524;
   const c = Math.floor((b - 122.1) / 365.25);
@@ -3037,9 +3037,9 @@ function unitVector(raHours, decDeg) {
 }
 function precessToDate(raHours, decDeg, date) {
   const time = Astronomy.MakeTime(date);
-  const [x, y, z26] = unitVector(raHours, decDeg);
+  const [x, y, z27] = unitVector(raHours, decDeg);
   const rot = Astronomy.Rotation_EQJ_EQD(time);
-  const v = Astronomy.RotateVector(rot, new Astronomy.Vector(x, y, z26, time));
+  const v = Astronomy.RotateVector(rot, new Astronomy.Vector(x, y, z27, time));
   const r = Math.hypot(v.x, v.y, v.z);
   const ra = Math.atan2(v.y, v.x) * 180 / Math.PI / 15;
   const dec = Math.asin(v.z / r) * 180 / Math.PI;
@@ -4203,6 +4203,23 @@ function vsnetDateFromJD(jd) {
   const dayWithFrac = (day + frac).toFixed(3).padStart(6, "0");
   return `${y}${mo}${dayWithFrac}`;
 }
+function vsnetDateToJD(token) {
+  const m = token.trim().match(/^(\d{4})(\d{2})(\d{1,2}(?:\.\d+)?)$/);
+  if (!m) return null;
+  const year = parseInt(m[1], 10);
+  const month = parseInt(m[2], 10);
+  const dayFrac = parseFloat(m[3]);
+  if (month < 1 || month > 12 || dayFrac < 1 || dayFrac >= 32) return null;
+  let y = year;
+  let mo = month;
+  if (mo <= 2) {
+    y -= 1;
+    mo += 12;
+  }
+  const A = Math.floor(y / 100);
+  const B = 2 - A + Math.floor(A / 4);
+  return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (mo + 1)) + dayFrac + B - 1524.5;
+}
 function parseSIPS(text, msgs = {
   minCols: (n) => `Line ${n}: at least 2 columns required`,
   nonNumeric: (n) => `Line ${n}: non-numeric JD or magnitude`
@@ -4327,12 +4344,71 @@ function buildAAVSOFromSIPS(rows, aavsoCode, obsCode, filter, chartId) {
   }
   return header + "\n" + body.join("\n") + "\n";
 }
+function parseVSNET(text, msgs = {
+  badLine: (n) => `Line ${n}: unrecognized VSNET row`
+}) {
+  const rows = [];
+  const errors = [];
+  const lines = text.split(/\r?\n/);
+  lines.forEach((raw, i) => {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) return;
+    const parts = line.split(/\s+/);
+    if (parts.length < 3) {
+      errors.push(msgs.badLine(i + 1));
+      return;
+    }
+    const [, dateToken, magToken, , filterToken] = parts;
+    const jd = vsnetDateToJD(dateToken);
+    const fainterThan = magToken.startsWith("<");
+    const mag = parseFloat(fainterThan ? magToken.slice(1) : magToken);
+    if (jd == null || !Number.isFinite(mag)) {
+      errors.push(msgs.badLine(i + 1));
+      return;
+    }
+    rows.push({ jd, mag, fainterThan, filter: filterToken ?? null });
+  });
+  return { rows, errors };
+}
+function buildAAVSOFromVSNET(rows, aavsoCode, obsCode, chartId) {
+  const header = [
+    "#TYPE=Extended",
+    `#OBSCODE=${obsCode.trim()}`,
+    "#SOFTWARE=Visual-Astro (japysoft)",
+    "#DELIM=,",
+    "#DATE=JD",
+    "#OBSTYPE=CCD"
+  ].join("\n");
+  const chart = chartId.trim() || "na";
+  const body = [];
+  for (const r of rows) {
+    const magStr = (r.fainterThan ? "<" : "") + r.mag.toFixed(4);
+    body.push([
+      aavsoCode.trim(),
+      r.jd.toFixed(6),
+      magStr,
+      "na",
+      aavsoFilter(r.filter),
+      "NO",
+      "STD",
+      "ENSEMBLE",
+      "na",
+      "na",
+      "na",
+      "na",
+      "na",
+      chart,
+      "na"
+    ].join(","));
+  }
+  return header + "\n" + body.join("\n") + "\n";
+}
 
 // src/lib/mcp/tools/convert-sips.ts
 var convert_sips_default = defineTool25({
   name: "convert_sips",
   title: "Convert SIPS Standard to VSNET/AAVSO",
-  description: "Convert a SIPS Standard photometry file (JD, magnitude, error, with optional '#' header lines) into VSNET or AAVSO Extended CCD format.",
+  description: "Convert a SIPS Standard photometry file (JD, magnitude, error, with optional '#' header lines) into VSNET or AAVSO Extended CCD format. Also handles plain headerless ASCII JD/mag/error triplets \u2014 pass the 'filter' override since there is no header to detect it from.",
   inputSchema: {
     data: z24.string().min(1).describe("Raw SIPS Standard file content."),
     format: z24.enum(["vsnet", "aavso"]).describe("Output format."),
@@ -4368,9 +4444,45 @@ var convert_sips_default = defineTool25({
   }
 });
 
-// src/lib/mcp/tools/get-profile.ts
+// src/lib/mcp/tools/convert-vsnet.ts
 import { defineTool as defineTool26 } from "npm:@lovable.dev/mcp-js@0.26.1";
-var get_profile_default = defineTool26({
+import { z as z25 } from "npm:zod@^3.25.76";
+var convert_vsnet_default = defineTool26({
+  name: "convert_vsnet",
+  title: "Convert VSNET to AAVSO",
+  description: "Convert a VSNET-format observation file ('CODE YYYYMMDD.DDD MAG OBSCODE [FILTER]' per line, magnitude may be prefixed with '<' for fainter-than) into AAVSO Extended CCD format.",
+  inputSchema: {
+    data: z25.string().min(1).describe("Raw VSNET-format file content."),
+    aavso_code: z25.string().trim().min(1).max(40).describe("AAVSO designation of the star."),
+    obs_code: z25.string().trim().max(10).optional().describe("Observer code; defaults to the profile setting."),
+    chart_id: z25.string().trim().max(40).optional().describe("AAVSO chart id.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ data, aavso_code, obs_code, chart_id }, ctx) => {
+    if (!ctx.isAuthenticated()) return unauthenticated();
+    const parsed = parseVSNET(data);
+    if (parsed.rows.length === 0) return fail(`No usable rows. ${parsed.errors.slice(0, 5).join("; ")}`);
+    let code = obs_code?.trim();
+    if (!code) {
+      const supabase = supabaseForUser(ctx);
+      const { data: profile } = await supabase.from("profiles").select("obs_code").maybeSingle();
+      code = profile?.obs_code ?? "DPV";
+    }
+    const text = buildAAVSOFromVSNET(parsed.rows, aavso_code, code, chart_id ?? "");
+    return {
+      content: [{ type: "text", text }],
+      structuredContent: {
+        rows: parsed.rows.length,
+        warnings: parsed.errors,
+        text
+      }
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-profile.ts
+import { defineTool as defineTool27 } from "npm:@lovable.dev/mcp-js@0.26.1";
+var get_profile_default = defineTool27({
   name: "get_profile",
   title: "Get observer profile",
   description: "Read the signed-in observer's profile: observer code, reference date, export portal preferences, plan status and counts of sessions, stars and CCD targets.",
@@ -4398,14 +4510,14 @@ var get_profile_default = defineTool26({
 });
 
 // src/lib/mcp/tools/update-profile.ts
-import { defineTool as defineTool27 } from "npm:@lovable.dev/mcp-js@0.26.1";
-import { z as z25 } from "npm:zod@^3.25.76";
-var update_profile_default = defineTool27({
+import { defineTool as defineTool28 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z26 } from "npm:zod@^3.25.76";
+var update_profile_default = defineTool28({
   name: "update_profile",
   title: "Update observer profile",
   description: "Change the observer code used by exports.",
   inputSchema: {
-    obs_code: z25.string().trim().min(1).max(10).optional().describe("Observer code, e.g. 'DPV'.")
+    obs_code: z26.string().trim().min(1).max(10).optional().describe("Observer code, e.g. 'DPV'.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (patch, ctx) => {
@@ -4426,7 +4538,7 @@ var mcp_default = defineMcp({
   name: "visual-astro",
   title: "Visual Astro",
   version: "0.1.0",
-  instructions: "Full toolset for Visual Astro, a variable-star observing logbook. Read and edit observing sessions and their observations (with computed Argelander magnitudes), manage the visual star catalog, manage POZOR CCD/photometry catalogs and targets, run POZOR observability computations (night conditions, altitude/airmass at an instant, night-by-night journals, minima predictions), build VSNET/AAVSO exports, convert SIPS Standard photometry files and Julian Dates, and read or update the observer profile. All data is scoped to the signed-in observer.",
+  instructions: "Full toolset for Visual Astro, a variable-star observing logbook. Read and edit observing sessions and their observations (with computed Argelander magnitudes), manage the visual star catalog, manage POZOR CCD/photometry catalogs and targets, run POZOR observability computations (night conditions, altitude/airmass at an instant, night-by-night journals, minima predictions), build VSNET/AAVSO exports, convert SIPS Standard and VSNET-format photometry files (SIPS also covers headerless ASCII JD/mag/error triplets) to VSNET/AAVSO and Julian Dates, and read or update the observer profile. All data is scoped to the signed-in observer.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"
@@ -4458,7 +4570,8 @@ var mcp_default = defineMcp({
     pozor_journal_default,
     pozor_minima_default,
     jd_convert_default,
-    convert_sips_default
+    convert_sips_default,
+    convert_vsnet_default
   ]
 });
 

@@ -24,6 +24,7 @@ import pozorJournalTool from "./tools/pozor-journal";
 import pozorMinimaTool from "./tools/pozor-minima";
 import jdConvertTool from "./tools/jd-convert";
 import convertSipsTool from "./tools/convert-sips";
+import convertVsnetTool from "./tools/convert-vsnet";
 import getProfileTool from "./tools/get-profile";
 import updateProfileTool from "./tools/update-profile";
 
@@ -34,7 +35,7 @@ export default defineMcp({
   title: "Visual Astro",
   version: "0.1.0",
   instructions:
-    "Full toolset for Visual Astro, a variable-star observing logbook. Read and edit observing sessions and their observations (with computed Argelander magnitudes), manage the visual star catalog, manage POZOR CCD/photometry catalogs and targets, run POZOR observability computations (night conditions, altitude/airmass at an instant, night-by-night journals, minima predictions), build VSNET/AAVSO exports, convert SIPS Standard photometry files and Julian Dates, and read or update the observer profile. All data is scoped to the signed-in observer.",
+    "Full toolset for Visual Astro, a variable-star observing logbook. Read and edit observing sessions and their observations (with computed Argelander magnitudes), manage the visual star catalog, manage POZOR CCD/photometry catalogs and targets, run POZOR observability computations (night conditions, altitude/airmass at an instant, night-by-night journals, minima predictions), build VSNET/AAVSO exports, convert SIPS Standard and VSNET-format photometry files (SIPS also covers headerless ASCII JD/mag/error triplets) to VSNET/AAVSO and Julian Dates, and read or update the observer profile. All data is scoped to the signed-in observer.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
@@ -67,5 +68,6 @@ export default defineMcp({
     pozorMinimaTool,
     jdConvertTool,
     convertSipsTool,
+    convertVsnetTool,
   ],
 });
