@@ -18,7 +18,7 @@ import {
   XAxis, YAxis, Tooltip, CartesianGrid,
 } from "recharts";
 import { YearContributionGraph } from "@/components/graphs/YearContributionGraph";
-import { NightContributionGraph, type NightOption } from "@/components/graphs/NightContributionGraph";
+import { NightContributionGraph, type NightColumn } from "@/components/graphs/NightContributionGraph";
 
 type ObsRow = {
   id: string;
@@ -266,42 +266,30 @@ export default function Graphs() {
     }
   }, [yearsWithData]);
 
-  // Nights with real observations, for the night heatmap's picker.
-  const nightOptions = useMemo((): NightOption[] => {
-    const m = new Map<string, number>();
-    realObs.forEach(o => m.set(o.session_id, (m.get(o.session_id) ?? 0) + 1));
-    return Array.from(m.entries())
-      .map(([id, count]) => ({ id, date: sessionById[id]?.observed_at_utc?.slice(0, 10) ?? "", count }))
-      .filter(n => n.date)
+  // One column per observing night that has real observations, sorted chronologically,
+  // each holding its observations bucketed by UT hour (anchored at noon so a
+  // midnight-crossing night renders as one contiguous strip — see HOUR_ORDER in
+  // NightContributionGraph). Nights without observations are skipped entirely
+  // (no empty-calendar padding) so the date axis stays compact.
+  const nightColumns = useMemo((): NightColumn[] => {
+    const byNight = new Map<string, { date: string; hours: number[] }>();
+    realObs.forEach(o => {
+      const date = sessionById[o.session_id]?.observed_at_utc?.slice(0, 10);
+      if (!date) return;
+      if (!byNight.has(o.session_id)) byNight.set(o.session_id, { date, hours: new Array(24).fill(0) });
+      if (!o.ut_time) return;
+      const m = /^(\d{1,2})[:.\s]+(\d{1,2})/.exec(String(o.ut_time).trim());
+      if (!m) return;
+      const hh = parseInt(m[1], 10);
+      if (hh < 0 || hh > 23) return;
+      byNight.get(o.session_id)!.hours[(hh - 12 + 24) % 24] += 1;
+    });
+    return Array.from(byNight.entries())
+      .map(([id, { date, hours }]) => ({ id, date, hours }))
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [realObs, sessionById]);
 
-  const [selectedNightId, setSelectedNightId] = useState<string>("");
-  useEffect(() => {
-    if (!selectedNightId && nightOptions.length > 0) setSelectedNightId(nightOptions[nightOptions.length - 1].id);
-  }, [nightOptions, selectedNightId]);
-
-  // Bucket the selected night's observations by UT hour, anchored at noon so the
-  // (midnight-crossing) night renders as one contiguous strip — see HOUR_ORDER.
-  const nightHourCounts = useMemo(() => {
-    const counts = new Array(24).fill(0);
-    if (!selectedNightId) return counts;
-    realObs
-      .filter(o => o.session_id === selectedNightId && o.ut_time)
-      .forEach(o => {
-        const m = /^(\d{1,2})[:.\s]+(\d{1,2})/.exec(String(o.ut_time).trim());
-        if (!m) return;
-        const hh = parseInt(m[1], 10);
-        if (hh < 0 || hh > 23) return;
-        counts[(hh - 12 + 24) % 24] += 1;
-      });
-    return counts;
-  }, [realObs, selectedNightId]);
-
-  const nightUntimedCount = useMemo(
-    () => realObs.filter(o => o.session_id === selectedNightId && !o.ut_time).length,
-    [realObs, selectedNightId]
-  );
+  const nightUntimedCount = useMemo(() => realObs.filter(o => !o.ut_time).length, [realObs]);
 
   // Light curve for selected star
   const lightCurve = useMemo(() => {
@@ -591,13 +579,7 @@ export default function Graphs() {
               <TabsContent value="night">
                 <Card className="p-4">
                   <h3 className="font-semibold mb-3">{t("graphs.night.title")}</h3>
-                  <NightContributionGraph
-                    nights={nightOptions}
-                    selectedNightId={selectedNightId}
-                    onSelectNight={setSelectedNightId}
-                    hourCounts={nightHourCounts}
-                    untimedCount={nightUntimedCount}
-                  />
+                  <NightContributionGraph nights={nightColumns} untimedCount={nightUntimedCount} />
                 </Card>
               </TabsContent>
 
