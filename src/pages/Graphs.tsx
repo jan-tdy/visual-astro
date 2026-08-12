@@ -17,6 +17,8 @@ import {
   ResponsiveContainer, ComposedChart, Line, BarChart, Bar, Scatter,
   XAxis, YAxis, Tooltip, CartesianGrid,
 } from "recharts";
+import { YearContributionGraph } from "@/components/graphs/YearContributionGraph";
+import { NightContributionGraph, type NightColumn } from "@/components/graphs/NightContributionGraph";
 
 type ObsRow = {
   id: string;
@@ -234,6 +236,61 @@ export default function Graphs() {
     if (!selectedStar && perStar.length > 0) setSelectedStar(perStar[0].id);
   }, [perStar, selectedStar]);
 
+  // Observations per calendar day — one observing night = one anchor date,
+  // same convention as perMonth/sessionsPerMonth above, keyed for the year heatmap.
+  const dailyCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    realObs.forEach(o => {
+      const dt = sessionById[o.session_id]?.observed_at_utc;
+      if (!dt) return;
+      const d = new Date(dt);
+      if (isNaN(d.getTime())) return;
+      const key = d.toISOString().slice(0, 10);
+      m.set(key, (m.get(key) ?? 0) + 1);
+    });
+    return m;
+  }, [realObs, sessionById]);
+
+  const yearsWithData = useMemo(() => {
+    const ys = new Set<number>();
+    dailyCounts.forEach((_, key) => ys.add(Number(key.slice(0, 4))));
+    return Array.from(ys).sort((a, b) => a - b);
+  }, [dailyCounts]);
+
+  const [selectedYear, setSelectedYear] = useState<number>(() => new Date().getUTCFullYear());
+  const yearInitedRef = useRef(false);
+  useEffect(() => {
+    if (!yearInitedRef.current && yearsWithData.length > 0) {
+      setSelectedYear(yearsWithData[yearsWithData.length - 1]);
+      yearInitedRef.current = true;
+    }
+  }, [yearsWithData]);
+
+  // One column per observing night that has real observations, sorted chronologically,
+  // each holding its observations bucketed by UT hour (anchored at noon so a
+  // midnight-crossing night renders as one contiguous strip — see HOUR_ORDER in
+  // NightContributionGraph). Nights without observations are skipped entirely
+  // (no empty-calendar padding) so the date axis stays compact.
+  const nightColumns = useMemo((): NightColumn[] => {
+    const byNight = new Map<string, { date: string; hours: number[] }>();
+    realObs.forEach(o => {
+      const date = sessionById[o.session_id]?.observed_at_utc?.slice(0, 10);
+      if (!date) return;
+      if (!byNight.has(o.session_id)) byNight.set(o.session_id, { date, hours: new Array(24).fill(0) });
+      if (!o.ut_time) return;
+      const m = /^(\d{1,2})[:.\s]+(\d{1,2})/.exec(String(o.ut_time).trim());
+      if (!m) return;
+      const hh = parseInt(m[1], 10);
+      if (hh < 0 || hh > 23) return;
+      byNight.get(o.session_id)!.hours[(hh - 12 + 24) % 24] += 1;
+    });
+    return Array.from(byNight.entries())
+      .map(([id, { date, hours }]) => ({ id, date, hours }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [realObs, sessionById]);
+
+  const nightUntimedCount = useMemo(() => realObs.filter(o => !o.ut_time).length, [realObs]);
+
   // Light curve for selected star
   const lightCurve = useMemo(() => {
     if (!selectedStar) return [];
@@ -348,6 +405,8 @@ export default function Graphs() {
               <TabsList className="mb-4 flex-wrap h-auto">
                 <TabsTrigger value="curve">{t("graphs.tab.curve")}</TabsTrigger>
                 <TabsTrigger value="time">{t("graphs.tab.time")}</TabsTrigger>
+                <TabsTrigger value="year">{t("graphs.tab.year")}</TabsTrigger>
+                <TabsTrigger value="night">{t("graphs.tab.night")}</TabsTrigger>
                 <TabsTrigger value="stars">{t("graphs.tab.stars")}</TabsTrigger>
                 <TabsTrigger value="const">{t("graphs.tab.const")}</TabsTrigger>
               </TabsList>
@@ -507,6 +566,20 @@ export default function Graphs() {
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="year">
+                <Card className="p-4">
+                  <h3 className="font-semibold mb-3">{t("graphs.year.title")}</h3>
+                  <YearContributionGraph counts={dailyCounts} year={selectedYear} onYearChange={setSelectedYear} />
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="night">
+                <Card className="p-4">
+                  <h3 className="font-semibold mb-3">{t("graphs.night.title")}</h3>
+                  <NightContributionGraph nights={nightColumns} untimedCount={nightUntimedCount} />
                 </Card>
               </TabsContent>
 
