@@ -689,6 +689,78 @@ export function minimaTimesInRange(
 }
 
 /* ------------------------------------------------------------------ */
+/* Local horizon obstruction (Hlohovec)                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Empirically measured minimum altitude (degrees) above which it is safe to
+ * start observing a target rising in the east at Hlohovec — a nearby
+ * obstruction blocks part of the low eastern sky, and how much of it is
+ * blocked depends on the target's declination. [declination°, min altitude°].
+ */
+const HLOHOVEC_HORIZON_TABLE: [number, number][] = [
+  [0, 30],
+  [10, 31],
+  [20, 32],
+  [30, 35],
+  [35, 38],
+  [40, 40],
+  [45, 41],
+  [50, 43],
+  [55, 45],
+  [60, 45],
+  [65, 46],
+  [70, 46],
+  [75, 47],
+  [80, 48],
+];
+
+/** Interpolated Hlohovec eastern-horizon altitude limit for a given declination. */
+export function hlohovecHorizonLimit(decDeg: number): number {
+  const table = HLOHOVEC_HORIZON_TABLE;
+  const d = Math.min(table[table.length - 1][0], Math.max(table[0][0], decDeg));
+  for (let i = 0; i < table.length - 1; i++) {
+    const [d0, a0] = table[i];
+    const [d1, a1] = table[i + 1];
+    if (d <= d1) return a0 + ((d - d0) / (d1 - d0)) * (a1 - a0);
+  }
+  return table[table.length - 1][1];
+}
+
+/** Whether `loc` is (close enough to) the Hlohovec site the horizon table above was measured at. */
+export function isHlohovecSite(loc: PozorLocation): boolean {
+  const h = getLocation("hlohovec");
+  return Math.abs(loc.lat - h.lat) < 0.05 && Math.abs(loc.lon - h.lon) < 0.05;
+}
+
+export interface HorizonCrossing {
+  minutes: number;
+  altDeg: number;
+}
+
+/**
+ * First instant, across a series of (minutes, altitude) samples, where the
+ * altitude rises from below `limitDeg` to at or above it — the moment a
+ * target rising in the east clears a fixed local obstruction. Returns null
+ * if the target never crosses upward through the limit in the series.
+ */
+export function firstRisingCrossing(
+  samples: { minutes: number; alt: number }[],
+  limitDeg: number,
+): HorizonCrossing | null {
+  for (let i = 1; i < samples.length; i++) {
+    const prev = samples[i - 1];
+    const cur = samples[i];
+    if (prev.alt < limitDeg && cur.alt >= limitDeg) {
+      const span = cur.minutes - prev.minutes;
+      const frac = span > 0 ? (limitDeg - prev.alt) / (cur.alt - prev.alt) : 0;
+      return { minutes: prev.minutes + frac * span, altDeg: limitDeg };
+    }
+  }
+  return null;
+}
+
+/* ------------------------------------------------------------------ */
 /* Journal                                                             */
 /* ------------------------------------------------------------------ */
 

@@ -5,9 +5,12 @@ import {
   airmass,
   dateToJD,
   duskTime,
+  firstRisingCrossing,
   getLocation,
   helioCorrection,
+  hlohovecHorizonLimit,
   instantInfo,
+  isHlohovecSite,
   jdToDate,
   minimaTimesInRange,
   moonPhaseAt,
@@ -281,5 +284,58 @@ describe("moonPhaseAt", () => {
       expect(info.angleDeg).toBeLessThan(360);
       expect(info.waxing).toBe(info.angleDeg < 180);
     }
+  });
+});
+
+describe("hlohovecHorizonLimit", () => {
+  it("matches the empirical table at its sampled declinations", () => {
+    expect(hlohovecHorizonLimit(0)).toBeCloseTo(30, 6);
+    expect(hlohovecHorizonLimit(40)).toBeCloseTo(40, 6);
+    expect(hlohovecHorizonLimit(80)).toBeCloseTo(48, 6);
+  });
+
+  it("interpolates linearly between sampled points", () => {
+    // Halfway between dec 30 (35°) and dec 35 (38°).
+    expect(hlohovecHorizonLimit(32.5)).toBeCloseTo(36.5, 6);
+  });
+
+  it("clamps outside the table's declination range", () => {
+    expect(hlohovecHorizonLimit(-20)).toBeCloseTo(30, 6);
+    expect(hlohovecHorizonLimit(90)).toBeCloseTo(48, 6);
+  });
+});
+
+describe("isHlohovecSite", () => {
+  it("recognizes the built-in Hlohovec location", () => {
+    expect(isHlohovecSite(hlohovec)).toBe(true);
+  });
+
+  it("rejects other locations", () => {
+    expect(isHlohovecSite(piconcillo)).toBe(false);
+    expect(isHlohovecSite(kolonica)).toBe(false);
+  });
+});
+
+describe("firstRisingCrossing", () => {
+  it("finds the ascending crossing and interpolates its position", () => {
+    const samples = [
+      { minutes: 0, alt: 10 },
+      { minutes: 10, alt: 20 },
+      { minutes: 20, alt: 30 },
+      { minutes: 30, alt: 25 },
+    ];
+    const crossing = firstRisingCrossing(samples, 25);
+    expect(crossing).not.toBeNull();
+    expect(crossing!.minutes).toBeCloseTo(15, 6);
+    expect(crossing!.altDeg).toBe(25);
+  });
+
+  it("ignores a later descending crossing and returns null when the target never rises through the limit", () => {
+    const samples = [
+      { minutes: 0, alt: 30 },
+      { minutes: 10, alt: 20 },
+      { minutes: 20, alt: 10 },
+    ];
+    expect(firstRisingCrossing(samples, 25)).toBeNull();
   });
 });

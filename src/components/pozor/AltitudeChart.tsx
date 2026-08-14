@@ -5,7 +5,8 @@ import {
 } from "recharts";
 import { useI18n } from "@/hooks/useI18n";
 import {
-  altAz, DEFAULT_NIGHT_RANGE, formatUT, minimaTimesInRange, sampleNight,
+  altAz, DEFAULT_NIGHT_RANGE, firstRisingCrossing, formatUT, hlohovecHorizonLimit,
+  isHlohovecSite, minimaTimesInRange, sampleNight,
   type NightRange, type PozorLocation, type SampleTarget,
 } from "@/lib/pozor";
 import { CURVE_COLORS } from "./shared";
@@ -55,6 +56,15 @@ const TWILIGHT_LABELS: { key: "sunset" | "civilDusk" | "nauticalDusk" | "astroDu
   { key: "civilDawn", label: "-6°" },
   { key: "sunrise", label: "0°" },
 ];
+
+/** Small upward triangle marking where a target clears the local eastern-horizon obstruction. */
+function HorizonMarker(props: { cx?: number; cy?: number; color?: string }) {
+  const { cx, cy, color } = props;
+  if (cx == null || cy == null) return null;
+  const r = 5;
+  const points = `${cx},${cy - r} ${cx - r},${cy + r} ${cx + r},${cy + r}`;
+  return <polygon points={points} fill={color} stroke="hsl(var(--card))" strokeWidth={1} />;
+}
 
 export function AltitudeChart({
   date,
@@ -155,6 +165,26 @@ export function AltitudeChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targets, fromDate, toDate, location]);
 
+  const horizonMarks = useMemo(() => {
+    if (!isHlohovecSite(location)) return [];
+    const out: { key: string; minutes: number; alt: number; color: string; time: string }[] = [];
+    targets.forEach((tg, i) => {
+      const limit = hlohovecHorizonLimit(tg.dec_deg);
+      const samples = rows.map((r) => ({ minutes: r.minutes as number, alt: r[tg.id] as number }));
+      const crossing = firstRisingCrossing(samples, limit);
+      if (!crossing) return;
+      out.push({
+        key: tg.id,
+        minutes: crossing.minutes,
+        alt: crossing.altDeg,
+        color: CURVE_COLORS[i % CURVE_COLORS.length],
+        time: formatUT(new Date(fromDate.getTime() + crossing.minutes * 60e3)),
+      });
+    });
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targets, rows, location, fromDate]);
+
   return (
     <div>
       <div style={{ height }}>
@@ -198,6 +228,26 @@ export function AltitudeChart({
                 stroke={m.color}
                 strokeWidth={1.5}
                 isFront
+              />
+            ))}
+            {horizonMarks.map((m) => (
+              <ReferenceDot
+                key={`horizon-${m.key}`}
+                x={m.minutes}
+                y={m.alt}
+                r={5}
+                shape={(props: { cx?: number; cy?: number }) => <HorizonMarker {...props} color={m.color} />}
+                isFront
+                label={
+                  compact
+                    ? undefined
+                    : {
+                        value: t("pozor.horizonSafeFrom").replace("{time}", m.time),
+                        position: "top",
+                        fill: m.color,
+                        fontSize: 9,
+                      }
+                }
               />
             ))}
             <XAxis
