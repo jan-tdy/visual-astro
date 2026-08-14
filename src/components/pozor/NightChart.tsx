@@ -127,22 +127,30 @@ export function NightChart({
                   </Button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {pageTargets.map((x) => (
-                    <div key={x.id} className="space-y-1">
-                      <p className="text-xs font-medium truncate" title={x.name}>
-                        {x.name} <span className="text-muted-foreground">{x.constellation}</span>
-                      </p>
-                      <AltitudeChart
-                        date={date}
-                        location={location}
-                        targets={[x]}
-                        minAltitude={settings.minAltitude}
-                        range={settings.range}
-                        height={200}
-                        compact
-                      />
-                    </div>
-                  ))}
+                  {pageTargets.map((x) => {
+                    const extra = [x.filters, x.notes].filter(Boolean).join(" · ");
+                    return (
+                      <div key={x.id} className="space-y-1">
+                        <p className="text-xs font-medium truncate" title={x.name}>
+                          {x.name} <span className="text-muted-foreground">{x.constellation}</span>
+                        </p>
+                        {extra && (
+                          <p className="text-[11px] text-muted-foreground truncate" title={extra}>
+                            {extra}
+                          </p>
+                        )}
+                        <AltitudeChart
+                          date={date}
+                          location={location}
+                          targets={[x]}
+                          minAltitude={settings.minAltitude}
+                          range={settings.range}
+                          height={200}
+                          compact
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </>
             )}
