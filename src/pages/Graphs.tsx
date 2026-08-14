@@ -598,7 +598,7 @@ export default function Graphs() {
                         <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                         <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} width={80} />
                         <Tooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", fontSize: 12 }} />
-                        <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                        <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} maxBarSize={22} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -620,7 +620,7 @@ export default function Graphs() {
                         <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                         <YAxis type="category" dataKey="constellation" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} width={60} />
                         <Tooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", fontSize: 12 }} />
-                        <Bar dataKey="count" fill="hsl(var(--accent))" radius={[0, 4, 4, 0]} />
+                        <Bar dataKey="count" fill="hsl(var(--accent))" radius={[0, 4, 4, 0]} maxBarSize={24} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
