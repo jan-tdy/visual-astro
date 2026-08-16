@@ -996,23 +996,27 @@ export default function SessionEditor() {
           ut_time: o.ut_time != null && o.ut_time !== "" ? String(o.ut_time) : null,
           note: o.note != null && o.note !== "" ? String(o.note) : null,
         };
+        const rowId = obsByStar[star.id]?.id ?? crypto.randomUUID();
         setObsByStar((prev) => {
           const cur = prev[star.id] ?? {
             star_id: star.id, a: null, pasos_a: null, pasos_b: null, b: null,
             limit_value: null, ut_time: null, note: null,
           };
-          return { ...prev, [star.id]: { ...cur, ...patch, _dirty: true } };
+          return { ...prev, [star.id]: { ...cur, ...patch, id: rowId, _dirty: true } };
         });
         upserts.push({
-          session_id: id!, user_id: user!.id, star_id: star.id, ...patch,
+          id: rowId, session_id: id!, user_id: user!.id, star_id: star.id, ...patch,
         });
         matched++;
       }
       for (let i = 0; i < upserts.length; i += 200) {
         const chunk = upserts.slice(i, i + 200);
+        // "observations" no longer has a unique constraint on (session_id, star_id) —
+        // multiple observations per star are allowed via row_index — so conflicts must
+        // be resolved on the primary key instead.
         const { error } = await supabase
           .from("observations")
-          .upsert(chunk, { onConflict: "session_id,star_id" });
+          .upsert(chunk, { onConflict: "id" });
         if (error) {
           if (error.message.includes("Storage limit exceeded")) {
             toast.error(t("editor.storageLimit"));
