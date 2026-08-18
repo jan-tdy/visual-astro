@@ -78,10 +78,17 @@ Deno.serve(async (req) => {
     }
     const userId = userData.user.id;
 
-    // Single free plan for everyone: 4 AI scans per month.
-    // Higher limits are negotiated individually (Enterprise, j44soft@gmail.com).
+    // Single free plan for everyone: 4 AI scans per month. Enterprise accounts
+    // get a per-user override negotiated individually (j44soft@gmail.com) and
+    // stored on profiles.enterprise_ai_scans_per_month — null means Free.
+    const { data: profileRow } = await supabase
+      .from('profiles')
+      .select('enterprise_ai_scans_per_month')
+      .eq('user_id', userId)
+      .maybeSingle();
+    const enterpriseLimit = (profileRow as any)?.enterprise_ai_scans_per_month;
     const isPlus = false;
-    const monthlyLimit = 4;
+    const monthlyLimit = typeof enterpriseLimit === 'number' && enterpriseLimit > 0 ? enterpriseLimit : 4;
 
     const { image, splitPart, splitTotal } = await req.json();
     if (!image || typeof image !== 'string') {

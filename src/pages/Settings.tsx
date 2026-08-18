@@ -36,6 +36,7 @@ export default function Settings() {
     counts: { stars: number; sessions: number; observations: number; promOverrides: number };
     loading: boolean;
   }>({ bytes: 0, counts: { stars: 0, sessions: 0, observations: 0, promOverrides: 0 }, loading: false });
+  const [limitMb, setLimitMb] = useState(400);
 
   useEffect(() => {
     if (!user) return;
@@ -68,12 +69,14 @@ export default function Settings() {
     setUsage((u) => ({ ...u, loading: true }));
     // Paginated fetch — PostgREST caps a single request at ~1000 rows, so an active
     // observer's stars/sessions/observations were silently undercounted without this.
-    const [stars, sessions, observations, profile] = await Promise.all([
+    const [stars, sessions, observations, profile, limitBytes] = await Promise.all([
       fetchAllRows<Record<string, unknown>>((from, to) => supabase.from("stars").select("*").eq("user_id", user.id).range(from, to)),
       fetchAllRows<Record<string, unknown>>((from, to) => supabase.from("sessions").select("*").eq("user_id", user.id).range(from, to)),
       fetchAllRows<Record<string, unknown>>((from, to) => supabase.from("observations").select("*").eq("user_id", user.id).range(from, to)),
       supabase.from("profiles").select("*").eq("user_id", user.id),
+      supabase.rpc("user_storage_limit_bytes", { _user_id: user.id }),
     ]);
+    if (typeof limitBytes.data === "number") setLimitMb(Math.round(limitBytes.data / 1024 / 1024));
     const enc = new TextEncoder();
     const sz = (x: any) => enc.encode(JSON.stringify(x ?? [])).length;
     let promBytes = 0;
@@ -109,8 +112,7 @@ export default function Settings() {
     return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
   };
 
-  const PLAN_LIMIT_MB = 400;
-  const LIMIT_BYTES = PLAN_LIMIT_MB * 1024 * 1024;
+  const LIMIT_BYTES = limitMb * 1024 * 1024;
 
   return (
     <div className="min-h-screen">
@@ -623,7 +625,7 @@ export default function Settings() {
                   <>
                     <div className="flex items-baseline gap-2">
                       <span className="text-2xl font-semibold">{fmtBytes(usage.bytes)}</span>
-                      <span className="text-sm text-muted-foreground">/ {PLAN_LIMIT_MB} MB</span>
+                      <span className="text-sm text-muted-foreground">/ {limitMb} MB</span>
                     </div>
                     <Progress value={pct} className="mt-2 h-2" />
                     <p className="text-xs text-muted-foreground mt-2">
