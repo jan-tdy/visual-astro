@@ -695,22 +695,6 @@ export default function Settings() {
             </Card>
           </TabsContent>
         </Tabs>
-
-        <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{t("settings.checkout.title")}</DialogTitle>
-            </DialogHeader>
-            {checkoutOpen && user && (
-              <StripeEmbeddedCheckout
-                priceId={billingCycle === "yearly" ? "plus_yearly" : PLUS_PRICE_ID}
-                customerEmail={user.email ?? undefined}
-                userId={user.id}
-                returnUrl={`${window.location.origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}`}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
       </main>
     </div>
   );
