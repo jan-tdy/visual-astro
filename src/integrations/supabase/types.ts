@@ -477,10 +477,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      grant_milestone_bonus: {
-        Args: { _kind: string; _user_id: string }
-        Returns: undefined
-      }
       has_active_bonus: { Args: { _user_id: string }; Returns: boolean }
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
