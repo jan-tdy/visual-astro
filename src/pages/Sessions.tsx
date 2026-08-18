@@ -5,13 +5,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/app/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, Plus, Trash2, Copy, Star, StarOff, Sparkles, X } from "lucide-react";
+import { Loader2, Plus, Trash2, Copy, Star, StarOff } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD } from "@/lib/astro";
 import { getPrefs } from "@/hooks/usePrefs";
 import { seedCatalogIfNeeded } from "@/lib/seed";
 import { useI18n } from "@/hooks/useI18n";
-import { useSubscription } from "@/hooks/useSubscription";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -32,7 +31,6 @@ export default function Sessions() {
   const { user } = useAuth();
   const nav = useNavigate();
   const { t, lang } = useI18n();
-  const { activeBonus, isBonusActive, markBonusSeen } = useSubscription();
   const [loading, setLoading] = useState(true);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
 
@@ -146,22 +144,6 @@ export default function Sessions() {
     <div className="min-h-screen">
       <AppHeader />
       <main className="container mx-auto px-4 py-8 max-w-4xl">
-        {isBonusActive && activeBonus && !activeBonus.seen && (
-          <Card className="p-4 mb-4 border-primary/40 bg-primary/5">
-            <div className="flex items-start gap-3">
-              <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-sm">🎉 {activeBonus.reason}</div>
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  {t("sessions.bonus.activeUntil")} {new Date(activeBonus.expires_at).toLocaleString(lang === "sk" ? "sk-SK" : "en-GB", { dateStyle: "medium", timeStyle: "short" })}. {t("sessions.bonus.enjoy")}
-                </div>
-              </div>
-              <Button variant="ghost" size="icon" onClick={markBonusSeen} title={t("common.close")}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </Card>
-        )}
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <div>
             <h1 className="text-2xl font-semibold">{t("sessions.title")}</h1>

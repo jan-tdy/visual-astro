@@ -15,12 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Check, Sparkles, Database, RefreshCw, ExternalLink, Lock, Upload, Copy, Cpu, TriangleAlert, LineChart as LineChartIcon, FileText, ScanLine } from "lucide-react";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
-import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
-import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
-import { getStripeEnvironment, PLUS_PRICE_ID } from "@/lib/stripe";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
-import { Zap } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
 import { fetchAllRows } from "@/lib/supabaseFetchAll";
 import { LocationManager } from "@/components/pozor/LocationManager";
@@ -30,14 +25,11 @@ import type { NightAnchor } from "@/lib/pozor";
 export default function Settings() {
   const { user } = useAuth();
   const { t } = useI18n();
-  const { isPlusActive, sub, isDevUser, devOverride, setDevOverride } = useSubscription();
+  const { isPlusActive } = useSubscription();
   const { prefs, update: setPrefs } = usePrefs();
   const { settings: pozor, setSettings: setPozor } = usePozorSettings();
   const [obsCode, setObsCode] = useState("DPV");
   const [busy, setBusy] = useState(false);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [portalBusy, setPortalBusy] = useState(false);
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const mcpUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mcp`;
   const [usage, setUsage] = useState<{
     bytes: number;
@@ -117,31 +109,11 @@ export default function Settings() {
     return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
   };
 
-  const openPortal = async () => {
-    setPortalBusy(true);
-    const { data, error } = await supabase.functions.invoke("create-portal-session", {
-      body: { returnUrl: window.location.origin + "/settings", environment: getStripeEnvironment() },
-    });
-    setPortalBusy(false);
-    if (error || !data?.url) {
-      toast.error(error?.message || t("settings.plan.portalErr"));
-      return;
-    }
-    window.open(data.url, "_blank");
-  };
-
-  const PLAN_LIMIT_MB = isPlusActive ? 800 : 200;
+  const PLAN_LIMIT_MB = 400;
   const LIMIT_BYTES = PLAN_LIMIT_MB * 1024 * 1024;
-
-  const toggleDevPlus = async () => {
-    const next = !devOverride;
-    await setDevOverride(next);
-    toast.success(next ? t("settings.dev.on") : t("settings.dev.off"));
-  };
 
   return (
     <div className="min-h-screen">
-      <PaymentTestModeBanner />
       <AppHeader />
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <h1 className="text-2xl font-semibold mb-6">{t("settings.title")}</h1>
@@ -570,7 +542,7 @@ export default function Settings() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-lg font-semibold">Free</h2>
-                    {!isPlusActive && <Badge variant="secondary" className="rounded-full">{t("settings.plan.active")}</Badge>}
+                    <Badge variant="secondary" className="rounded-full">{t("settings.plan.active")}</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">{t("settings.plan.freeDesc")}</p>
                 </div>
@@ -583,65 +555,6 @@ export default function Settings() {
               <ul className="mt-4 space-y-2 text-sm">
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span>{t("settings.plan.featFree")}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span>{t("settings.plan.exports")}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span>{t("settings.plan.storage")} <strong>200 MB</strong></span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span><strong>5</strong> {t("settings.plan.aiScansPerMonth")}</span>
-                </li>
-              </ul>
-            </Card>
-
-            <Card className="p-6 border-primary/40">
-              <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-semibold">Plus</h2>
-                    {isPlusActive && <Badge className="rounded-full">{t("settings.plan.active")}</Badge>}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">{t("settings.plan.plusDesc")}</p>
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-semibold text-primary">
-                    {billingCycle === "monthly" ? "2,99 €" : "2,65 €"}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {t("settings.plan.month")}
-                    {billingCycle === "yearly" && <span className="ml-1 text-primary">· 31,80 €{t("settings.plan.perYear")}</span>}
-                  </div>
-                </div>
-              </div>
-
-              {!isPlusActive && (
-                <div className="mt-3 inline-flex rounded-md border border-border p-0.5 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setBillingCycle("monthly")}
-                    className={`px-3 py-1 rounded ${billingCycle === "monthly" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
-                  >
-                    {t("settings.plan.monthly")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setBillingCycle("yearly")}
-                    className={`px-3 py-1 rounded ${billingCycle === "yearly" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
-                  >
-                    {t("settings.plan.yearly")} · <span className="text-primary/90 font-semibold ml-1">−11 %</span>
-                  </button>
-                </div>
-              )}
-
-              <ul className="mt-4 space-y-2 text-sm">
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                   <span>{t("settings.plan.featAll")}</span>
                 </li>
                 <li className="flex items-start gap-2">
@@ -650,52 +563,48 @@ export default function Settings() {
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span>{t("settings.plan.storage")} <strong>800 MB</strong></span>
+                  <span>{t("settings.plan.storage")} <strong>0,4 GB</strong></span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span><strong>40</strong> {t("settings.plan.aiScansPerMonth")}</span>
+                  <span><strong>4</strong> {t("settings.plan.aiScansPerMonth")}</span>
                 </li>
               </ul>
-              {isPlusActive ? (
-                <Button className="mt-5 w-full" variant="secondary" onClick={openPortal} disabled={portalBusy}>
-                  <ExternalLink className="h-4 w-4 mr-1.5" /> {t("settings.plan.manage")}
-                </Button>
-              ) : (
-                <Button className="mt-5 w-full" onClick={() => setCheckoutOpen(true)}>
-                  {t("settings.plan.activate")}
-                </Button>
-              )}
-              {isPlusActive && sub?.current_period_end && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  {sub.cancel_at_period_end ? t("settings.plan.cancelAt") + " " : t("settings.plan.nextBill") + " "}
-                  <strong>
-                    {new Date(sub.current_period_end).toLocaleDateString("sk-SK", {
-                      day: "numeric", month: "long", year: "numeric",
-                    })}
-                  </strong>
-                  .
-                </p>
-              )}
+            </Card>
+
+            <Card className="p-6 border-primary/40">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <h2 className="text-lg font-semibold">Enterprise</h2>
+                  <p className="text-sm text-muted-foreground mt-1">{t("settings.plan.enterpriseDesc")}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-semibold text-primary">{t("settings.plan.from")} 0 €</div>
+                  <div className="text-xs text-muted-foreground">{t("settings.plan.month")}</div>
+                </div>
+              </div>
+
+              <ul className="mt-4 space-y-2 text-sm">
+                <li className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <span>{t("settings.plan.entLimits")}</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <span>{t("settings.plan.entStorage")}</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <span>{t("settings.plan.entSupport")}</span>
+                </li>
+              </ul>
+
+              <p className="text-xs text-muted-foreground mt-4">{t("settings.plan.entNote")}</p>
+              <Button asChild className="mt-4 w-full" variant="secondary">
+                <a href="mailto:j44soft@gmail.com?subject=Visual%20Astro%20Enterprise">j44soft@gmail.com</a>
+              </Button>
             </Card>
             </div>
-
-            {isDevUser && (
-              <Card className="p-6 border-accent/40 bg-accent/5">
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-accent" />
-                      <h3 className="font-semibold">{t("settings.dev.title")}</h3>
-                    </div>
-                    <p className="text-xs text-muted-foreground max-w-md">
-                      {t("settings.dev.desc").replace("{email}", user?.email ?? "")}
-                    </p>
-                  </div>
-                  <Switch checked={devOverride} onCheckedChange={toggleDevPlus} />
-                </div>
-              </Card>
-            )}
 
             <Card className="p-6">
               <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
@@ -785,22 +694,6 @@ export default function Settings() {
             </Card>
           </TabsContent>
         </Tabs>
-
-        <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{t("settings.checkout.title")}</DialogTitle>
-            </DialogHeader>
-            {checkoutOpen && user && (
-              <StripeEmbeddedCheckout
-                priceId={billingCycle === "yearly" ? "plus_yearly" : PLUS_PRICE_ID}
-                customerEmail={user.email ?? undefined}
-                userId={user.id}
-                returnUrl={`${window.location.origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}`}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
       </main>
     </div>
   );

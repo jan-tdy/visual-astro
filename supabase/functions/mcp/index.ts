@@ -3293,23 +3293,11 @@ function resolveLocation(input) {
 var iso = (d) => d ? d.toISOString() : null;
 
 // src/lib/mcp/subscription.ts
-var DEV_PLUS_EMAIL = "var@kozmos.sk";
-async function isPlusActive(ctx) {
-  const client = supabaseForUser(ctx);
-  const { data: sub } = await client.from("subscriptions").select("status,current_period_end").order("created_at", { ascending: false }).limit(1).maybeSingle();
-  const status = sub ?? null;
-  const realPlusActive = !!status && (["active", "trialing", "past_due"].includes(status.status ?? "") && (!status.current_period_end || new Date(status.current_period_end) > /* @__PURE__ */ new Date()) || status.status === "canceled" && !!status.current_period_end && new Date(status.current_period_end) > /* @__PURE__ */ new Date());
-  if (realPlusActive) return true;
-  const { data: bonus } = await client.from("plus_bonuses").select("expires_at").gt("expires_at", (/* @__PURE__ */ new Date()).toISOString()).order("expires_at", { ascending: false }).limit(1).maybeSingle();
-  if (bonus) return true;
-  if (ctx.getUserEmail()?.toLowerCase() === DEV_PLUS_EMAIL) {
-    const { data: profile } = await client.from("profiles").select("dev_plus_override").maybeSingle();
-    if (profile?.dev_plus_override) return true;
-  }
-  return false;
+async function isPlusActive(_ctx) {
+  return true;
 }
 function plusRequired() {
-  return fail("This POZOR tool requires a Plus subscription. Upgrade in the app under Settings \u2192 Pl\xE1n & faktur\xE1cia.");
+  return fail("This feature is currently unavailable. Contact j44soft@gmail.com.");
 }
 
 // src/lib/mcp/tools/list-ccd-targets.ts

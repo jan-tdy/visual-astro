@@ -79,16 +79,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       .limit(1)
       .maybeSingle();
     setSub((data as SubscriptionRow | null) ?? null);
-    // Fetch latest non-expired bonus
-    const { data: bonus } = await supabase
-      .from("plus_bonuses")
-      .select("id,reason,expires_at,seen")
-      .eq("user_id", user.id)
-      .gt("expires_at", new Date().toISOString())
-      .order("expires_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    setActiveBonus((bonus as any) ?? null);
+    setActiveBonus(null);
     setLoading(false);
   };
 
@@ -109,21 +100,12 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  const realPlusActive = !!sub && (
-    (["active", "trialing", "past_due"].includes(sub.status) &&
-      (!sub.current_period_end || new Date(sub.current_period_end) > new Date())) ||
-    (sub.status === "canceled" && sub.current_period_end && new Date(sub.current_period_end) > new Date())
-  );
-
   const isDevUser = user?.email?.toLowerCase() === DEV_PLUS_EMAIL;
-  const isBonusActive = !!activeBonus && new Date(activeBonus.expires_at) > new Date();
-  const isPlusActive = realPlusActive || isBonusActive || (isDevUser && devOverride);
-
-  const markBonusSeen = async () => {
-    if (!activeBonus || activeBonus.seen) return;
-    await supabase.from("plus_bonuses").update({ seen: true }).eq("id", activeBonus.id);
-    setActiveBonus({ ...activeBonus, seen: true });
-  };
+  // Subscriptions were discontinued: every signed-in observer gets the full
+  // feature set for free. Higher limits are arranged individually (Enterprise).
+  const isPlusActive = true;
+  const isBonusActive = false;
+  const markBonusSeen = async () => {};
 
   return (
     <SubscriptionContext.Provider
