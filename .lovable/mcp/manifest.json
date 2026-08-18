@@ -1296,7 +1296,7 @@
       {
         "name": "convert_sips",
         "title": "Convert SIPS Standard to VSNET/AAVSO",
-        "description": "Convert a SIPS Standard photometry file (JD, magnitude, error, with optional '#' header lines) into VSNET or AAVSO Extended CCD format.",
+        "description": "Convert a SIPS Standard photometry file (JD, magnitude, error, with optional '#' header lines) into VSNET or AAVSO Extended CCD format. Also handles plain headerless ASCII JD/mag/error triplets — pass the 'filter' override since there is no header to detect it from.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -1344,6 +1344,49 @@
             "data",
             "format",
             "star_code"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "convert_vsnet",
+        "title": "Convert VSNET to AAVSO",
+        "description": "Convert a VSNET-format observation file ('CODE YYYYMMDD.DDD MAG OBSCODE [FILTER]' per line, magnitude may be prefixed with '<' for fainter-than) into AAVSO Extended CCD format.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Raw VSNET-format file content."
+            },
+            "aavso_code": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40,
+              "description": "AAVSO designation of the star."
+            },
+            "obs_code": {
+              "type": "string",
+              "maxLength": 10,
+              "description": "Observer code; defaults to the profile setting."
+            },
+            "chart_id": {
+              "type": "string",
+              "maxLength": 40,
+              "description": "AAVSO chart id."
+            }
+          },
+          "required": [
+            "data",
+            "aavso_code"
           ],
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"
