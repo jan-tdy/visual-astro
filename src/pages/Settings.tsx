@@ -117,7 +117,7 @@ export default function Settings() {
   return (
     <div className="min-h-screen">
       <AppHeader />
-      <main className="container mx-auto px-4 py-8 max-w-2xl">
+      <main className="container mx-auto px-4 py-8 max-w-6xl">
         <h1 className="text-2xl font-semibold mb-6">{t("settings.title")}</h1>
         <Tabs defaultValue="general" className="w-full">
           <TabsList className="mb-4">
@@ -127,6 +127,7 @@ export default function Settings() {
           </TabsList>
 
           <TabsContent value="general">
+            <div className="columns-1 lg:columns-2 xl:columns-3 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
             <Card className="p-6 space-y-5">
           <div>
             <Label htmlFor="obs">{t("settings.obsCode")}</Label>
@@ -136,7 +137,7 @@ export default function Settings() {
           <Button onClick={save} disabled={busy}>{t("settings.save")}</Button>
             </Card>
 
-            <Card className="p-6 space-y-5 mt-4">
+            <Card className="p-6 space-y-5">
               <h2 className="text-lg font-semibold">{t("settings.comfort")}</h2>
 
               <div className="flex items-start justify-between gap-4">
@@ -215,7 +216,7 @@ export default function Settings() {
               </div>
             </Card>
 
-            <Card className="p-6 space-y-4 mt-4">
+            <Card className="p-6 space-y-4">
               <div className="flex items-center gap-2">
                 <Upload className="h-4 w-4 text-muted-foreground" />
                 <h2 className="text-lg font-semibold">{t("settings.afterExport")}</h2>
@@ -284,7 +285,7 @@ export default function Settings() {
               ))}
             </Card>
 
-            <Card className="p-6 space-y-5 mt-4">
+            <Card className="p-6 space-y-5">
               <div className="flex items-center gap-2">
                 <TriangleAlert className="h-4 w-4 text-muted-foreground" />
                 <h2 className="text-lg font-semibold">{t("settings.magCheck")}</h2>
@@ -322,7 +323,7 @@ export default function Settings() {
               </div>
             </Card>
 
-            <Card className="p-6 space-y-5 mt-4">
+            <Card className="p-6 space-y-5">
               <div className="flex items-center gap-2">
                 <ScanLine className="h-4 w-4 text-muted-foreground" />
                 <h2 className="text-lg font-semibold">{t("settings.aiScanTuning")}</h2>
@@ -347,7 +348,7 @@ export default function Settings() {
               </div>
             </Card>
 
-            <Card className="p-6 space-y-5 mt-4">
+            <Card className="p-6 space-y-5">
               <div className="flex items-center gap-2">
                 <LineChartIcon className="h-4 w-4 text-muted-foreground" />
                 <h2 className="text-lg font-semibold">{t("settings.nightRange")}</h2>
@@ -398,7 +399,7 @@ export default function Settings() {
               </p>
             </Card>
 
-            <Card className="p-6 space-y-5 mt-4">
+            <Card className="p-6 space-y-5">
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-muted-foreground" />
                 <h2 className="text-lg font-semibold">{t("settings.paper.title")}</h2>
@@ -532,8 +533,9 @@ export default function Settings() {
               </div>
             </Card>
 
-            <div className="mt-4">
+            <div>
               <LocationManager />
+            </div>
             </div>
           </TabsContent>
 
@@ -674,26 +676,28 @@ export default function Settings() {
               </div>
             </Card>
 
-            <Card className="p-6 space-y-3">
-              <h3 className="font-semibold">{t("settings.mcp.claudeTitle")}</h3>
-              <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
-                <li>{t("settings.mcp.claude1")}</li>
-                <li>{t("settings.mcp.claude2")}</li>
-                <li>{t("settings.mcp.claude3")}</li>
-                <li>{t("settings.mcp.claude4")}</li>
-              </ol>
-            </Card>
+            <div className="grid md:grid-cols-2 gap-4">
+              <Card className="p-6 space-y-3">
+                <h3 className="font-semibold">{t("settings.mcp.claudeTitle")}</h3>
+                <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                  <li>{t("settings.mcp.claude1")}</li>
+                  <li>{t("settings.mcp.claude2")}</li>
+                  <li>{t("settings.mcp.claude3")}</li>
+                  <li>{t("settings.mcp.claude4")}</li>
+                </ol>
+              </Card>
 
-            <Card className="p-6 space-y-3">
-              <h3 className="font-semibold">{t("settings.mcp.chatgptTitle")}</h3>
-              <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
-                <li>{t("settings.mcp.chatgpt1")}</li>
-                <li>{t("settings.mcp.chatgpt2")}</li>
-                <li>{t("settings.mcp.chatgpt3")}</li>
-                <li>{t("settings.mcp.chatgpt4")}</li>
-                <li>{t("settings.mcp.chatgpt5")}</li>
-              </ol>
-            </Card>
+              <Card className="p-6 space-y-3">
+                <h3 className="font-semibold">{t("settings.mcp.chatgptTitle")}</h3>
+                <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                  <li>{t("settings.mcp.chatgpt1")}</li>
+                  <li>{t("settings.mcp.chatgpt2")}</li>
+                  <li>{t("settings.mcp.chatgpt3")}</li>
+                  <li>{t("settings.mcp.chatgpt4")}</li>
+                  <li>{t("settings.mcp.chatgpt5")}</li>
+                </ol>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </main>
