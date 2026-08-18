@@ -15,7 +15,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Check, Sparkles, Database, RefreshCw, ExternalLink, Lock, Upload, Copy, Cpu, TriangleAlert, LineChart as LineChartIcon, FileText, ScanLine } from "lucide-react";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
 import { useI18n } from "@/hooks/useI18n";
 import { fetchAllRows } from "@/lib/supabaseFetchAll";
