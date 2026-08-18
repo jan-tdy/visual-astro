@@ -88,7 +88,6 @@ export function AppHeader() {
           <div className="h-5 w-px bg-border mx-1 shrink-0" aria-hidden />
           {link("/settings", t("nav.settings"), SettingsIcon)}
           {link("/about", t("nav.info"), Info)}
-          {link("/connect", t("nav.connect"), Bot)}
         </nav>
         <div className="flex items-center gap-2">
           {user && <div className="hidden md:block"><GlobalSearch /></div>}
@@ -134,7 +133,6 @@ export function AppHeader() {
                 <div className="h-px bg-border my-1" aria-hidden />
                 {link("/settings", t("nav.settings"), SettingsIcon)}
                 {link("/about", t("nav.info"), Info)}
-                {link("/connect", t("nav.connect"), Bot)}
                 <button
                   onClick={() => { setOpen(false); signOut(); }}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-muted-foreground hover:text-foreground text-left mt-4"
