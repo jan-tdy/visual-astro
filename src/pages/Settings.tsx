@@ -15,12 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Check, Sparkles, Database, RefreshCw, ExternalLink, Lock, Upload, Copy, Cpu, TriangleAlert, LineChart as LineChartIcon, FileText, ScanLine } from "lucide-react";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
-import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
-import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
-import { getStripeEnvironment, PLUS_PRICE_ID } from "@/lib/stripe";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
-import { Zap } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
 import { fetchAllRows } from "@/lib/supabaseFetchAll";
 import { LocationManager } from "@/components/pozor/LocationManager";
@@ -30,14 +26,11 @@ import type { NightAnchor } from "@/lib/pozor";
 export default function Settings() {
   const { user } = useAuth();
   const { t } = useI18n();
-  const { isPlusActive, sub, isDevUser, devOverride, setDevOverride } = useSubscription();
+  const { isPlusActive } = useSubscription();
   const { prefs, update: setPrefs } = usePrefs();
   const { settings: pozor, setSettings: setPozor } = usePozorSettings();
   const [obsCode, setObsCode] = useState("DPV");
   const [busy, setBusy] = useState(false);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [portalBusy, setPortalBusy] = useState(false);
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const mcpUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mcp`;
   const [usage, setUsage] = useState<{
     bytes: number;
@@ -117,31 +110,11 @@ export default function Settings() {
     return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
   };
 
-  const openPortal = async () => {
-    setPortalBusy(true);
-    const { data, error } = await supabase.functions.invoke("create-portal-session", {
-      body: { returnUrl: window.location.origin + "/settings", environment: getStripeEnvironment() },
-    });
-    setPortalBusy(false);
-    if (error || !data?.url) {
-      toast.error(error?.message || t("settings.plan.portalErr"));
-      return;
-    }
-    window.open(data.url, "_blank");
-  };
-
-  const PLAN_LIMIT_MB = isPlusActive ? 800 : 200;
+  const PLAN_LIMIT_MB = 400;
   const LIMIT_BYTES = PLAN_LIMIT_MB * 1024 * 1024;
-
-  const toggleDevPlus = async () => {
-    const next = !devOverride;
-    await setDevOverride(next);
-    toast.success(next ? t("settings.dev.on") : t("settings.dev.off"));
-  };
 
   return (
     <div className="min-h-screen">
-      <PaymentTestModeBanner />
       <AppHeader />
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <h1 className="text-2xl font-semibold mb-6">{t("settings.title")}</h1>
