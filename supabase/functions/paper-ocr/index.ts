@@ -77,7 +77,6 @@ Deno.serve(async (req) => {
       });
     }
     const userId = userData.user.id;
-    const email = (userData.user.email ?? '').toLowerCase();
 
     // Single free plan for everyone: 4 AI scans per month.
     // Higher limits are negotiated individually (Enterprise, j44soft@gmail.com).
