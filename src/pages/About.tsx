@@ -16,7 +16,7 @@ const FEATURE_KEYS = [
   { icon: Languages, key: "language" },
   { icon: ScanLine, key: "ocr" },
   { icon: Download, key: "json" },
-  { icon: CreditCard, key: "plus" },
+  { icon: CreditCard, key: "enterprise" },
   { icon: Moon, key: "pozor" },
   { icon: Table2, key: "prom" },
   { icon: BarChart3, key: "graphs" },
@@ -133,10 +133,10 @@ export default function About() {
             </div>
             <div className="rounded-lg border border-primary/40 p-4">
               <div className="flex items-center justify-between mb-1">
-                <strong>Plus</strong>
-                <span className="text-primary font-semibold">{t("about.plan.price")}</span>
+                <strong>Enterprise</strong>
+                <span className="text-primary font-semibold">{t("about.plan.from")} 0 €</span>
               </div>
-              <p className="text-muted-foreground text-xs">{t("about.plan.plus")}</p>
+              <p className="text-muted-foreground text-xs">{t("about.plan.enterprise")}</p>
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-3">{t("about.plan.manage")}</p>

@@ -19,7 +19,8 @@ star magnitudes with the Nijland-Blazhko method, and export your results straigh
   data dumps.
 - **Paper OCR** — scan and import handwritten observation sheets (Supabase Edge Function).
 - **Multi-language UI** — powered by [Tolgee](https://tolgee.io/).
-- **Subscriptions** — optional paid plan via Stripe checkout/portal.
+- **Plans** — everyone gets the Free plan (all features, 0.4 GB storage, 4 AI scans/month)
+  for free; Enterprise offers negotiable limits on request, see Settings → Plan & billing.
 - **MCP server** — the app exposes an [MCP](https://modelcontextprotocol.io/) tool server
   (`supabase/functions/mcp`) so AI assistants can read/write sessions, stars, CCD targets,
   and more on the observer's behalf.
@@ -30,7 +31,6 @@ star magnitudes with the Nijland-Blazhko method, and export your results straigh
 - [shadcn/ui](https://ui.shadcn.com/) + [Radix UI](https://www.radix-ui.com/) + [Tailwind CSS](https://tailwindcss.com/)
 - [Supabase](https://supabase.com/) (Postgres, Auth, Storage, Edge Functions)
 - [astronomy-engine](https://github.com/cosinekitty/astronomy) for astronomical calculations
-- [Stripe](https://stripe.com/) for subscription billing
 - [Tolgee](https://tolgee.io/) for internationalization
 - [TanStack Query](https://tanstack.com/query) for data fetching/caching
 - [Vitest](https://vitest.dev/) + Testing Library for tests
@@ -53,10 +53,9 @@ npm install
 This is a [Lovable](https://lovable.dev/) project, and its Supabase
 integration manages `.env` (project URL, project ID, and publishable/anon
 key) automatically — you generally don't need to touch it by hand. `.env` and
-`.env.development` are committed with these values for that reason: they're
-the Supabase publishable (anon) key and a Stripe *publishable* test key,
-neither of which is a secret — both are meant to be used client-side and are
-safe to be public.
+`.env.development` are committed with these values for that reason: it's the
+Supabase publishable (anon) key, which isn't a secret and is meant to be used
+client-side.
 
 ### Run the dev server
 
@@ -91,16 +90,15 @@ src/
   lib/         # astronomy, exporters, PDF/OCR helpers, MCP tool implementations
   pages/       # route-level pages (Sessions, Catalog, Pozor, Graphs, Tools, ...)
 supabase/
-  functions/   # Edge Functions (mcp, paper-ocr, checkout, billing portal, webhooks)
+  functions/   # Edge Functions (mcp, paper-ocr)
   migrations/  # database schema migrations
 ```
 
 ## Backend (Supabase)
 
 The `supabase/` directory contains the database migrations and Edge Functions backing
-the app: authentication-protected data access, Stripe checkout/portal/webhook handling,
-paper OCR, and the MCP tool server. See `supabase/config.toml` and `supabase/functions/`
-for details.
+the app: authentication-protected data access, paper OCR, and the MCP tool server. See
+`supabase/config.toml` and `supabase/functions/` for details.
 
 ## Contributing
 
