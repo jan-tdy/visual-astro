@@ -5,13 +5,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/app/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, Plus, Trash2, Copy, Star, StarOff, Sparkles, X } from "lucide-react";
+import { Loader2, Plus, Trash2, Copy, Star, StarOff } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD } from "@/lib/astro";
 import { getPrefs } from "@/hooks/usePrefs";
 import { seedCatalogIfNeeded } from "@/lib/seed";
 import { useI18n } from "@/hooks/useI18n";
-import { useSubscription } from "@/hooks/useSubscription";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -32,7 +31,6 @@ export default function Sessions() {
   const { user } = useAuth();
   const nav = useNavigate();
   const { t, lang } = useI18n();
-  const { activeBonus, isBonusActive, markBonusSeen } = useSubscription();
   const [loading, setLoading] = useState(true);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
 
