@@ -627,7 +627,7 @@ export default function Settings() {
                     </div>
                     <Progress value={pct} className="mt-2 h-2" />
                     <p className="text-xs text-muted-foreground mt-2">
-                      {t("settings.usage.used").replace("{pct}", pct.toFixed(2)).replace("{plan}", isPlusActive ? "Plus" : "Free")}
+                      {t("settings.usage.used").replace("{pct}", pct.toFixed(2)).replace("{plan}", "Free")}
                     </p>
                   </>
                 );

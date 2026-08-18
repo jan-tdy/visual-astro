@@ -19,7 +19,6 @@ import Settings from "./pages/Settings.tsx";
 import Tools from "./pages/Tools.tsx";
 import About from "./pages/About.tsx";
 import OAuthConsent from "./pages/OAuthConsent.tsx";
-import CheckoutReturn from "./pages/CheckoutReturn.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { ProtectedRoute } from "./components/app/ProtectedRoute.tsx";
 
@@ -46,7 +45,6 @@ const App = () => (
             <Route path="/graphs" element={<ProtectedRoute><Graphs /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/tools" element={<ProtectedRoute><Tools /></ProtectedRoute>} />
-            <Route path="/checkout/return" element={<ProtectedRoute><CheckoutReturn /></ProtectedRoute>} />
             <Route path="/about" element={<About />} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="*" element={<NotFound />} />
