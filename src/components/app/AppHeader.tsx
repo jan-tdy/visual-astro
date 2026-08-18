@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import {
   LogOut, BookOpen, Settings as SettingsIcon, ListChecks, Info, Sun, Moon, Menu,
-  Sparkles, BarChart3, Wrench, Telescope, Bot,
+  Sparkles, BarChart3, Wrench, Telescope,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
