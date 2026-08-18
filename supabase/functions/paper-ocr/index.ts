@@ -79,33 +79,10 @@ Deno.serve(async (req) => {
     const userId = userData.user.id;
     const email = (userData.user.email ?? '').toLowerCase();
 
-    // Determine plan limit
-    const { data: subRow } = await supabase
-      .from('subscriptions')
-      .select('status,current_period_end,environment')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    const subActive = !!subRow && (
-      (['active','trialing','past_due'].includes((subRow as any).status) &&
-        (!(subRow as any).current_period_end || new Date((subRow as any).current_period_end) > new Date())) ||
-      ((subRow as any).status === 'canceled' && (subRow as any).current_period_end && new Date((subRow as any).current_period_end) > new Date())
-    );
-    const { data: prof } = await supabase
-      .from('profiles').select('dev_plus_override').eq('user_id', userId).maybeSingle();
-    const devOverride = !!(prof as any)?.dev_plus_override && email === 'var@kozmos.sk';
-    // Bonus (milestone free Plus)
-    const { data: bonusRow } = await supabase
-      .from('plus_bonuses')
-      .select('id')
-      .eq('user_id', userId)
-      .gt('expires_at', new Date().toISOString())
-      .limit(1)
-      .maybeSingle();
-    const bonusActive = !!bonusRow;
-    const isPlus = subActive || devOverride || bonusActive;
-    const monthlyLimit = isPlus ? 40 : 5;
+    // Single free plan for everyone: 4 AI scans per month.
+    // Higher limits are negotiated individually (Enterprise, j44soft@gmail.com).
+    const isPlus = false;
+    const monthlyLimit = 4;
 
     const { image, splitPart, splitTotal } = await req.json();
     if (!image || typeof image !== 'string') {
@@ -123,7 +100,7 @@ Deno.serve(async (req) => {
     // this function N times for unrelated images.
     const isSplitScan = typeof splitTotal === 'number' && splitTotal >= 2 &&
       typeof splitPart === 'number' && splitPart >= 1 && splitPart <= splitTotal;
-    const skipQuota = isSplitScan && !isPlus && splitPart > 1;
+    const skipQuota = isSplitScan && splitPart > 1;
 
     // Mesačný agregát: prvý deň mesiaca ako "bucket" v ocr_usage.used_on
     const now = new Date();
@@ -138,7 +115,7 @@ Deno.serve(async (req) => {
     const used = (usageRow as any)?.count ?? 0;
     if (!skipQuota && used >= monthlyLimit) {
       return new Response(JSON.stringify({
-        error: `Mesačný limit AI skenov vyčerpaný (${used}/${monthlyLimit}). ${isPlus ? '' : 'Upgraduj na Plus pre 40 skenov mesačne.'}`,
+        error: `Mesačný limit AI skenov vyčerpaný (${used}/${monthlyLimit}). Potrebuješ viac? Napíš na j44soft@gmail.com.`,
         limitReached: true, used, monthlyLimit, dailyLimit: monthlyLimit, isPlus,
       }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
