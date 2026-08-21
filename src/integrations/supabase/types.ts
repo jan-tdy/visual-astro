@@ -309,6 +309,8 @@ export type Database = {
           catalog_seeded: boolean
           created_at: string
           dev_plus_override: boolean
+          enterprise_ai_scans_per_month: number | null
+          enterprise_storage_mb: number | null
           fecha_referencia: string
           milestone_progress: Json
           obs_code: string
@@ -321,6 +323,8 @@ export type Database = {
           catalog_seeded?: boolean
           created_at?: string
           dev_plus_override?: boolean
+          enterprise_ai_scans_per_month?: number | null
+          enterprise_storage_mb?: number | null
           fecha_referencia?: string
           milestone_progress?: Json
           obs_code?: string
@@ -333,6 +337,8 @@ export type Database = {
           catalog_seeded?: boolean
           created_at?: string
           dev_plus_override?: boolean
+          enterprise_ai_scans_per_month?: number | null
+          enterprise_storage_mb?: number | null
           fecha_referencia?: string
           milestone_progress?: Json
           obs_code?: string
