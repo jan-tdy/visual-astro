@@ -1,5 +1,7 @@
 # Visual Astro — Visual Observation Log
 
+[![CI](https://github.com/jan-tdy/visual-astro/actions/workflows/ci.yml/badge.svg)](https://github.com/jan-tdy/visual-astro/actions/workflows/ci.yml)
+
 A modern, web-based replacement for the classic `Reducciones.ods` spreadsheet used by
 visual variable-star observers. Visual Astro helps you log observing sessions, estimate
 star magnitudes with the Nijland-Blazhko method, and export your results straight to
