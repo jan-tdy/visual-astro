@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-All(only one) are available currently on japysoft.bombol.space :)
+All(only one) that are available currently on japysoft.bombol.space :)
 
 ## Reporting a Vulnerability
 
