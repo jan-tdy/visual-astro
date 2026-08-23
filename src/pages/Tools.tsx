@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { downloadText } from "@/lib/exporters";
+import { openPortalWithFallback } from "@/lib/popup";
 import { usePrefs } from "@/hooks/usePrefs";
 import { useI18n } from "@/hooks/useI18n";
 import { supabase } from "@/integrations/supabase/client";
@@ -123,7 +124,13 @@ export default function Tools() {
   const openPortal = (kind: "vsnet" | "aavso") => {
     if (!prefs.openPortalAfterExport[kind]) return;
     const url = prefs.portalUrls[kind];
-    if (url) window.open(url, "_blank", "noopener,noreferrer");
+    if (url) {
+      openPortalWithFallback(url, {
+        blocked: t("editor.popupBlocked"),
+        hint: t("editor.popupBlockedHint"),
+        open: t("editor.popupBlockedOpen"),
+      });
+    }
   };
 
   const dlVSNET = () => {

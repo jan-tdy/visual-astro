@@ -13,6 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
 import { buildAAVSO, buildExportSummary, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
+import { openPortalWithFallback } from "@/lib/popup";
 import { getPrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useI18n } from "@/hooks/useI18n";
@@ -900,6 +901,12 @@ export default function SessionEditor() {
     [obsByStar, extraByStar, obsCode, stars],
   );
 
+  const popupMessages = () => ({
+    blocked: t("editor.popupBlocked"),
+    hint: t("editor.popupBlockedHint"),
+    open: t("editor.popupBlockedOpen"),
+  });
+
   const exportFile = (kind: "vsnet" | "aavso", preview = false) => {
     const rows = buildExportRows();
     const ctx = { observedAt, jd, obsCode, compLabelThreshold: getPrefs().compLabelThreshold };
@@ -919,7 +926,7 @@ export default function SessionEditor() {
       const prefs = getPrefs();
       if (isPlusActive && prefs.openPortalAfterExport[kind]) {
         const url = prefs.portalUrls?.[kind] || SUBMISSION_PORTALS[kind].url;
-        setTimeout(() => window.open(url, "_blank", "noopener,noreferrer"), 250);
+        setTimeout(() => openPortalWithFallback(url, popupMessages()), 250);
       }
     }
   };
@@ -1155,8 +1162,12 @@ export default function SessionEditor() {
       colUt: "UT",
       colNote: t("editor.col.note"),
     };
-    const doc = await buildPaperTemplatePdf(prefs.paperTemplate, labels, obsCode);
-    doc.save(`pozorovaci-papier-${isoDate}.pdf`);
+    try {
+      const doc = await buildPaperTemplatePdf(prefs.paperTemplate, labels, obsCode);
+      doc.save(`pozorovaci-papier-${isoDate}.pdf`);
+    } catch (e: any) {
+      toast.error(t("editor.paperTemplateFailed") + (e?.message ? `: ${e.message}` : ""));
+    }
   };
 
   // Format input value for date (UTC)
@@ -2111,7 +2122,7 @@ export default function SessionEditor() {
                   const prefs = getPrefs();
                   if (isPlusActive && prefs.openPortalAfterExport[previewing.kind]) {
                     const url = prefs.portalUrls?.[previewing.kind] || SUBMISSION_PORTALS[previewing.kind].url;
-                    setTimeout(() => window.open(url, "_blank", "noopener,noreferrer"), 250);
+                    setTimeout(() => openPortalWithFallback(url, popupMessages()), 250);
                   }
                 }}>
                   <Download className="h-4 w-4 mr-1" /> {t("editor.download")}
