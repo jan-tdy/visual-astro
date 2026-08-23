@@ -919,7 +919,7 @@ export default function SessionEditor() {
       const prefs = getPrefs();
       if (isPlusActive && prefs.openPortalAfterExport[kind]) {
         const url = prefs.portalUrls?.[kind] || SUBMISSION_PORTALS[kind].url;
-        setTimeout(() => window.open(url, "_blank", "noopener,noreferrer"), 250);
+        setTimeout(() => openPortalWithFallback(url, popupMessages()), 250);
       }
     }
   };
@@ -2111,7 +2111,7 @@ export default function SessionEditor() {
                   const prefs = getPrefs();
                   if (isPlusActive && prefs.openPortalAfterExport[previewing.kind]) {
                     const url = prefs.portalUrls?.[previewing.kind] || SUBMISSION_PORTALS[previewing.kind].url;
-                    setTimeout(() => window.open(url, "_blank", "noopener,noreferrer"), 250);
+                    setTimeout(() => openPortalWithFallback(url, popupMessages()), 250);
                   }
                 }}>
                   <Download className="h-4 w-4 mr-1" /> {t("editor.download")}

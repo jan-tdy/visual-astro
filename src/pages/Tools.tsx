@@ -123,7 +123,13 @@ export default function Tools() {
   const openPortal = (kind: "vsnet" | "aavso") => {
     if (!prefs.openPortalAfterExport[kind]) return;
     const url = prefs.portalUrls[kind];
-    if (url) window.open(url, "_blank", "noopener,noreferrer");
+    if (url) {
+      openPortalWithFallback(url, {
+        blocked: t("editor.popupBlocked"),
+        hint: t("editor.popupBlockedHint"),
+        open: t("editor.popupBlockedOpen"),
+      });
+    }
   };
 
   const dlVSNET = () => {
