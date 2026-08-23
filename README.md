@@ -52,10 +52,9 @@ npm install
 
 This is a [Lovable](https://lovable.dev/) project, and its Supabase
 integration manages `.env` (project URL, project ID, and publishable/anon
-key) automatically — you generally don't need to touch it by hand. `.env` and
-`.env.development` are committed with these values for that reason: it's the
-Supabase publishable (anon) key, which isn't a secret and is meant to be used
-client-side.
+key) automatically — you generally don't need to touch it by hand. `.env` is
+committed with these values for that reason: it's the Supabase publishable
+(anon) key, which isn't a secret and is meant to be used client-side.
 
 ### Run the dev server
 
