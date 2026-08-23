@@ -1162,8 +1162,12 @@ export default function SessionEditor() {
       colUt: "UT",
       colNote: t("editor.col.note"),
     };
-    const doc = await buildPaperTemplatePdf(prefs.paperTemplate, labels, obsCode);
-    doc.save(`pozorovaci-papier-${isoDate}.pdf`);
+    try {
+      const doc = await buildPaperTemplatePdf(prefs.paperTemplate, labels, obsCode);
+      doc.save(`pozorovaci-papier-${isoDate}.pdf`);
+    } catch (e: any) {
+      toast.error(t("editor.paperTemplateFailed") + (e?.message ? `: ${e.message}` : ""));
+    }
   };
 
   // Format input value for date (UTC)
