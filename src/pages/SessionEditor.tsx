@@ -13,6 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
 import { buildAAVSO, buildExportSummary, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
+import { openPortalWithFallback } from "@/lib/popup";
 import { getPrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useI18n } from "@/hooks/useI18n";
@@ -899,6 +900,12 @@ export default function SessionEditor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [obsByStar, extraByStar, obsCode, stars],
   );
+
+  const popupMessages = () => ({
+    blocked: t("editor.popupBlocked"),
+    hint: t("editor.popupBlockedHint"),
+    open: t("editor.popupBlockedOpen"),
+  });
 
   const exportFile = (kind: "vsnet" | "aavso", preview = false) => {
     const rows = buildExportRows();

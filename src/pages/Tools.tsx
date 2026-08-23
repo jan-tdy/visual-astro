@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { downloadText } from "@/lib/exporters";
+import { openPortalWithFallback } from "@/lib/popup";
 import { usePrefs } from "@/hooks/usePrefs";
 import { useI18n } from "@/hooks/useI18n";
 import { supabase } from "@/integrations/supabase/client";
