@@ -75,7 +75,7 @@ export function buildAAVSO(rows: ExportRow[], ctx: ExportContext): string {
     const aVal = resolveCompValue(r.star_name, r.a ?? null, compLabelThreshold);
     const bVal = resolveCompValue(r.star_name, r.b ?? null, compLabelThreshold);
     const comp1 = isLimit
-      ? (Number.isFinite(bVal) ? bVal.toFixed(2) : csvSafe((r.limit_value ?? "").replace("<", "")))
+      ? (Number.isFinite(bVal) ? bVal.toFixed(2) : csvSafe((r.limit_value ?? "").replace(/</g, "")))
       : (Number.isFinite(aVal) ? aVal.toFixed(2) : csvSafe(r.a ?? ""));
     const comp2 = isLimit ? "na" : (Number.isFinite(bVal) ? bVal.toFixed(2) : csvSafe(r.b ?? ""));
     const jd = ctx.jd + (rowDate(r, ctx).getTime() - ctx.observedAt.getTime()) / 86400000;
