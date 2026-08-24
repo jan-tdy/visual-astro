@@ -3581,7 +3581,7 @@ function buildAAVSO(rows, ctx) {
     const isLimit = !!(r.limit_value && r.limit_value.trim());
     const aVal = resolveCompValue(r.star_name, r.a ?? null, compLabelThreshold);
     const bVal = resolveCompValue(r.star_name, r.b ?? null, compLabelThreshold);
-    const comp1 = isLimit ? Number.isFinite(bVal) ? bVal.toFixed(2) : csvSafe((r.limit_value ?? "").replace("<", "")) : Number.isFinite(aVal) ? aVal.toFixed(2) : csvSafe(r.a ?? "");
+    const comp1 = isLimit ? Number.isFinite(bVal) ? bVal.toFixed(2) : csvSafe((r.limit_value ?? "").replace(/</g, "")) : Number.isFinite(aVal) ? aVal.toFixed(2) : csvSafe(r.a ?? "");
     const comp2 = isLimit ? "na" : Number.isFinite(bVal) ? bVal.toFixed(2) : csvSafe(r.b ?? "");
     const jd = ctx.jd + (rowDate(r, ctx).getTime() - ctx.observedAt.getTime()) / 864e5;
     const rawNote = csvSafe((r.note ?? "").trim().replace(/:/g, "Z"));
