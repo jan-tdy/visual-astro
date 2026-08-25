@@ -95,13 +95,10 @@ supabase/
   migrations/  # database schema migrations
 ```
 
-## Landing page (GitHub Pages)
+## Landing page
 
-The `docs/` directory holds a static, self-contained landing page (no build step,
-no Tolgee) describing the app, with Log in / Sign up links to
-[japysoft.bombol.space](https://japysoft.bombol.space). To publish it, enable
-GitHub Pages in the repo settings with source **Deploy from a branch** →
-`main` / `/docs`.
+`/info` is a public, unauthenticated marketing page describing the app (features,
+screenshots, plans) with Log in / Sign up buttons — see `src/pages/Info.tsx`.
 
 ## Backend (Supabase)
 
