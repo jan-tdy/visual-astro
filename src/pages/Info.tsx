@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  Telescope, Sparkles, Clock, Moon, Table2, BarChart3, Download, ScanLine, Languages,
+  Telescope, Sparkles, Clock, Moon, Table2, BarChart3, Download, ScanLine, Languages, Bot,
 } from "lucide-react";
 import coverUrl from "@/assets/visual-astro-cover.png";
 import pozorShotUrl from "@/assets/info-screenshot-pozor.png";
@@ -169,6 +169,62 @@ export default function Info() {
                 </Card>
               ))}
             </div>
+          </div>
+        </section>
+
+        <section className="py-14">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <Card className="p-8 sm:p-10 border-primary/30 bg-primary/5">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-primary/15 text-primary shrink-0">
+                  <Moon className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold mb-1">Pozor — plan the whole night</h2>
+                  <p className="text-muted-foreground max-w-2xl">
+                    A dedicated night-planning module, separate from your visual catalog: see
+                    what&apos;s observable right now, predict eclipsing-variable minima, and keep
+                    your own CCD/photometry target list.
+                  </p>
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-x-8 gap-y-2 text-sm text-muted-foreground sm:pl-16">
+                <div>• Altitude &amp; night charts for every target</div>
+                <div>• Eclipsing-variable minima predictions</div>
+                <div>• A CCD/photometry target catalog</div>
+                <div>• An observability journal</div>
+                <div>• Multiple saved observing locations</div>
+                <div>• Moon phase &amp; illumination calendar</div>
+              </div>
+            </Card>
+          </div>
+        </section>
+
+        <section className="py-14">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <Card className="p-8 sm:p-10 border-accent/30 bg-accent/5">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-accent/15 text-accent shrink-0">
+                  <Bot className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold mb-1">MCP server for AI assistants</h2>
+                  <p className="text-muted-foreground max-w-2xl">
+                    Visual Astro exposes an MCP (Model Context Protocol) server, so AI assistants
+                    like Claude can work with your observing data directly on your behalf — all
+                    scoped to your own signed-in account.
+                  </p>
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-x-8 gap-y-2 text-sm text-muted-foreground sm:pl-16">
+                <div>• Read &amp; write sessions and observations</div>
+                <div>• Manage your star catalog and CCD targets</div>
+                <div>• Run Pozor observability computations</div>
+                <div>• Build VSNET/AAVSO exports</div>
+                <div>• Convert SIPS/VSNET photometry files</div>
+                <div>• Read &amp; update your observer profile</div>
+              </div>
+            </Card>
           </div>
         </section>
 
