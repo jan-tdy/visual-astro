@@ -369,6 +369,25 @@ export default function Graphs() {
     return [+(Math.min(...mags) - 0.2).toFixed(2), +(Math.max(...mags) + 0.2).toFixed(2)];
   }, [lightCurve, limitCurve]);
 
+  // Recharts renders gridlines at whatever ticks it auto-generates for a given
+  // numeric domain, and always forces the exact domain edges in as the first/last
+  // tick — since our domain edges are arbitrary computed values (not round
+  // numbers), that leaves one gridline interval visibly uneven vs. the rest,
+  // which reads as a broken/inconsistent scale. Generate explicit, evenly
+  // spaced ticks across the domain instead so the axis is honest either way.
+  const evenTicks = (min: number, max: number, count = 5): number[] => {
+    if (!Number.isFinite(min) || !Number.isFinite(max) || min === max) return [min];
+    const step = (max - min) / (count - 1);
+    return Array.from({ length: count }, (_, i) => min + step * i);
+  };
+
+  const curveXTicks = useMemo(() => {
+    const [min, max] = curveXDomain;
+    return typeof min === "number" && typeof max === "number" ? evenTicks(min, max) : undefined;
+  }, [curveXDomain]);
+
+  const curveYTicks = useMemo(() => evenTicks(curveYDomain[0], curveYDomain[1]), [curveYDomain]);
+
   const totalObs = realObs.length;
   const totalStars = perStar.length;
   const totalSessions = sessions.length;
@@ -481,6 +500,7 @@ export default function Graphs() {
                             dataKey="jd"
                             type="number"
                             domain={curveXDomain}
+                            ticks={curveXTicks}
                             tickFormatter={(v: number) => v.toFixed(2)}
                             tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                             label={{ value: "JD", position: "insideBottom", offset: -5, fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
@@ -488,6 +508,7 @@ export default function Graphs() {
                           <YAxis
                             reversed
                             domain={curveYDomain}
+                            ticks={curveYTicks}
                             tickFormatter={(v: number) => v.toFixed(2)}
                             allowDecimals
                             tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
