@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  LogOut, BookOpen, Settings as SettingsIcon, ListChecks, Info, Sun, Moon, Menu,
+  LogOut, BookOpen, Settings as SettingsIcon, ListChecks, Sun, Moon, Menu,
   Sparkles, BarChart3, Wrench, Telescope,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -87,7 +87,6 @@ export function AppHeader() {
           {link("/tools", t("nav.tools"), Wrench)}
           <div className="h-5 w-px bg-border mx-1 shrink-0" aria-hidden />
           {link("/settings", t("nav.settings"), SettingsIcon)}
-          {link("/about", t("nav.info"), Info)}
         </nav>
         <div className="flex items-center gap-2">
           {user && <div className="hidden md:block"><GlobalSearch /></div>}
@@ -132,7 +131,6 @@ export function AppHeader() {
                 {link("/tools", t("nav.tools"), Wrench)}
                 <div className="h-px bg-border my-1" aria-hidden />
                 {link("/settings", t("nav.settings"), SettingsIcon)}
-                {link("/about", t("nav.info"), Info)}
                 <button
                   onClick={() => { setOpen(false); signOut(); }}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-muted-foreground hover:text-foreground text-left mt-4"

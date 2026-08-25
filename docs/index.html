@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Visual Astro — Visual Observation Log for Variable Star Observers</title>
+<meta name="description" content="A modern, web-based replacement for the classic Reducciones.ods spreadsheet used by visual variable-star observers. Log sessions, estimate magnitudes, plan your night, and export straight to VSNET/AAVSO." />
+<link rel="icon" href="./assets/favicon.ico" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,300..900&family=Roboto+Serif:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --background: 35 40% 97%;
+    --foreground: 260 30% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 260 30% 12%;
+    --muted-foreground: 260 10% 40%;
+    --border: 260 15% 88%;
+    --primary: 262 70% 52%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 28 95% 60%;
+    --accent-foreground: 0 0% 100%;
+    --radius: 1rem;
+    --shadow-color: 260 30% 30%;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: 260 30% 8%;
+      --foreground: 0 0% 96%;
+      --card: 260 25% 12%;
+      --card-foreground: 0 0% 96%;
+      --muted-foreground: 260 12% 68%;
+      --border: 260 15% 22%;
+      --primary: 270 85% 75%;
+      --primary-foreground: 260 40% 12%;
+      --accent: 28 95% 65%;
+      --accent-foreground: 260 40% 12%;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: 'Roboto Flex', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    line-height: 1.5;
+  }
+  h1, h2, h3, .brand {
+    font-family: 'Roboto Serif', 'Roboto Flex', serif;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  a { color: inherit; }
+  img { max-width: 100%; display: block; }
+  .container {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  /* ---------- header ---------- */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    backdrop-filter: blur(10px);
+    background: hsl(var(--background) / 0.75);
+    border-bottom: 1px solid hsl(var(--border));
+  }
+  header .inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.7rem 0;
+  }
+  .logo-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    text-decoration: none;
+    color: hsl(var(--foreground));
+  }
+  .logo-mark {
+    display: inline-block;
+    height: 26px;
+    width: 26px;
+    background-color: hsl(var(--primary));
+    -webkit-mask-image: url(./assets/logo.png);
+    mask-image: url(./assets/logo.png);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    flex-shrink: 0;
+  }
+  .logo-link .brand { font-size: 1.15rem; }
+  .badge {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: hsl(var(--accent) / 0.15);
+    color: hsl(var(--accent));
+    border: 1px solid hsl(var(--accent) / 0.3);
+    margin-left: 0.35rem;
+  }
+  .auth-buttons { display: flex; align-items: center; gap: 0.6rem; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 0.55rem 1.1rem;
+    border-radius: 999px;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+    white-space: nowrap;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+  .btn-primary:hover { opacity: 0.92; }
+  .btn-ghost { background: transparent; color: hsl(var(--foreground)); border-color: hsl(var(--border)); }
+  .btn-ghost:hover { background: hsl(var(--card)); }
+  .btn-lg { padding: 0.8rem 1.6rem; font-size: 1rem; }
+
+  /* ---------- hero ---------- */
+  .hero {
+    padding: 4.5rem 0 3.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: -20% -10% auto -10%;
+    height: 480px;
+    background: radial-gradient(60% 60% at 30% 20%, hsl(var(--primary) / 0.22), transparent 70%),
+                radial-gradient(50% 50% at 80% 10%, hsl(var(--accent) / 0.18), transparent 70%);
+    pointer-events: none;
+    z-index: -1;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 3rem;
+    align-items: center;
+  }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: hsl(var(--primary));
+    background: hsl(var(--primary) / 0.1);
+    border: 1px solid hsl(var(--primary) / 0.25);
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    margin-bottom: 1.1rem;
+  }
+  .hero h1 {
+    font-size: clamp(2.1rem, 4.2vw, 3.2rem);
+    line-height: 1.08;
+    margin: 0 0 1rem;
+  }
+  .hero p.lead {
+    font-size: 1.1rem;
+    color: hsl(var(--muted-foreground));
+    max-width: 42ch;
+    margin: 0 0 1.75rem;
+  }
+  .hero-cta { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .hero-note { font-size: 0.82rem; color: hsl(var(--muted-foreground)); }
+
+  .browser-frame {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: calc(var(--radius) + 6px);
+    box-shadow: 0 30px 60px -20px hsl(var(--shadow-color) / 0.35);
+    overflow: hidden;
+    transform: rotate(-1.2deg);
+  }
+  .browser-frame .bar {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid hsl(var(--border));
+    background: hsl(var(--background) / 0.6);
+  }
+  .browser-frame .dot { width: 9px; height: 9px; border-radius: 999px; background: hsl(var(--border)); }
+  .browser-frame .url {
+    margin-left: 0.5rem;
+    font-size: 0.72rem;
+    color: hsl(var(--muted-foreground));
+    background: hsl(var(--background));
+    border: 1px solid hsl(var(--border));
+    border-radius: 999px;
+    padding: 0.15rem 0.7rem;
+    flex: 1;
+  }
+  .browser-frame img { width: 100%; }
+
+  /* ---------- sections ---------- */
+  section { padding: 3.5rem 0; }
+  .section-head { text-align: center; max-width: 640px; margin: 0 auto 2.5rem; }
+  .section-head h2 { font-size: clamp(1.6rem, 3vw, 2.1rem); margin: 0 0 0.6rem; }
+  .section-head p { color: hsl(var(--muted-foreground)); margin: 0; }
+
+  .features {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  .feature-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    padding: 1.4rem;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+  .feature-card:hover { border-color: hsl(var(--primary) / 0.4); transform: translateY(-2px); }
+  .feature-icon {
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: hsl(var(--primary) / 0.12);
+    color: hsl(var(--primary));
+    margin-bottom: 0.85rem;
+    font-size: 1.2rem;
+  }
+  .feature-card h3 { font-size: 1rem; margin: 0 0 0.4rem; font-family: 'Roboto Flex', sans-serif; font-weight: 700; }
+  .feature-card p { font-size: 0.88rem; color: hsl(var(--muted-foreground)); margin: 0; }
+
+  .screens {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+  .screen-card { text-align: center; }
+  .screen-card .browser-frame { transform: none; margin-bottom: 1rem; }
+  .screen-card h3 { font-size: 1rem; margin: 0 0 0.3rem; }
+  .screen-card p { font-size: 0.85rem; color: hsl(var(--muted-foreground)); margin: 0; }
+
+  .steps {
+    counter-reset: step;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+  }
+  .step {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    padding: 1.2rem 1rem;
+  }
+  .step .num {
+    counter-increment: step;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 999px;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-bottom: 0.7rem;
+  }
+  .step .num::before { content: counter(step); }
+  .step h3 { font-size: 0.92rem; margin: 0 0 0.3rem; font-family: 'Roboto Flex', sans-serif; font-weight: 700; }
+  .step p { font-size: 0.82rem; color: hsl(var(--muted-foreground)); margin: 0; }
+
+  .plans {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  .plan-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    padding: 1.6rem;
+  }
+  .plan-card.highlight { border-color: hsl(var(--primary) / 0.5); box-shadow: 0 0 0 3px hsl(var(--primary) / 0.08); }
+  .plan-card .row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.5rem; }
+  .plan-card .row strong { font-size: 1.05rem; }
+  .plan-card .price { color: hsl(var(--primary)); font-weight: 700; }
+  .plan-card p { font-size: 0.88rem; color: hsl(var(--muted-foreground)); margin: 0; }
+
+  .cta-banner {
+    text-align: center;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.12), hsl(var(--accent) / 0.1));
+    border: 1px solid hsl(var(--border));
+    border-radius: calc(var(--radius) + 8px);
+    padding: 3rem 2rem;
+  }
+  .cta-banner h2 { margin: 0 0 0.6rem; font-size: clamp(1.5rem, 3vw, 2rem); }
+  .cta-banner p { color: hsl(var(--muted-foreground)); margin: 0 0 1.5rem; }
+  .cta-banner .hero-cta { justify-content: center; }
+
+  footer {
+    border-top: 1px solid hsl(var(--border));
+    padding: 2rem 0;
+    margin-top: 1rem;
+  }
+  footer .inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.82rem;
+    color: hsl(var(--muted-foreground));
+  }
+  footer a { text-decoration: none; }
+  footer a:hover { color: hsl(var(--primary)); }
+  footer .links { display: flex; gap: 1.2rem; flex-wrap: wrap; }
+
+  @media (max-width: 900px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .hero .browser-frame { max-width: 420px; margin: 0 auto; }
+    .features { grid-template-columns: repeat(2, 1fr); }
+    .steps { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .features { grid-template-columns: 1fr; }
+    .steps { grid-template-columns: 1fr; }
+    .screens { grid-template-columns: 1fr; }
+    .plans { grid-template-columns: 1fr; }
+    header nav.auth-buttons .btn span.long { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container inner">
+    <a class="logo-link" href="#top">
+      <span class="logo-mark" aria-hidden="true"></span>
+      <span class="brand">Visual Astro</span>
+      <span class="badge">beta</span>
+    </a>
+    <nav class="auth-buttons">
+      <a class="btn btn-ghost" href="https://japysoft.bombol.space/auth">Log in</a>
+      <a class="btn btn-primary" href="https://japysoft.bombol.space/auth?mode=signup">Sign up free</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <span class="eyebrow">★ By JapySoft</span>
+        <h1>Your variable-star observing logbook, reimagined.</h1>
+        <p class="lead">
+          Visual Astro is a modern, web-based replacement for the classic
+          <code>Reducciones.ods</code> spreadsheet. Log sessions, estimate magnitudes with the
+          Nijland–Blažko method, plan your night, and export straight to
+          <strong>VSNET</strong> and <strong>AAVSO</strong> — all from your browser.
+        </p>
+        <div class="hero-cta">
+          <a class="btn btn-primary btn-lg" href="https://japysoft.bombol.space/auth?mode=signup">Create free account</a>
+          <a class="btn btn-ghost btn-lg" href="https://japysoft.bombol.space/auth">I already have an account</a>
+        </div>
+        <p class="hero-note">Free plan included — no credit card required.</p>
+      </div>
+      <div class="browser-frame">
+        <div class="bar">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="url">japysoft.bombol.space/auth</span>
+        </div>
+        <img src="./assets/screenshot-login.png" alt="Visual Astro sign-in screen" />
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="container">
+      <div class="section-head">
+        <h2>Everything a visual observer needs</h2>
+        <p>One tool for the whole workflow — from a fresh session to a finished VSNET/AAVSO export.</p>
+      </div>
+      <div class="features">
+        <div class="feature-card">
+          <div class="feature-icon">🔭</div>
+          <h3>Sessions</h3>
+          <p>Start a new observing session in one click — blank, copied from your last session, or from a favorite with times reset.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">✦</div>
+          <h3>Personal catalog</h3>
+          <p>Manage your own catalog of variable stars and comparison sequences, organized by constellation.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⏱</div>
+          <h3>Nijland–Blažko method</h3>
+          <p>Enter A/Paso/B step estimates and UT times; magnitudes are computed for you automatically.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🌙</div>
+          <h3>Pozor — night planning</h3>
+          <p>Altitude charts, night charts, eclipsing-variable minima predictions, a CCD target catalog, and an observability journal.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">▦</div>
+          <h3>Prom reductions table</h3>
+          <p>A spreadsheet-style reductions view in the spirit of the original <code>Reducciones.ods</code>.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📈</div>
+          <h3>Graphs</h3>
+          <p>Visualize magnitude history and trends across your observing sessions at a glance.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⇩</div>
+          <h3>VSNET / AAVSO exports</h3>
+          <p>Generate ready-to-submit VSNET/AAVSO Extended exports, PDF paper templates, and JSON/XLSX data dumps.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">▤</div>
+          <h3>Paper OCR</h3>
+          <p>Photograph a handwritten observation sheet and let AI fill in stars, A/Paso/B values, and UT times for you.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">✎</div>
+          <h3>Multi-language UI</h3>
+          <p>Available in eight interface languages, so observers around the world feel at home.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how-it-works">
+    <div class="container">
+      <div class="section-head">
+        <h2>How it works</h2>
+        <p>From clear sky to submitted data in a few steps.</p>
+      </div>
+      <div class="steps">
+        <div class="step"><span class="num"></span><h3>Sign up</h3><p>Create a free account — your personal catalog is seeded automatically.</p></div>
+        <div class="step"><span class="num"></span><h3>Start a session</h3><p>Open a new observing session for tonight, in one click.</p></div>
+        <div class="step"><span class="num"></span><h3>Log estimates</h3><p>Record A/Paso/B step values and UT times for each star.</p></div>
+        <div class="step"><span class="num"></span><h3>Review magnitudes</h3><p>Magnitudes are computed automatically as you type.</p></div>
+        <div class="step"><span class="num"></span><h3>Export</h3><p>Send your results to VSNET/AAVSO, or export PDF/JSON/XLSX.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="screenshots">
+    <div class="container">
+      <div class="section-head">
+        <h2>A quick look</h2>
+        <p>Real screens from the app — sign in or create an account in seconds.</p>
+      </div>
+      <div class="screens">
+        <div class="screen-card">
+          <div class="browser-frame">
+            <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">japysoft.bombol.space/auth</span></div>
+            <img src="./assets/screenshot-login.png" alt="Log in screen of Visual Astro" />
+          </div>
+          <h3>Log in</h3>
+          <p>Email &amp; password, or continue with Google.</p>
+        </div>
+        <div class="screen-card">
+          <div class="browser-frame">
+            <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">japysoft.bombol.space/auth?mode=signup</span></div>
+            <img src="./assets/screenshot-signup.png" alt="Sign up screen of Visual Astro" />
+          </div>
+          <h3>Sign up</h3>
+          <p>Free forever — your catalog is set up for you automatically.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="plans">
+    <div class="container">
+      <div class="section-head">
+        <h2>Plans</h2>
+        <p>Every observer starts on a generous free plan.</p>
+      </div>
+      <div class="plans">
+        <div class="plan-card">
+          <div class="row"><strong>Free</strong><span class="price">0 €</span></div>
+          <p>All core features, 0.4 GB storage, and 4 AI paper scans per month — for everyone, forever.</p>
+        </div>
+        <div class="plan-card highlight">
+          <div class="row"><strong>Enterprise</strong><span class="price">from 0 €</span></div>
+          <p>Negotiable, higher limits for observatories and teams — reach out to discuss what you need.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="get-started">
+    <div class="container">
+      <div class="cta-banner">
+        <h2>Ready to log tonight's session?</h2>
+        <p>Create your free Visual Astro account and start observing in minutes.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary btn-lg" href="https://japysoft.bombol.space/auth?mode=signup">Sign up free</a>
+          <a class="btn btn-ghost btn-lg" href="https://japysoft.bombol.space/auth">Log in</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="container inner">
+    <span>© <span id="year"></span> JapySoft — Visual Astro. Licensed under AGPL-3.0.</span>
+    <nav class="links">
+      <a href="https://github.com/jan-tdy/visual-astro">GitHub</a>
+      <a href="https://github.com/jan-tdy/visual-astro/blob/main/LICENSE">License</a>
+      <a href="https://vsnet.kusastro.kyoto-u.ac.jp/">VSNET</a>
+      <a href="https://www.aavso.org/">AAVSO</a>
+      <a href="https://japysoft.bombol.space/auth">Log in</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+
+</body>
+</html>

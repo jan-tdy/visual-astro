@@ -95,6 +95,14 @@ supabase/
   migrations/  # database schema migrations
 ```
 
+## Landing page (GitHub Pages)
+
+The `docs/` directory holds a static, self-contained landing page (no build step,
+no Tolgee) describing the app, with Log in / Sign up links to
+[japysoft.bombol.space](https://japysoft.bombol.space). To publish it, enable
+GitHub Pages in the repo settings with source **Deploy from a branch** →
+`main` / `/docs`.
+
 ## Backend (Supabase)
 
 The `supabase/` directory contains the database migrations and Edge Functions backing
