@@ -17,6 +17,7 @@ import Pozor from "./pages/Pozor.tsx";
 import Graphs from "./pages/Graphs.tsx";
 import Settings from "./pages/Settings.tsx";
 import Tools from "./pages/Tools.tsx";
+import Info from "./pages/Info.tsx";
 import OAuthConsent from "./pages/OAuthConsent.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { ProtectedRoute } from "./components/app/ProtectedRoute.tsx";
@@ -36,6 +37,7 @@ const App = () => (
           <ErrorBoundary>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/info" element={<Info />} />
             <Route path="/" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
             <Route path="/session/:id" element={<ProtectedRoute><SessionEditor /></ProtectedRoute>} />
             <Route path="/catalog" element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
