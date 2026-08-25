@@ -40,6 +40,8 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/info" element={<Info />} />
+            <Route path="/julian-date-converter" element={<JulianDateConverterPage />} />
+
             <Route path="/" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
             <Route path="/session/:id" element={<ProtectedRoute><SessionEditor /></ProtectedRoute>} />
             <Route path="/catalog" element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
