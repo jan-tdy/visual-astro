@@ -197,6 +197,7 @@ export default function Sessions() {
                   <Button
                     variant="ghost"
                     size="icon"
+                    aria-label={s.is_favorite ? t("sessions.favoriteRemove") : t("sessions.favoriteAdd")}
                     title={s.is_favorite ? t("sessions.favoriteRemove") : t("sessions.favoriteAdd")}
                     onClick={() => toggleFavorite(s.id, !!s.is_favorite)}
                   >
@@ -209,7 +210,8 @@ export default function Sessions() {
                   {!s.is_favorite && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" title={t("common.delete")}>
+                        <Button variant="ghost" size="icon" aria-label={t("common.delete")} title={t("common.delete")}>
+
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </AlertDialogTrigger>

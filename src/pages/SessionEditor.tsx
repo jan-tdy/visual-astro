@@ -2028,7 +2028,9 @@ export default function SessionEditor() {
                               variant="ghost"
                               size="icon"
                               className="h-6 w-6"
+                              aria-label={t("editor.addRow")}
                               title={t("editor.addRow")}
+
                               onClick={() => addExtraRow(s.id)}
                               disabled={extras.length >= 5}
                             >
@@ -2072,7 +2074,9 @@ export default function SessionEditor() {
                                 {emag.value ?? <span className="text-muted-foreground">—</span>}
                               </td>
                               <td className="px-1 py-1 text-right">
-                                 <Button variant="ghost" size="icon" className="h-6 w-6" title={t("editor.removeRow")} onClick={() => removeExtra(s.id, ei)}>
+                                 <Button variant="ghost" size="icon" className="h-6 w-6" aria-label={t("editor.removeRow")} title={t("editor.removeRow")} onClick={() => removeExtra(s.id, ei)}>
+
+
                                   <X className="h-3.5 w-3.5" />
                                 </Button>
                               </td>
