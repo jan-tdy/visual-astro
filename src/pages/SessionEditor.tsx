@@ -2028,7 +2028,9 @@ export default function SessionEditor() {
                               variant="ghost"
                               size="icon"
                               className="h-6 w-6"
+                              aria-label={t("editor.addRow")}
                               title={t("editor.addRow")}
+
                               onClick={() => addExtraRow(s.id)}
                               disabled={extras.length >= 5}
                             >
