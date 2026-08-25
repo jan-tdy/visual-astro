@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { applyUtTimeToDate, computeMagnitude, dateToJD, parseLimitMagnitude } from "@/lib/astro";
 import { getPrefs } from "@/hooks/usePrefs";
 import { useI18n } from "@/hooks/useI18n";
+import { fetchAllRows } from "@/lib/supabaseFetchAll";
 import {
   ResponsiveContainer, ComposedChart, Line, BarChart, Bar, Scatter,
   XAxis, YAxis, Tooltip, CartesianGrid,
@@ -138,29 +139,28 @@ export default function Graphs() {
     if (!user) return;
     (async () => {
       setLoading(true);
-      // Paginated fetch — PostgREST caps single requests at ~1000 rows.
-      const fetchAll = async <T,>(table: string, cols: string): Promise<T[]> => {
-        const pageSize = 1000;
-        const all: T[] = [];
-        for (let from = 0; ; from += pageSize) {
-          const { data, error } = await supabase
-            .from(table as any)
-            .select(cols)
-            .range(from, from + pageSize - 1);
-          if (error || !data) break;
-          all.push(...(data as T[]));
-          if (data.length < pageSize) break;
-        }
-        return all;
-      };
-      const [o, s, se] = await Promise.all([
-        fetchAll<ObsRow>("observations", "id,session_id,star_id,a,b,pasos_a,pasos_b,limit_value,note,ut_time"),
-        fetchAll<StarRow>("stars", "id,name,constellation"),
-        fetchAll<SessionRow>("sessions", "id,observed_at_utc"),
+      // Paginated fetch — PostgREST caps single requests at ~1000 rows. Each page
+      // must be ordered by a stable column, or Postgres can return rows in a
+      // different relative order between requests, silently duplicating or
+      // dropping rows once a table crosses the page size.
+      const [obsRes, starsRes, sessionsRes] = await Promise.all([
+        fetchAllRows<ObsRow>((from, to) =>
+          supabase
+            .from("observations")
+            .select("id,session_id,star_id,a,b,pasos_a,pasos_b,limit_value,note,ut_time")
+            .order("id")
+            .range(from, to),
+        ),
+        fetchAllRows<StarRow>((from, to) =>
+          supabase.from("stars").select("id,name,constellation").order("id").range(from, to),
+        ),
+        fetchAllRows<SessionRow>((from, to) =>
+          supabase.from("sessions").select("id,observed_at_utc").order("id").range(from, to),
+        ),
       ]);
-      setObs(o);
-      setStars([...s].sort((x, y) => x.name.localeCompare(y.name)));
-      setSessions(se);
+      setObs(obsRes.data);
+      setStars([...starsRes.data].sort((x, y) => x.name.localeCompare(y.name)));
+      setSessions(sessionsRes.data);
       setLoading(false);
     })();
   }, [user?.id]);
@@ -612,7 +612,7 @@ export default function Graphs() {
                       <Download className="h-4 w-4 mr-1" /> PNG
                     </Button>
                   </div>
-                  <div ref={starsRef} className="w-full" style={{ height: Math.max(240, perStar.length * 22) }}>
+                  <div ref={starsRef} className="w-full" style={{ height: Math.max(240, Math.min(perStar.length, 30) * 22) }}>
                     <ResponsiveContainer>
                       <BarChart data={perStar.slice(0, 30)} layout="vertical" margin={{ top: 5, right: 20, left: 60, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
