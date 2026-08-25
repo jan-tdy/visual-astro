@@ -173,7 +173,7 @@ export default function Tools() {
     <div className="min-h-screen bg-background">
       <AppHeader />
       <main className="container mx-auto px-4 py-6 max-w-6xl">
-        <h1 className="text-2xl font-semibold mb-1">{t("tools.title")}</h1>
+        <h1 className="text-2xl font-semibold mb-1">{t("tools.title")} — Visual Astro</h1>
         <p className="text-sm text-muted-foreground mb-6">{t("tools.subtitle")}</p>
 
         <div className="columns-1 lg:columns-2 xl:columns-3 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
