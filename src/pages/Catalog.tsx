@@ -282,15 +282,18 @@ export default function Catalog() {
                     <td className="px-3 py-2 font-mono text-xs">{s.aavso_code}</td>
                     <td className="px-3 py-2 font-mono text-xs">{s.chart_id}</td>
                     <td className="px-3 py-2 text-right">
-                      <Button variant="ghost" size="icon" disabled={!canUp} title={t("catalog.moveUp")} onClick={(e) => { e.stopPropagation(); moveStar(s, -1); }}>
+                      <Button variant="ghost" size="icon" disabled={!canUp} aria-label={t("catalog.moveUp")} title={t("catalog.moveUp")} onClick={(e) => { e.stopPropagation(); moveStar(s, -1); }}>
                         <ArrowUp className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" disabled={!canDown} title={t("catalog.moveDown")} onClick={(e) => { e.stopPropagation(); moveStar(s, 1); }}>
+                      <Button variant="ghost" size="icon" disabled={!canDown} aria-label={t("catalog.moveDown")} title={t("catalog.moveDown")} onClick={(e) => { e.stopPropagation(); moveStar(s, 1); }}>
                         <ArrowDown className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
+                        aria-label={t("common.delete")}
+                        title={t("common.delete")}
+
                         onClick={(e) => {
                           e.stopPropagation();
                           if (getPrefs().confirmDelete) setConfirmDelete(s);
