@@ -174,10 +174,14 @@ export default function Graphs() {
     [obs]
   );
 
+  // Rows without a UT time aren't valid, timed estimates — the night chart already
+  // excludes them from its counts, and the other aggregates below now match that.
+  const timedObs = useMemo(() => realObs.filter(o => o.ut_time), [realObs]);
+
   // Per-star counts
   const perStar = useMemo(() => {
     const m = new Map<string, number>();
-    realObs.forEach(o => m.set(o.star_id, (m.get(o.star_id) ?? 0) + 1));
+    timedObs.forEach(o => m.set(o.star_id, (m.get(o.star_id) ?? 0) + 1));
     return Array.from(m.entries())
       .map(([id, count]) => ({
         id,
@@ -186,12 +190,12 @@ export default function Graphs() {
         count,
       }))
       .sort((a, b) => b.count - a.count);
-  }, [realObs, starById]);
+  }, [timedObs, starById]);
 
   // Observations per month
   const perMonth = useMemo(() => {
     const m = new Map<string, number>();
-    realObs.forEach(o => {
+    timedObs.forEach(o => {
       const dt = sessionById[o.session_id]?.observed_at_utc;
       if (!dt) return;
       const d = new Date(dt);
@@ -201,7 +205,7 @@ export default function Graphs() {
     return Array.from(m.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, count]) => ({ month, count }));
-  }, [realObs, sessionById]);
+  }, [timedObs, sessionById]);
 
   // Sessions per month (distinct session ids)
   const sessionsPerMonth = useMemo(() => {
@@ -222,14 +226,14 @@ export default function Graphs() {
   // Per-constellation
   const perConstellation = useMemo(() => {
     const m = new Map<string, number>();
-    realObs.forEach(o => {
+    timedObs.forEach(o => {
       const c = starById[o.star_id]?.constellation ?? "?";
       m.set(c, (m.get(c) ?? 0) + 1);
     });
     return Array.from(m.entries())
       .map(([constellation, count]) => ({ constellation, count }))
       .sort((a, b) => b.count - a.count);
-  }, [realObs, starById]);
+  }, [timedObs, starById]);
 
   // Default selected star = first one observed
   useEffect(() => {
@@ -240,7 +244,7 @@ export default function Graphs() {
   // same convention as perMonth/sessionsPerMonth above, keyed for the year heatmap.
   const dailyCounts = useMemo(() => {
     const m = new Map<string, number>();
-    realObs.forEach(o => {
+    timedObs.forEach(o => {
       const dt = sessionById[o.session_id]?.observed_at_utc;
       if (!dt) return;
       const d = new Date(dt);
@@ -249,7 +253,7 @@ export default function Graphs() {
       m.set(key, (m.get(key) ?? 0) + 1);
     });
     return m;
-  }, [realObs, sessionById]);
+  }, [timedObs, sessionById]);
 
   const yearsWithData = useMemo(() => {
     const ys = new Set<number>();
@@ -297,7 +301,7 @@ export default function Graphs() {
     const starName = starById[selectedStar]?.name;
     const compLabelThreshold = getPrefs().compLabelThreshold;
     const points: { jd: number; date: string; mag: number }[] = [];
-    realObs
+    timedObs
       .filter(o => o.star_id === selectedStar)
       .forEach(o => {
         const dt = sessionById[o.session_id]?.observed_at_utc;
@@ -306,7 +310,7 @@ export default function Graphs() {
         if (numeric == null) return;
         const d = new Date(dt);
         if (isNaN(d.getTime())) return;
-        // Overlay UT time on the session date when available (session dt is often 18:00 placeholder).
+        // Overlay UT time on the session date (session dt is often just an 18:00 placeholder).
         applyUtTimeToDate(d, o.ut_time);
         if (!Number.isFinite(numeric)) return;
         points.push({
@@ -316,14 +320,14 @@ export default function Graphs() {
         });
       });
     return points.sort((a, b) => a.jd - b.jd);
-  }, [realObs, selectedStar, starById, sessionById]);
+  }, [timedObs, selectedStar, starById, sessionById]);
 
   // "Fainter than" (upper-limit) observations for the selected star — the star wasn't
   // seen even at this comparison magnitude, so plotted separately from real detections.
   const limitCurve = useMemo(() => {
     if (!selectedStar) return [];
     const points: { jd: number; date: string; mag: number }[] = [];
-    realObs
+    timedObs
       .filter(o => o.star_id === selectedStar && o.limit_value && o.limit_value.trim())
       .forEach(o => {
         const dt = sessionById[o.session_id]?.observed_at_utc;
@@ -340,7 +344,7 @@ export default function Graphs() {
         });
       });
     return points.sort((a, b) => a.jd - b.jd);
-  }, [realObs, selectedStar, sessionById]);
+  }, [timedObs, selectedStar, sessionById]);
 
   // Basic descriptive statistics for the selected star's detections.
   const curveStats = useMemo(() => {
@@ -388,7 +392,7 @@ export default function Graphs() {
 
   const curveYTicks = useMemo(() => evenTicks(curveYDomain[0], curveYDomain[1]), [curveYDomain]);
 
-  const totalObs = realObs.length;
+  const totalObs = timedObs.length;
   const totalStars = perStar.length;
   const totalSessions = sessions.length;
 
