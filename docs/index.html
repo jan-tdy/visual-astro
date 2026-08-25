@@ -4,7 +4,16 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Visual Astro — Visual Observation Log for Variable Star Observers</title>
-<meta name="description" content="A modern, web-based replacement for the classic Reducciones.ods spreadsheet used by visual variable-star observers. Log sessions, estimate magnitudes, plan your night, and export straight to VSNET/AAVSO." />
+<meta name="description" content="A modern, web-based tool for visual observers of variable stars. Log sessions, estimate magnitudes, plan your night, and export straight to VSNET/AAVSO." />
+<meta property="og:title" content="Visual Astro" />
+<meta property="og:description" content="A modern, web-based tool for visual observers of variable stars." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://jan-tdy.github.io/visual-astro/" />
+<meta property="og:image" content="https://jan-tdy.github.io/visual-astro/assets/Visual%20Astro.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Visual Astro" />
+<meta name="twitter:description" content="A modern, web-based tool for visual observers of variable stars." />
+<meta name="twitter:image" content="https://jan-tdy.github.io/visual-astro/assets/Visual%20Astro.png" />
 <link rel="icon" href="./assets/favicon.ico" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -85,18 +94,10 @@
     color: hsl(var(--foreground));
   }
   .logo-mark {
-    display: inline-block;
-    height: 26px;
-    width: 26px;
-    background-color: hsl(var(--primary));
-    -webkit-mask-image: url(./assets/logo.png);
-    mask-image: url(./assets/logo.png);
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    mask-position: center;
-    -webkit-mask-size: contain;
-    mask-size: contain;
+    display: block;
+    height: 32px;
+    width: 32px;
+    border-radius: 9px;
     flex-shrink: 0;
   }
   .logo-link .brand { font-size: 1.15rem; }
@@ -351,7 +352,7 @@
 <header>
   <div class="container inner">
     <a class="logo-link" href="#top">
-      <span class="logo-mark" aria-hidden="true"></span>
+      <img class="logo-mark" src="./assets/Visual%20Astro.png" alt="" aria-hidden="true" />
       <span class="brand">Visual Astro</span>
       <span class="badge">beta</span>
     </a>
