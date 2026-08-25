@@ -81,15 +81,23 @@ export default function Auth() {
         <div className="flex justify-end">
           <button
             onClick={() => setLang(lang === "sk" ? "en" : "sk")}
+            aria-label={lang === "sk" ? "Switch language to English" : "Prepnúť jazyk na slovenčinu"}
+            title={lang === "sk" ? "Switch language to English" : "Prepnúť jazyk na slovenčinu"}
             className="text-[11px] font-semibold uppercase tracking-wider px-2 py-1 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           >
             {lang === "sk" ? "SK" : "EN"}
           </button>
         </div>
         <div className="text-center">
-          <div className="text-3xl mb-1 text-primary">✦</div>
-          <h1 className="text-xl font-semibold">{t("auth.title")}</h1>
+          <div className="text-3xl mb-1 text-primary" aria-hidden>✦</div>
+          <h1 className="text-xl font-semibold">
+            {t("auth.title")}
+            <span className="block text-sm font-normal text-muted-foreground">
+              Variable star observation logbook
+            </span>
+          </h1>
           <p className="text-sm text-muted-foreground">{t("auth.subtitle")}</p>
+
         </div>
         <form onSubmit={submit} className="space-y-3">
           <div>
