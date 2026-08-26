@@ -27,6 +27,9 @@ star magnitudes with the Nijland-Blazhko method, and export your results straigh
   (`supabase/functions/mcp`) so AI assistants can read/write sessions, stars, CCD targets,
   and more on the observer's behalf.
 
+## Roadmap
+We keep track of bigger ideas/bugs here: https://github.com/users/jan-tdy/projects/6
+
 ## Tech stack
 
 - [Vite](https://vitejs.dev/) + [React](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
