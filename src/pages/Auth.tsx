@@ -77,6 +77,24 @@ export default function Auth() {
     }
   };
 
+  const signInWithApple = async () => {
+    setAppleBusy(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("apple", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast.error(result.error.message ?? t("auth.error"));
+        return;
+      }
+      if (result.redirected) return;
+    } catch (err: any) {
+      toast.error(err?.message ?? t("auth.error"));
+    } finally {
+      setAppleBusy(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <Card className="w-full max-w-sm p-6 space-y-5">
