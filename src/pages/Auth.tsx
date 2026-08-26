@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useI18n } from "@/hooks/useI18n";
 import { lovable } from "@/integrations/lovable/index";
+import { Apple } from "lucide-react";
 
 export default function Auth() {
   const { user } = useAuth();
