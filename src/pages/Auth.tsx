@@ -157,6 +157,16 @@ export default function Auth() {
           </svg>
           {t("auth.google") === "auth.google" ? "Continue with Google" : t("auth.google")}
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          disabled={appleBusy}
+          onClick={signInWithApple}
+        >
+          <Apple className="h-4 w-4 mr-2" aria-hidden />
+          {t("auth.apple") === "auth.apple" ? "Continue with Apple" : t("auth.apple")}
+        </Button>
         <button
           type="button"
           onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
