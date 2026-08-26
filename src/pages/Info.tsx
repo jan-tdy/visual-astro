@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  Telescope, Sparkles, Clock, Moon, Table2, BarChart3, Download, ScanLine, Languages, Bot,
+  Telescope, Sparkles, Clock, Moon, Table2, BarChart3, Download, ScanLine, Languages, Bot, Github,
 } from "lucide-react";
 import coverUrl from "@/assets/visual-astro-cover.png";
 import pozorShotUrl from "@/assets/info-screenshot-pozor.png";
@@ -291,9 +291,36 @@ export default function Info() {
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Negotiable, higher limits for observatories and teams — reach out to discuss what you need.
-                </p>
+              </p>
               </Card>
             </div>
+          </div>
+        </section>
+
+        <section className="py-14">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <Card className="p-8 sm:p-10 border-border bg-card">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+                <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-primary/10 text-primary shrink-0">
+                  <Github className="h-6 w-6" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold mb-1">Feature requests &amp; issues</h2>
+                  <p className="text-muted-foreground max-w-2xl">
+                    Found a bug or have an idea for a new feature? Please open an issue on GitHub so we can track and discuss it together.
+                  </p>
+                </div>
+                <Button asChild variant="outline" className="rounded-full shrink-0">
+                  <a
+                    href="https://github.com/jan-tdy/visual-astro/issues"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Open GitHub Issues
+                  </a>
+                </Button>
+              </div>
+            </Card>
           </div>
         </section>
 
