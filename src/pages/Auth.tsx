@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useI18n } from "@/hooks/useI18n";
 import { lovable } from "@/integrations/lovable/index";
+import { Apple } from "lucide-react";
 
 export default function Auth() {
   const { user } = useAuth();
@@ -24,6 +25,7 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
+  const [appleBusy, setAppleBusy] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -72,6 +74,24 @@ export default function Auth() {
       toast.error(err?.message ?? t("auth.error"));
     } finally {
       setGoogleBusy(false);
+    }
+  };
+
+  const signInWithApple = async () => {
+    setAppleBusy(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("apple", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast.error(result.error.message ?? t("auth.error"));
+        return;
+      }
+      if (result.redirected) return;
+    } catch (err: any) {
+      toast.error(err?.message ?? t("auth.error"));
+    } finally {
+      setAppleBusy(false);
     }
   };
 
@@ -136,6 +156,16 @@ export default function Auth() {
             <path fill="#34A853" d="M24 47.5c6.2 0 11.5-2 15.5-5.6l-7.6-5.9c-2.1 1.4-4.8 2.3-7.9 2.3-6.4 0-11.7-4.2-13.6-10.2l-7.8 6.1C6.5 42.2 14.6 47.5 24 47.5z"/>
           </svg>
           {t("auth.google") === "auth.google" ? "Continue with Google" : t("auth.google")}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          disabled={appleBusy}
+          onClick={signInWithApple}
+        >
+          <Apple className="h-4 w-4 mr-2" aria-hidden />
+          {t("auth.apple") === "auth.apple" ? "Continue with Apple" : t("auth.apple")}
         </Button>
         <button
           type="button"
