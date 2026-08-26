@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  Telescope, Sparkles, Clock, Moon, Table2, BarChart3, Download, ScanLine, Languages, Bot,
+  Telescope, Sparkles, Clock, Moon, Table2, BarChart3, Download, ScanLine, Languages, Bot, Github,
 } from "lucide-react";
 import coverUrl from "@/assets/visual-astro-cover.png";
 import pozorShotUrl from "@/assets/info-screenshot-pozor.png";
