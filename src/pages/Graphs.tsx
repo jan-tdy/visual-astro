@@ -20,6 +20,7 @@ import {
 } from "recharts";
 import { YearContributionGraph } from "@/components/graphs/YearContributionGraph";
 import { NightContributionGraph, type NightColumn } from "@/components/graphs/NightContributionGraph";
+import { LightCurveComparator } from "@/components/graphs/LightCurveComparator";
 
 type ObsRow = {
   id: string;
@@ -427,6 +428,7 @@ export default function Graphs() {
             <Tabs defaultValue="curve" className="w-full">
               <TabsList className="mb-4 flex-wrap h-auto">
                 <TabsTrigger value="curve">{t("graphs.tab.curve")}</TabsTrigger>
+                <TabsTrigger value="compare">{t("graphs.tab.compare")}</TabsTrigger>
                 <TabsTrigger value="time">{t("graphs.tab.time")}</TabsTrigger>
                 <TabsTrigger value="year">{t("graphs.tab.year")}</TabsTrigger>
                 <TabsTrigger value="night">{t("graphs.tab.night")}</TabsTrigger>
@@ -551,6 +553,10 @@ export default function Graphs() {
                     </>
                   )}
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="compare">
+                <LightCurveComparator />
               </TabsContent>
 
               <TabsContent value="time">
