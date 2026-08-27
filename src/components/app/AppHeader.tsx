@@ -82,9 +82,9 @@ export function AppHeader() {
           {link("/catalog", t("nav.catalog"), BookOpen)}
           {link("/prom", t("nav.prom"), Sparkles)}
           {link("/graphs", t("nav.graphs"), BarChart3)}
-          {link("/compare", t("nav.compare"), GitCompare)}
           <div className="h-5 w-px bg-border mx-1 shrink-0" aria-hidden />
           {link("/pozor", t("nav.pozor"), Telescope)}
+          {link("/compare", t("nav.compare"), GitCompare)}
           {link("/tools", t("nav.tools"), Wrench)}
           <div className="h-5 w-px bg-border mx-1 shrink-0" aria-hidden />
           {link("/settings", t("nav.settings"), SettingsIcon)}
@@ -127,9 +127,9 @@ export function AppHeader() {
                 {link("/catalog", t("nav.catalog"), BookOpen)}
                 {link("/prom", t("nav.prom"), Sparkles)}
                 {link("/graphs", t("nav.graphs"), BarChart3)}
-                {link("/compare", t("nav.compare"), GitCompare)}
                 <div className="h-px bg-border my-1" aria-hidden />
                 {link("/pozor", t("nav.pozor"), Telescope)}
+                {link("/compare", t("nav.compare"), GitCompare)}
                 {link("/tools", t("nav.tools"), Wrench)}
                 <div className="h-px bg-border my-1" aria-hidden />
                 {link("/settings", t("nav.settings"), SettingsIcon)}
