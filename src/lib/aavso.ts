@@ -7,7 +7,16 @@ export type AavsoObservation = {
   mag: number;
   band: string;
   fainterThan: boolean;
+  /** Observer's full name when AAVSO reports one, otherwise their observer code. */
+  observer: string;
+  /** e.g. "Visual", "CCD", "DSLR", "PEP"... */
+  obsType: string;
 };
+
+// AAVSO's own submission picklist (view=api.bands, Picklist=1), plus "Vis." —
+// the single most common band for this app's visual observers, which AAVSO
+// itself flags Picklist=0 because it has its own separate visual-report form.
+export const AAVSO_BANDS = ["Vis.", "V", "B", "R", "I", "U", "CV", "CR", "TG", "TB", "TR"];
 
 const AAVSO_ENDPOINT = "https://vsx.aavso.org/index.php";
 // A three-character delimiter is what AAVSO's own docs recommend — a plain
@@ -24,8 +33,12 @@ export function parseAavsoDelim(text: string): AavsoObservation[] {
   const magIdx = header.indexOf("mag");
   const bandIdx = header.indexOf("band");
   const fainterIdx = header.indexOf("fainterThan");
+  const byIdx = header.indexOf("by");
+  const obsNameIdx = header.indexOf("obsName");
+  const obsTypeIdx = header.indexOf("obsType");
   if (jdIdx === -1 || magIdx === -1) return [];
 
+  const col = (cols: string[], idx: number) => (idx >= 0 ? (cols[idx] ?? "").trim() : "");
   const out: AavsoObservation[] = [];
   for (const line of lines.slice(1)) {
     const cols = line.split(DELIMITER);
@@ -35,8 +48,10 @@ export function parseAavsoDelim(text: string): AavsoObservation[] {
     out.push({
       jd,
       mag,
-      band: bandIdx >= 0 ? (cols[bandIdx] ?? "").trim() : "",
+      band: col(cols, bandIdx),
       fainterThan: fainterIdx >= 0 ? cols[fainterIdx]?.trim() === "1" : false,
+      observer: col(cols, obsNameIdx) || col(cols, byIdx),
+      obsType: col(cols, obsTypeIdx),
     });
   }
   return out.sort((a, b) => a.jd - b.jd);
@@ -47,6 +62,7 @@ export async function fetchAavsoObservations(
   ident: string,
   fromJd: number,
   toJd: number,
+  band?: string,
 ): Promise<AavsoObservation[]> {
   const params = new URLSearchParams({
     view: "api.delim",
@@ -55,6 +71,7 @@ export async function fetchAavsoObservations(
     tojd: String(toJd),
     delimiter: DELIMITER,
   });
+  if (band) params.set("band", band);
   const res = await fetch(`${AAVSO_ENDPOINT}?${params.toString()}`);
   if (!res.ok) throw new Error(`AAVSO request failed (${res.status})`);
   return parseAavsoDelim(await res.text());
