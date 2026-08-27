@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import {
   LogOut, BookOpen, Settings as SettingsIcon, ListChecks, Sun, Moon, Menu,
-  Sparkles, BarChart3, Wrench, Telescope,
+  Sparkles, BarChart3, Wrench, Telescope, GitCompare,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
@@ -82,6 +82,7 @@ export function AppHeader() {
           {link("/catalog", t("nav.catalog"), BookOpen)}
           {link("/prom", t("nav.prom"), Sparkles)}
           {link("/graphs", t("nav.graphs"), BarChart3)}
+          {link("/compare", t("nav.compare"), GitCompare)}
           <div className="h-5 w-px bg-border mx-1 shrink-0" aria-hidden />
           {link("/pozor", t("nav.pozor"), Telescope)}
           {link("/tools", t("nav.tools"), Wrench)}
@@ -126,6 +127,7 @@ export function AppHeader() {
                 {link("/catalog", t("nav.catalog"), BookOpen)}
                 {link("/prom", t("nav.prom"), Sparkles)}
                 {link("/graphs", t("nav.graphs"), BarChart3)}
+                {link("/compare", t("nav.compare"), GitCompare)}
                 <div className="h-px bg-border my-1" aria-hidden />
                 {link("/pozor", t("nav.pozor"), Telescope)}
                 {link("/tools", t("nav.tools"), Wrench)}
