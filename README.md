@@ -7,6 +7,8 @@ visual variable-star observers. Visual Astro helps you log observing sessions, e
 star magnitudes with the Nijland-Blazhko method, and export your results straight to
 [VSNET](https://vsnet.kusastro.kyoto-u.ac.jp/) and [AAVSO](https://www.aavso.org/).
 
+**If you found this useful, please give this repo a star!** **Also check out my other repos!**
+
 ## Features
 
 - **Sessions** — record observing sessions and individual magnitude estimates.
