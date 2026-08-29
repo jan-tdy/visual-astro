@@ -42,6 +42,10 @@ We keep track of bigger ideas/bugs here: https://github.com/users/jan-tdy/projec
 - [TanStack Query](https://tanstack.com/query) for data fetching/caching
 - [Vitest](https://vitest.dev/) + Testing Library for tests
 
+<img width="1866" height="915" alt="image" src="https://github.com/user-attachments/assets/133bbf5f-48b4-4edc-9c5e-d4543f6f2f2a" />
+<img width="1871" height="920" alt="image" src="https://github.com/user-attachments/assets/0f6e0774-bde4-4be3-a0d1-bae139f4d61e" />
+
+
 ## Getting started
 
 ### Prerequisites
