@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Plus, X } from "lucide-react";
 import {
-  ResponsiveContainer, ComposedChart, Scatter,
+  ResponsiveContainer, ScatterChart, Scatter,
   XAxis, YAxis, Tooltip, Legend, CartesianGrid,
 } from "recharts";
 import { toast } from "@/hooks/use-toast";
@@ -62,7 +62,8 @@ export default function Compare() {
   const { t } = useI18n();
   const [stars, setStars] = useState<StarConfig[]>([]);
   const [nameInput, setNameInput] = useState("");
-  const [rangeInput, setRangeInput] = useState("30");
+  const [rangeBeforeInput, setRangeBeforeInput] = useState("30");
+  const [rangeAfterInput, setRangeAfterInput] = useState("30");
   const [loading, setLoading] = useState(false);
   const [series, setSeries] = useState<Series[]>([]);
   const [queried, setQueried] = useState(false);
@@ -92,12 +93,13 @@ export default function Compare() {
   };
 
   const runComparison = async () => {
-    const range = parseFloat(rangeInput);
+    const rangeBefore = parseFloat(rangeBeforeInput);
+    const rangeAfter = parseFloat(rangeAfterInput);
     if (stars.length === 0) {
       toast({ title: t("compare.errNoStars"), variant: "destructive" });
       return;
     }
-    if (!Number.isFinite(range) || range <= 0) {
+    if (!Number.isFinite(rangeBefore) || rangeBefore < 0 || !Number.isFinite(rangeAfter) || rangeAfter < 0 || rangeBefore + rangeAfter <= 0) {
       toast({ title: t("compare.errRange"), variant: "destructive" });
       return;
     }
@@ -116,7 +118,7 @@ export default function Compare() {
     setLoading(true);
     setQueried(true);
     const results = await Promise.allSettled(
-      jobs.map(({ star, t0 }) => fetchAavsoObservations(star.name, t0 - range, t0 + range, star.filter)),
+      jobs.map(({ star, t0 }) => fetchAavsoObservations(star.name, t0 - rangeBefore, t0 + rangeAfter, star.filter)),
     );
     const nextSeries: Series[] = results.map((res, i) => {
       const { star, color, t0 } = jobs[i];
@@ -147,13 +149,14 @@ export default function Compare() {
     setLoading(false);
   };
 
-  const range = parseFloat(rangeInput);
-  const validRange = Number.isFinite(range) && range > 0;
+  const rangeBefore = parseFloat(rangeBeforeInput);
+  const rangeAfter = parseFloat(rangeAfterInput);
+  const validRange = Number.isFinite(rangeBefore) && rangeBefore >= 0 && Number.isFinite(rangeAfter) && rangeAfter >= 0 && rangeBefore + rangeAfter > 0;
   const allPoints = series.flatMap((s) => [...s.points, ...s.limitPoints]);
   const yDomain: [number, number] = allPoints.length
     ? [+(Math.min(...allPoints.map((p) => p.mag)) - 0.2).toFixed(2), +(Math.max(...allPoints.map((p) => p.mag)) + 0.2).toFixed(2)]
     : [0, 1];
-  const xDomain: [number, number] = validRange ? [-range, range] : [-1, 1];
+  const xDomain: [number, number] = validRange ? [-rangeBefore, rangeAfter] : [-1, 1];
 
   return (
     <div className="min-h-screen">
@@ -244,13 +247,23 @@ export default function Compare() {
 
           <div className="flex items-end gap-3 flex-wrap">
             <div className="space-y-1">
-              <Label htmlFor="compare-range">{t("compare.range")}</Label>
+              <Label htmlFor="compare-range-before">{t("compare.range.before")}</Label>
               <Input
-                id="compare-range"
-                className="w-40"
+                id="compare-range-before"
+                className="w-32"
                 inputMode="decimal"
-                value={rangeInput}
-                onChange={(e) => setRangeInput(e.target.value)}
+                value={rangeBeforeInput}
+                onChange={(e) => setRangeBeforeInput(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="compare-range-after">{t("compare.range.after")}</Label>
+              <Input
+                id="compare-range-after"
+                className="w-32"
+                inputMode="decimal"
+                value={rangeAfterInput}
+                onChange={(e) => setRangeAfterInput(e.target.value)}
               />
             </div>
             <Button type="button" onClick={runComparison} disabled={loading || stars.length === 0}>
@@ -268,7 +281,7 @@ export default function Compare() {
           <Card className="p-4">
             <div className="w-full h-96">
               <ResponsiveContainer>
-                <ComposedChart margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                <ScatterChart margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis
                     dataKey="day"
@@ -310,7 +323,7 @@ export default function Compare() {
                       name={`${s.star} (${t("graphs.curve.legend.limit")})`}
                     />
                   ))}
-                </ComposedChart>
+                </ScatterChart>
               </ResponsiveContainer>
             </div>
           </Card>
