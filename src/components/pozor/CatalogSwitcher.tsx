@@ -43,10 +43,6 @@ export function CatalogSwitcher({
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const submit = async () => {
-    if (loading) {
-      toast.error(t("pozor.cat.err.noCatalog"));
-      return;
-    }
     const trimmed = name.trim();
     if (!trimmed) return;
     if (dialog === "new" && !canCreateNew) {
@@ -85,11 +81,6 @@ export function CatalogSwitcher({
   };
 
   const remove = async () => {
-    if (loading) {
-      toast.error(t("pozor.cat.err.noCatalog"));
-      setConfirmDelete(false);
-      return;
-    }
     setConfirmDelete(false);
     if (!active || !isOwnCatalog || ownCount <= 1) return;
     const { error } = await supabase.from("ccd_catalogs").delete().eq("id", active.id);
@@ -104,10 +95,15 @@ export function CatalogSwitcher({
 
   return (
     <div className="flex items-end gap-2">
-      <div className="space-y-1">
+      <div className="space-y-1" aria-busy={loading}>
         <Label className="text-xs">
           {t("pozor.catalog")}
-          {loading && <Loader2 className="inline-block h-4 w-4 animate-spin ml-2 text-muted-foreground" />}
+          {loading && (
+            <span role="status" aria-live="polite" className="inline-flex items-center">
+              <Loader2 className="inline-block h-4 w-4 animate-spin ml-2 text-muted-foreground" aria-hidden="true" />
+              <span className="sr-only">{t("pozor.catalog.loading")}</span>
+            </span>
+          )}
         </Label>
         <Select value={activeId} onValueChange={setActiveId} disabled={loading || !catalogs.length}>
           <SelectTrigger className="w-[180px] h-9">
@@ -128,10 +124,6 @@ export function CatalogSwitcher({
         variant="outline"
         className="h-9 w-9 relative"
         onClick={() => {
-          if (loading) {
-            toast.error(t("pozor.cat.err.noCatalog"));
-            return;
-          }
           if (!canCreateNew) {
             toast.error(t("pozor.catalog.plusRequired"));
             return;
@@ -152,10 +144,6 @@ export function CatalogSwitcher({
         variant="outline"
         className="h-9 w-9"
         onClick={() => {
-          if (loading) {
-            toast.error(t("pozor.cat.err.noCatalog"));
-            return;
-          }
           if (!active) return;
           setName(active.name);
           setDialog("rename");
@@ -189,7 +177,7 @@ export function CatalogSwitcher({
             disabled={loading}
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialog(null)} disabled={loading}>
+            <Button variant="outline" onClick={() => setDialog(null)}>
               {t("pozor.cancel")}
             </Button>
             <Button onClick={submit} disabled={busy || !name.trim() || loading}>
@@ -209,7 +197,7 @@ export function CatalogSwitcher({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={loading}>{t("pozor.cancel")}</AlertDialogCancel>
+            <AlertDialogCancel>{t("pozor.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={remove} disabled={loading}>{t("pozor.catalog.delete")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
