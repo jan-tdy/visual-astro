@@ -95,8 +95,16 @@ export function CatalogSwitcher({
 
   return (
     <div className="flex items-end gap-2">
-      <div className="space-y-1">
-        <Label className="text-xs">{t("pozor.catalog")}</Label>
+      <div className="space-y-1" aria-busy={loading}>
+        <Label className="text-xs">
+          {t("pozor.catalog")}
+          {loading && (
+            <span role="status" aria-live="polite" className="inline-flex items-center">
+              <Loader2 className="inline-block h-4 w-4 animate-spin ml-2 text-muted-foreground" aria-hidden="true" />
+              <span className="sr-only">{t("pozor.catalog.loading")}</span>
+            </span>
+          )}
+        </Label>
         <Select value={activeId} onValueChange={setActiveId} disabled={loading || !catalogs.length}>
           <SelectTrigger className="w-[180px] h-9">
             <SelectValue />
@@ -124,6 +132,7 @@ export function CatalogSwitcher({
           setDialog("new");
         }}
         title={canCreateNew ? t("pozor.catalog.new") : t("pozor.catalog.plusRequired")}
+        disabled={loading || !canCreateNew}
       >
         <Plus className="h-4 w-4" />
         {!canCreateNew && (
@@ -139,7 +148,7 @@ export function CatalogSwitcher({
           setName(active.name);
           setDialog("rename");
         }}
-        disabled={!active || !isOwnCatalog}
+        disabled={loading || !active || !isOwnCatalog}
         title={isOwnCatalog ? t("pozor.catalog.rename") : t("pozor.catalog.sharedHint")}
       >
         <Pencil className="h-4 w-4" />
@@ -149,7 +158,7 @@ export function CatalogSwitcher({
         variant="outline"
         className="h-9 w-9"
         onClick={() => setConfirmDelete(true)}
-        disabled={!active || !isOwnCatalog || ownCount <= 1}
+        disabled={loading || !active || !isOwnCatalog || ownCount <= 1}
         title={isOwnCatalog ? t("pozor.catalog.delete") : t("pozor.catalog.sharedHint")}
       >
         <Trash2 className="h-4 w-4 text-destructive" />
@@ -165,12 +174,13 @@ export function CatalogSwitcher({
             onChange={(e) => setName(e.target.value)}
             placeholder={t("pozor.catalog.namePlaceholder")}
             onKeyDown={(e) => e.key === "Enter" && submit()}
+            disabled={loading}
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialog(null)}>
               {t("pozor.cancel")}
             </Button>
-            <Button onClick={submit} disabled={busy || !name.trim()}>
+            <Button onClick={submit} disabled={busy || !name.trim() || loading}>
               {busy && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
               {t("pozor.save")}
             </Button>
@@ -188,7 +198,7 @@ export function CatalogSwitcher({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("pozor.cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={remove}>{t("pozor.catalog.delete")}</AlertDialogAction>
+            <AlertDialogAction onClick={remove} disabled={loading}>{t("pozor.catalog.delete")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
