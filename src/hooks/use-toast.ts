@@ -2,7 +2,10 @@ import * as React from "react";
 
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 
-const TOAST_LIMIT = 1;
+// Compare fires one toast per (star, filter) combo that had no AAVSO data
+// or failed to fetch — those are independent per-combo warnings, not
+// something a limit of 1 should collapse down to just the latest.
+const TOAST_LIMIT = 5;
 const TOAST_REMOVE_DELAY = 1000000;
 
 type ToasterToast = ToastProps & {
