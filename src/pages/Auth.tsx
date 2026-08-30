@@ -26,6 +26,7 @@ export default function Auth() {
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [appleBusy, setAppleBusy] = useState(false);
+  const [msBusy, setMsBusy] = useState(false);
 
   useEffect(() => {
     if (!user) return;
