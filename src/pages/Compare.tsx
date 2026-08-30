@@ -23,7 +23,7 @@ const MAX_STARS = 8;
 const COLORS = Array.from({ length: MAX_STARS }, (_, i) => `hsl(var(--chart-${i + 1}))`);
 
 type StarConfig = { id: string; name: string; t0: string; filter: string };
-type Point = { day: number; mag: number; jd: number; band: string; observer: string; obsType: string };
+type Point = { day: number; mag: number; jd: number; band: string; observer: string; obsType: string; star: string; isLimit: boolean };
 type Series = { id: string; star: string; color: string; points: Point[]; limitPoints: Point[] };
 
 function evenTicks(min: number, max: number, count = 5): number[] {
@@ -42,14 +42,17 @@ function LimitMarker(props: { cx?: number; cy?: number; stroke?: string }) {
   return <polygon points={points} fill="none" stroke={stroke} strokeWidth={1.5} />;
 }
 
-function CompareTooltip({ active, payload }: { active?: boolean; payload?: { name?: string; payload: Point }[] }) {
+function CompareTooltip({ active, payload }: { active?: boolean; payload?: { payload: Point }[] }) {
   const { t } = useI18n();
   if (!active || !payload || payload.length === 0) return null;
-  const entry = payload[0];
-  const p = entry.payload;
+  // Recharts builds a scatter tooltip's payload with one entry per axis
+  // dimension (x, y, …) rather than one per series, so payload[0].name is
+  // the XAxis's own dataKey ("day") — not the hovered star. Read the star
+  // name from the point data itself instead.
+  const p = payload[0].payload;
   return (
     <div className="rounded-md border border-border bg-background p-2 text-xs shadow-sm space-y-0.5">
-      <div className="font-semibold">{entry.name}</div>
+      <div className="font-semibold">{p.star}{p.isLimit ? ` (${t("graphs.curve.legend.limit")})` : ""}</div>
       <div>JD {p.jd.toFixed(5)} ({p.day >= 0 ? "+" : ""}{p.day.toFixed(2)} d)</div>
       <div>mag {p.mag.toFixed(2)}{p.band ? ` (${p.band})` : ""}</div>
       {p.observer && <div>{t("compare.tooltip.observer")}: {p.observer}</div>}
@@ -136,6 +139,8 @@ export default function Compare() {
         band: o.band,
         observer: o.observer,
         obsType: o.obsType,
+        star: star.name,
+        isLimit: o.fainterThan,
       });
       return {
         id: star.id,
@@ -270,6 +275,9 @@ export default function Compare() {
               {loading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
               {t("compare.show")}
             </Button>
+            {loading && (
+              <p className="text-xs text-muted-foreground">{t("compare.loading")}</p>
+            )}
           </div>
         </Card>
 
