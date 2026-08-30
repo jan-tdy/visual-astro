@@ -4,9 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Loader2, Plus, X } from "lucide-react";
 import {
   ResponsiveContainer, ScatterChart, Scatter,
@@ -19,12 +17,28 @@ import { dateToJD } from "@/lib/astro";
 import { jdToDate, toIsoDate, utcDate } from "@/lib/pozor";
 
 const MAX_STARS = 8;
-// hsl(var(--chart-1..8)) — the app's reserved multi-series chart palette.
-const COLORS = Array.from({ length: MAX_STARS }, (_, i) => `hsl(var(--chart-${i + 1}))`);
 
-type StarConfig = { id: string; name: string; t0: string; filter: string };
+// Each star can plot more than one filter/band, so the series count isn't
+// bounded by MAX_STARS — it's stars × filters selected. The first 8 combos
+// get the app's reserved, theme-aware chart palette (matching every other
+// multi-series chart); beyond that, evenly spaced hues (golden-angle
+// stepping, so neighboring indices never land on similar colors) keep every
+// combo visually distinct instead of wrapping around and reusing a color.
+function seriesColor(index: number): string {
+  if (index < 8) return `hsl(var(--chart-${index + 1}))`;
+  const hue = (index * 137.508) % 360;
+  return `hsl(${hue.toFixed(1)}deg 65% 45%)`;
+}
+
+type StarConfig = { id: string; name: string; t0: string; filters: string[] };
 type Point = { day: number; mag: number; jd: number; band: string; observer: string; obsType: string; star: string; isLimit: boolean };
-type Series = { id: string; star: string; color: string; points: Point[]; limitPoints: Point[] };
+type Series = { id: string; star: string; filter: string; color: string; points: Point[]; limitPoints: Point[] };
+
+type Combo = { starId: string; filter: string };
+
+function flattenCombos(stars: StarConfig[]): Combo[] {
+  return stars.flatMap((s) => s.filters.map((filter) => ({ starId: s.id, filter })));
+}
 
 function evenTicks(min: number, max: number, count = 5): number[] {
   if (!Number.isFinite(min) || !Number.isFinite(max) || min === max) return [min];
@@ -86,13 +100,20 @@ export default function Compare() {
       toast({ title: t("compare.maxStars").replace("{n}", String(MAX_STARS)), variant: "destructive" });
       return;
     }
-    setStars([...stars, { id: crypto.randomUUID(), name, t0: "", filter: "Vis." }]);
+    setStars([...stars, { id: crypto.randomUUID(), name, t0: "", filters: ["Vis."] }]);
     setNameInput("");
   };
 
   const removeStar = (id: string) => {
     setStars(stars.filter((s) => s.id !== id));
-    setSeries(series.filter((s) => s.id !== id));
+    setSeries(series.filter((s) => !s.id.startsWith(`${id}::`)));
+  };
+
+  // A star always needs at least one filter selected — ignore a toggle that
+  // would deselect the last one instead of leaving the star with no series.
+  const setStarFilters = (id: string, filters: string[]) => {
+    if (filters.length === 0) return;
+    updateStar(id, { filters });
   };
 
   const runComparison = async () => {
@@ -107,30 +128,41 @@ export default function Compare() {
       return;
     }
 
+    const combos = flattenCombos(stars);
     const jobs = stars
-      .map((s, i) => ({ star: s, color: COLORS[i % COLORS.length], t0: parseFloat(s.t0) }))
+      .map((s) => ({ star: s, t0: parseFloat(s.t0) }))
       .filter(({ star, t0 }) => {
         if (!Number.isFinite(t0) || t0 <= 0) {
           toast({ title: t("compare.errT0").replace("{star}", star.name), variant: "destructive" });
           return false;
         }
         return true;
-      });
+      })
+      .flatMap(({ star, t0 }) =>
+        star.filters.map((filter) => {
+          const index = combos.findIndex((c) => c.starId === star.id && c.filter === filter);
+          return { star, t0, filter, color: seriesColor(index) };
+        }),
+      );
     if (jobs.length === 0) return;
 
     setLoading(true);
     setQueried(true);
     const results = await Promise.allSettled(
-      jobs.map(({ star, t0 }) => fetchAavsoObservations(star.name, t0 - rangeBefore, t0 + rangeAfter, star.filter)),
+      jobs.map(({ star, t0, filter }) => fetchAavsoObservations(star.name, t0 - rangeBefore, t0 + rangeAfter, filter)),
     );
     const nextSeries: Series[] = results.map((res, i) => {
-      const { star, color, t0 } = jobs[i];
+      const { star, color, t0, filter } = jobs[i];
+      const id = `${star.id}::${filter}`;
       if (res.status === "rejected") {
-        toast({ title: t("compare.fetchError").replace("{star}", star.name), variant: "destructive" });
-        return { id: star.id, star: star.name, color, points: [], limitPoints: [] };
+        toast({
+          title: t("compare.fetchError").replace("{star}", star.name).replace("{filter}", filter),
+          variant: "destructive",
+        });
+        return { id, star: star.name, filter, color, points: [], limitPoints: [] };
       }
       if (res.value.length === 0) {
-        toast({ title: t("compare.noData").replace("{star}", star.name) });
+        toast({ title: t("compare.noData").replace("{star}", star.name).replace("{filter}", filter) });
       }
       const toPoint = (o: AavsoObservation): Point => ({
         day: +(o.jd - t0).toFixed(5),
@@ -143,8 +175,9 @@ export default function Compare() {
         isLimit: o.fainterThan,
       });
       return {
-        id: star.id,
+        id,
         star: star.name,
+        filter,
         color,
         points: res.value.filter((o) => !o.fainterThan).map(toPoint),
         limitPoints: res.value.filter((o) => o.fainterThan).map(toPoint),
@@ -157,6 +190,14 @@ export default function Compare() {
   const rangeBefore = parseFloat(rangeBeforeInput);
   const rangeAfter = parseFloat(rangeAfterInput);
   const validRange = Number.isFinite(rangeBefore) && rangeBefore >= 0 && Number.isFinite(rangeAfter) && rangeAfter >= 0 && rangeBefore + rangeAfter > 0;
+  // Live preview of the color each selected (star, filter) combo will get
+  // once the comparison runs — recomputed as filters are toggled, so the
+  // swatches in the form always match what "Show comparison" will draw.
+  const liveCombos = flattenCombos(stars);
+  const comboColor = (starId: string, filter: string) => {
+    const index = liveCombos.findIndex((c) => c.starId === starId && c.filter === filter);
+    return index === -1 ? undefined : seriesColor(index);
+  };
   const allPoints = series.flatMap((s) => [...s.points, ...s.limitPoints]);
   const yDomain: [number, number] = allPoints.length
     ? [+(Math.min(...allPoints.map((p) => p.mag)) - 0.2).toFixed(2), +(Math.max(...allPoints.map((p) => p.mag)) + 0.2).toFixed(2)]
@@ -192,13 +233,12 @@ export default function Compare() {
             <p className="text-sm text-muted-foreground mb-4">{t("compare.noStars")}</p>
           ) : (
             <div className="mb-4">
-              {stars.map((star, i) => {
+              {stars.map((star) => {
                 const t0Num = parseFloat(star.t0);
                 const dateValue = Number.isFinite(t0Num) && t0Num > 0 ? toIsoDate(jdToDate(t0Num)) : "";
                 return (
                   <div key={star.id} className="flex flex-wrap items-end gap-3 py-2 border-b border-border last:border-0">
                     <div className="flex items-center gap-1.5 min-w-[9rem]">
-                      <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
                       <span className="font-medium text-sm truncate">{star.name}</span>
                     </div>
                     <div className="space-y-1">
@@ -226,14 +266,26 @@ export default function Compare() {
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs">{t("compare.star.filter")}</Label>
-                      <Select value={star.filter} onValueChange={(v) => updateStar(star.id, { filter: v })}>
-                        <SelectTrigger className="w-24 h-10"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {AAVSO_BANDS.map((b) => (
-                            <SelectItem key={b} value={b}>{b}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <ToggleGroup
+                        type="multiple"
+                        value={star.filters}
+                        onValueChange={(v) => setStarFilters(star.id, v)}
+                        className="flex-wrap justify-start"
+                      >
+                        {AAVSO_BANDS.map((b) => {
+                          const selected = star.filters.includes(b);
+                          const color = comboColor(star.id, b);
+                          return (
+                            <ToggleGroupItem key={b} value={b} size="sm" variant="outline" className="h-8 gap-1.5 px-2">
+                              <span
+                                className="inline-block h-2 w-2 rounded-full shrink-0"
+                                style={{ background: selected && color ? color : "hsl(var(--muted-foreground) / 0.35)" }}
+                              />
+                              {b}
+                            </ToggleGroupItem>
+                          );
+                        })}
+                      </ToggleGroup>
                     </div>
                     <Button
                       type="button"
@@ -317,7 +369,7 @@ export default function Compare() {
                       dataKey="mag"
                       fill={s.color}
                       isAnimationActive={false}
-                      name={s.star}
+                      name={`${s.star} (${s.filter})`}
                     />
                   ))}
                   {series.filter((s) => s.limitPoints.length > 0).map((s) => (
@@ -328,7 +380,7 @@ export default function Compare() {
                       shape={LimitMarker}
                       stroke={s.color}
                       isAnimationActive={false}
-                      name={`${s.star} (${t("graphs.curve.legend.limit")})`}
+                      name={`${s.star} (${s.filter}, ${t("graphs.curve.legend.limit")})`}
                     />
                   ))}
                 </ScatterChart>
