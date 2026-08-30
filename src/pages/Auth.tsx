@@ -96,6 +96,24 @@ export default function Auth() {
     }
   };
 
+  const signInWithMicrosoft = async () => {
+    setMsBusy(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("microsoft", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast.error(result.error.message ?? t("auth.error"));
+        return;
+      }
+      if (result.redirected) return;
+    } catch (err: any) {
+      toast.error(err?.message ?? t("auth.error"));
+    } finally {
+      setMsBusy(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <Card className="w-full max-w-sm p-6 space-y-5">
@@ -167,6 +185,21 @@ export default function Auth() {
         >
           <Apple className="h-4 w-4 mr-2" aria-hidden />
           {t("auth.apple") === "auth.apple" ? "Continue with Apple" : t("auth.apple")}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          disabled={msBusy}
+          onClick={signInWithMicrosoft}
+        >
+          <svg className="h-4 w-4 mr-2" viewBox="0 0 21 21" aria-hidden>
+            <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+            <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+            <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+            <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+          </svg>
+          {t("auth.microsoft") === "auth.microsoft" ? "Continue with Microsoft" : t("auth.microsoft")}
         </Button>
         <button
           type="button"
