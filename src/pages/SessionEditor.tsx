@@ -635,7 +635,7 @@ export default function SessionEditor() {
         .update({ name: sessionName || null })
         .eq("id", id)
         .then(({ error }) => {
-          if (error) console.error("save name failed", error);
+          if (error) toast.error(error.message);
         });
     }, 400);
     return () => clearTimeout(t);
@@ -650,7 +650,7 @@ export default function SessionEditor() {
           .update({ name: sessionNameRef.current || null })
           .eq("id", id)
           .then(({ error }) => {
-            if (error) console.error("save name failed", error);
+            if (error) toast.error(error.message);
           });
       }
     };
@@ -663,7 +663,7 @@ export default function SessionEditor() {
       .update({ name: sessionName || null })
       .eq("id", id)
       .then(({ error }) => {
-        if (error) console.error("save name failed", error);
+        if (error) toast.error(error.message);
       });
   };
 
@@ -1113,10 +1113,25 @@ export default function SessionEditor() {
         return { observations: obsArr, used: body.used, lim: body.dailyLimit };
       };
 
-      const results = [];
+      // Only crop 1 is quota-charged, so a crop that fails after that
+      // shouldn't discard the ones that already succeeded — the observer
+      // would lose the whole scan's output for a transient failure on a
+      // single part while still paying for it. Collect per-part failures
+      // instead of letting the first one abort the loop, and import
+      // whatever did come back; only surface an error (no import) if every
+      // part failed.
+      const results: { observations: any[]; used?: number; lim?: number }[] = [];
+      const partFailures: number[] = [];
       for (let i = 0; i < quadrants.length; i++) {
-        results.push(await runPart(quadrants[i], i + 1));
+        try {
+          results.push(await runPart(quadrants[i], i + 1));
+        } catch (e: any) {
+          const msg = e?.message ?? t("editor.ocrUnknown");
+          appendOcrLog(t("editor.ocrDialog.logErrorPart").replace("{part}", String(i + 1)).replace("{total}", String(total)).replace("{msg}", msg));
+          partFailures.push(i + 1);
+        }
       }
+      if (results.length === 0) throw new Error(t("editor.ocrUnknown"));
       const obsArr = results.flatMap((r) => r.observations);
       const used = results.map((r) => r.used).reverse().find((v) => v !== undefined);
       const lim = results.map((r) => r.lim).reverse().find((v) => v !== undefined);
@@ -1125,6 +1140,9 @@ export default function SessionEditor() {
       const blob = new Blob([JSON.stringify({ observations: obsArr })], { type: "application/json" });
       const result = await handleImportFile(new File([blob], "ocr.json", { type: "application/json" }));
       if (used && lim) toast.info(`${t("editor.ocrCount")}: ${used}/${lim}`);
+      if (partFailures.length) {
+        toast.error(t("editor.ocrPartialFailed").replace("{n}", String(partFailures.length)).replace("{total}", String(total)));
+      }
       setOcrResult(result ?? { matched: 0, skipped: 0 });
       setOcrPhase("done");
     } catch (e: any) {
