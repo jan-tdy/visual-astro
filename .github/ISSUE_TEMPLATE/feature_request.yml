@@ -1,0 +1,60 @@
+name: "✨ Feature request"
+description: Suggest a new feature or improvement for visual-astro
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion! Please describe what's missing and why it'd help — you don't need to have a full solution figured out.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched existing issues and this isn't a duplicate
+          required: true
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Module
+      description: Which part of the app does this affect?
+      multiple: false
+      options:
+        - Sessions
+        - Catalog
+        - Prom
+        - Pozor
+        - Graphs
+        - Compare
+        - Tools
+        - Settings
+        - Info / login
+        - GitHub repo / CI
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: whats-missing
+    attributes:
+      label: What's missing / what should be improved
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why is this useful
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution (optional)
+      description: If you already have an idea of how this could work, describe it here.
+    validations:
+      required: false
