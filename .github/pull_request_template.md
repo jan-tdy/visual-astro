@@ -23,12 +23,10 @@ Fixes # <!-- (Links an issue WITH closing it) -->
 <!-- ONLY  FOR BIG CHANGES, OTHERWISE DELETE THE FOLLOWING SECTION-->
 <!-- ONLY  FOR BIG CHANGES, OTHERWISE DELETE THE FOLLOWING SECTION-->
 
-------------------------------
+## Note
 
 In this PR, we will do everything related to issue <!-- FILL IN THE ISSUE IF AVAILABLE --> , then merge it and deploy live (ETA: <!-- FILL IN THE ETA IF AVAILABLE --> )
 
-------------------------------
-
-FAQ:
+## FAQ
 - Why like that (everything in one PR) this time:
   - We will do it like this from now on, because we now have previews (thanks to Vercel) without the need to merge!
