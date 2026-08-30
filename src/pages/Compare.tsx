@@ -276,10 +276,7 @@ export default function Compare() {
               {t("compare.show")}
             </Button>
             {loading && (
-              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <Loader2 className="h-3 w-3 animate-spin shrink-0" />
-                {t("compare.loading")}
-              </p>
+              <p className="text-xs text-muted-foreground">{t("compare.loading")}</p>
             )}
           </div>
         </Card>
