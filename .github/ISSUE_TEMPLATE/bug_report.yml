@@ -1,12 +1,14 @@
 name: "🐛 Bug report"
 description: Something isn't working as it should (wrong values, crashes, disconnects, errors in the log)
-title: "[Bug]: "
+title: "[Module] "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
         Thanks for taking the time to report a bug! Please fill out as much of this as you can — it makes the bug much faster to track down.
+
+        In the title above, replace `[Module]` with the module you picked below (e.g. `[Sessions]`, `[Pozor]`).
 
   - type: checkboxes
     id: preflight

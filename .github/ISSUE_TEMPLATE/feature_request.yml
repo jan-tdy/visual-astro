@@ -1,12 +1,14 @@
 name: "✨ Feature request"
 description: Suggest a new feature or improvement for visual-astro
-title: "[Feature]: "
+title: "[Module] "
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
         Thanks for the suggestion! Please describe what's missing and why it'd help — you don't need to have a full solution figured out.
+
+        In the title above, replace `[Module]` with the module you picked below (e.g. `[Sessions]`, `[Pozor]`).
 
   - type: checkboxes
     id: preflight
