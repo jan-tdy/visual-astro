@@ -2997,7 +2997,7 @@ function formatHMS(hours) {
 function formatDMS(deg) {
   const sign = deg < 0 ? "\u2212" : "+";
   const a = Math.abs(deg);
-  let total = Math.round(a * 3600);
+  const total = Math.round(a * 3600);
   const d = Math.floor(total / 3600);
   const m = Math.floor((total - d * 3600) / 60);
   const s = total - d * 3600 - m * 60;
@@ -3101,8 +3101,8 @@ function instantInfo(raHoursJ2000, decDegJ2000, date, loc) {
 function nightInfo(isoDate, loc, sunAltDeg = -18) {
   const observer = observerOf(loc);
   const noonLocal = utcDate(isoDate, 12 - loc.lon / 15);
-  let start = null;
-  let end = null;
+  let start;
+  let end;
   try {
     const s = Astronomy.SearchAltitude(Astronomy.Body.Sun, observer, -1, noonLocal, 1, sunAltDeg);
     start = s ? s.date : null;

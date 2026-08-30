@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, Sparkles, Database, RefreshCw, ExternalLink, Lock, Upload, Copy, Cpu, TriangleAlert, LineChart as LineChartIcon, FileText, ScanLine } from "lucide-react";
+import { Check, Sparkles, Database, RefreshCw, Lock, Upload, Copy, Cpu, TriangleAlert, LineChart as LineChartIcon, FileText, ScanLine } from "lucide-react";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
 import { usePrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
@@ -83,7 +83,7 @@ export default function Settings() {
     try {
       const raw = localStorage.getItem("prom_overrides_v1");
       if (raw) promBytes = enc.encode(raw).length;
-    } catch {}
+    } catch { /* storage unavailable */ }
     const promCount = (() => {
       try {
         const raw = localStorage.getItem("prom_overrides_v1");
@@ -103,7 +103,7 @@ export default function Settings() {
     });
   };
 
-  useEffect(() => { if (user) computeUsage(); /* eslint-disable-next-line */ }, [user]);
+  useEffect(() => { if (user) computeUsage(); }, [user]);
 
   const fmtBytes = (n: number) => {
     if (n < 1024) return `${n} B`;

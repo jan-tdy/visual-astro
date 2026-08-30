@@ -404,7 +404,7 @@ export function parseRawLine(line: string, index: StarMatchIndex): ParsedRaw | n
     let limitBody: string | null = inner || null;
     let ut_time: string | null = null;
     const m = /^(.+?)(\d{3,4})$/.exec(inner);
-    if (m && /[.\-]/.test(m[1])) {
+    if (m && /[.-]/.test(m[1])) {
       limitBody = m[1];
       ut_time = utFromDigits(m[2]);
     }

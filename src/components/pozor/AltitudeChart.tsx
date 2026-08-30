@@ -182,7 +182,6 @@ export function AltitudeChart({
       });
     });
     return out;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targets, rows, location, fromDate]);
 
   return (
