@@ -35,7 +35,9 @@ export function brokeredPreviewStorage() {
     new Promise((resolve) => {
       const requestId = newId();
       let done = false;
-      let timer: ReturnType<typeof setTimeout>;
+      // `finish` closes over `timer`; it's only ever invoked after the
+      // `setTimeout` call below runs synchronously, so referencing it here
+      // ahead of its declaration is safe.
       const finish = (r: { ok: boolean; value?: string | null } | null) => {
         if (done) return;
         done = true;
@@ -53,7 +55,7 @@ export function brokeredPreviewStorage() {
       if (value !== undefined) msg['value'] = value;
       // targetOrigin per trusted editor origin, so a session token never reaches an arbitrary embedder.
       for (const origin of editorOrigins) window.parent.postMessage(msg, origin);
-      timer = setTimeout(() => finish(null), TIMEOUT);
+      const timer = setTimeout(() => finish(null), TIMEOUT);
     });
 
   // The editor may not be listening yet at the first getItem, so retry once.

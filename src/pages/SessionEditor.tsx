@@ -110,7 +110,7 @@ export default function SessionEditor() {
   const [simpleMode, setSimpleMode] = useState<boolean>(() => {
     try { return localStorage.getItem("session_simple_mode") === "1"; } catch { return false; }
   });
-  useEffect(() => { try { localStorage.setItem("session_simple_mode", simpleMode ? "1" : "0"); } catch {} }, [simpleMode]);
+  useEffect(() => { try { localStorage.setItem("session_simple_mode", simpleMode ? "1" : "0"); } catch { /* storage unavailable */ } }, [simpleMode]);
   const [rawText, setRawText] = useState("");
   const [rawReport, setRawReport] = useState<{ matched: number; unmatched: string[] } | null>(null);
   // Star names the last apply rewrote. Kept in the session header rather than
@@ -127,11 +127,11 @@ export default function SessionEditor() {
   const [rawPreviewSort, setRawPreviewSort] = useState<"catalog" | "ut">(() => {
     try { return (localStorage.getItem("raw_preview_sort") as any) || "catalog"; } catch { return "catalog"; }
   });
-  useEffect(() => { try { localStorage.setItem("raw_preview_sort", rawPreviewSort); } catch {} }, [rawPreviewSort]);
+  useEffect(() => { try { localStorage.setItem("raw_preview_sort", rawPreviewSort); } catch { /* storage unavailable */ } }, [rawPreviewSort]);
   const [rawPreviewOrder, setRawPreviewOrder] = useState<"asc" | "desc">(() => {
     try { return (localStorage.getItem("raw_preview_order") as any) || "asc"; } catch { return "asc"; }
   });
-  useEffect(() => { try { localStorage.setItem("raw_preview_order", rawPreviewOrder); } catch {} }, [rawPreviewOrder]);
+  useEffect(() => { try { localStorage.setItem("raw_preview_order", rawPreviewOrder); } catch { /* storage unavailable */ } }, [rawPreviewOrder]);
   // Inline star-name edit in the raw preview table: which source line (index
   // into rawText.split) is being edited, and the current search text.
   const [rawEditingLine, setRawEditingLine] = useState<number | null>(null);
@@ -169,7 +169,7 @@ export default function SessionEditor() {
       if (fixes) setAppliedFixes(JSON.parse(fixes));
       const unmatched = localStorage.getItem(`raw_unmatched_${id}`);
       if (unmatched) setUnmatchedLines(JSON.parse(unmatched));
-    } catch {}
+    } catch { /* storage unavailable */ }
   }, [id]);
   // The corrections outlive the apply that produced them: they stay until the
   // observer ticks them off, so a name rewritten last night is still flagged
@@ -203,11 +203,11 @@ export default function SessionEditor() {
     try {
       if (rawDirtyRef.current && rawText.trim()) localStorage.setItem(rawDraftKey, rawText);
       else localStorage.removeItem(rawDraftKey);
-    } catch {}
+    } catch { /* storage unavailable */ }
   }, [rawText, rawDraftKey]);
   useEffect(() => {
     if (!rawModeKey) return;
-    try { localStorage.setItem(rawModeKey, rawMode ? "1" : "0"); } catch {}
+    try { localStorage.setItem(rawModeKey, rawMode ? "1" : "0"); } catch { /* storage unavailable */ }
   }, [rawMode, rawModeKey]);
   const sessionNameRef = useRef("");
   // Snapshot obs values as loaded (baseline from template session). Použijeme na
@@ -217,7 +217,7 @@ export default function SessionEditor() {
   const [exportSort, setExportSort] = useState<ExportSort>(() => {
     try { return (localStorage.getItem("export_sort") as ExportSort) || "catalog"; } catch { return "catalog"; }
   });
-  useEffect(() => { try { localStorage.setItem("export_sort", exportSort); } catch {} }, [exportSort]);
+  useEffect(() => { try { localStorage.setItem("export_sort", exportSort); } catch { /* storage unavailable */ } }, [exportSort]);
 
   // ---- RAW MODE ----
   // Line parsing + star-name autocorrect live in @/lib/rawParse (unit-tested);
@@ -475,8 +475,6 @@ export default function SessionEditor() {
   // Keyboard shortcut: "/" or Ctrl/Cmd+F focuses star search
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName;
-      const inField = tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
         e.preventDefault();
         searchInputRef.current?.focus();
@@ -695,7 +693,7 @@ export default function SessionEditor() {
         limit_value: o.limit_value, ut_time: o.ut_time, note: o.note,
         row_index: 0,
       };
-      let error: any = null;
+      let error: any;
       if (o.id) {
         const r = await supabase.from("observations").update(payload).eq("id", o.id);
         error = r.error;
@@ -734,7 +732,7 @@ export default function SessionEditor() {
         limit_value: o.limit_value, ut_time: o.ut_time, note: o.note,
         row_index: idx + 1,
       };
-      let error: any = null;
+      let error: any;
       if (o.id) {
         const r = await supabase.from("observations").update(payload).eq("id", o.id);
         error = r.error;
@@ -910,7 +908,7 @@ export default function SessionEditor() {
   const exportFile = (kind: "vsnet" | "aavso", preview = false) => {
     const rows = buildExportRows();
     const ctx = { observedAt, jd, obsCode, compLabelThreshold: getPrefs().compLabelThreshold };
-    let text = "", filename = "", name = "";
+    let text: string, filename: string, name: string;
     if (kind === "vsnet") {
       text = buildVSNET(rows, ctx);
       filename = `vsnet_${filenameDate(observedAt)}.txt`;
@@ -1723,7 +1721,7 @@ export default function SessionEditor() {
                     );
                   }
                   const sorted = [...rows].sort((a, b) => {
-                    let cmp = 0;
+                    let cmp: number;
                     if (rawPreviewSort === "ut") {
                       const at = a.o.ut_time ?? "";
                       const bt = b.o.ut_time ?? "";

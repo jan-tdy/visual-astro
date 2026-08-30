@@ -174,7 +174,6 @@ export default function Prom() {
         open={!!editing || creating}
         row={editing}
         onClose={() => { setEditing(null); setCreating(false); }}
-        lang={lang}
       />
 
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
@@ -220,12 +219,11 @@ export default function Prom() {
 }
 
 function PromDialog({
-  open, row, onClose, lang,
+  open, row, onClose,
 }: {
   open: boolean;
   row: Row | null;
   onClose: () => void;
-  lang: string;
 }) {
   const { t } = useI18n();
   const [name, setName] = useState("");

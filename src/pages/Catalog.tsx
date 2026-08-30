@@ -32,16 +32,6 @@ type Star = {
 
 const TYPES = ["VISUAL", "BINAR", "ECL faint", "ECL bright"] as const;
 
-const CONSTELLATIONS = [
-  "ANDROMEDA","AQUARIUS","AQUILA","ARIES","AURIGA","BOOTES","CAMELOPARDALIS",
-  "CANCER","CANES VENATICI","CANIS MAIOR","CANIS MINOR","CAPRICORNUS","CASSIOPEA",
-  "CEPHEUS","CETUS","COMA BERENICES","CORONA BOREALIS","CORVUS","CRATER","CYGNUS",
-  "DELPHINUS","DRACO","EQUULEUS","ERIDANUS","GEMINI","HERCULES","HYDRA",
-  "LACERTA","LEO","LEO MINOR","LEPUS","LIBRA","LYNX","LYRA","MONOCEROS",
-  "OPHIUCHUS","ORION","PEGASUS","PERSEUS","PISCES","PUPPIS","SAGITTA",
-  "SAGITTARIUS","SCORPIUS","SCUTUM","SERPENS","SEXTANS","TAURUS","TRIANGULUM",
-  "URSA MAIOR","URSA MINOR","VIRGO","VULPECULA",
-] as const;
 const OTHER_CONST = "__other__";
 
 const sortStars = (items: Star[]) =>
@@ -162,7 +152,7 @@ export default function Catalog() {
   };
 
   const exportJSON = () => {
-    const payload = stars.map(({ id, ...rest }) => rest);
+    const payload = stars.map(({ id: _id, ...rest }) => rest);
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

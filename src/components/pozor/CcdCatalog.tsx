@@ -89,7 +89,7 @@ export function CcdCatalog({
       return null;
     }
     if (targets.length) {
-      const clones = targets.map(({ id, catalog_id, ...rest }) => ({ ...rest, catalog_id: created.id }));
+      const clones = targets.map(({ id: _id, catalog_id: _catalogId, ...rest }) => ({ ...rest, catalog_id: created.id }));
       const { error: cloneErr } = await supabase.from("ccd_targets").insert(clones);
       if (cloneErr) {
         toast.error(cloneErr.message);
@@ -223,7 +223,7 @@ export function CcdCatalog({
     downloadText(
       `ccd_katalog_${date}.json`,
       JSON.stringify(
-        targets.map(({ id, catalog_id, ...rest }) => rest),
+        targets.map(({ id: _id, catalog_id: _catalogId, ...rest }) => rest),
         null,
         2,
       ),

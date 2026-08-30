@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useMemo } from "react";
+import { createContext, useContext, useEffect, ReactNode, useMemo } from "react";
 import {
   Tolgee,
   BackendFetch,

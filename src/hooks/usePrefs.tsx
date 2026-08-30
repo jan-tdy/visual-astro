@@ -146,7 +146,7 @@ export function usePrefs() {
             ...((data as any).portal_urls ?? {}),
           },
         };
-        try { localStorage.setItem(KEY, JSON.stringify(next)); } catch {}
+        try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* storage unavailable */ }
         return next;
       });
     })();
@@ -157,7 +157,7 @@ export function usePrefs() {
     setPrefsState(next);
     try {
       localStorage.setItem(KEY, JSON.stringify(next));
-    } catch {}
+    } catch { /* storage unavailable */ }
     // Persist portal-related prefs to Supabase profile
     if (patch.openPortalAfterExport || patch.portalUrls) {
       (async () => {
