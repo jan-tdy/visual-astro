@@ -242,7 +242,7 @@ export default function Tools() {
               <div className="text-xs text-destructive space-y-0.5">
                 {parsed.errors.slice(0, 10).map((e, i) => <div key={i}>{e}</div>)}
                 {parsed.errors.length > 10 && (
-                  <div>{t("tools.errors.more").replace("{n}", String(parsed.errors.length - 10))}</div>
+                  <div>{t("tools.errors.more", { n: parsed.errors.length - 10 })}</div>
                 )}
               </div>
             )}
@@ -325,7 +325,7 @@ export default function Tools() {
               <div className="text-xs text-destructive space-y-0.5">
                 {vsnetParsed.errors.slice(0, 10).map((e, i) => <div key={i}>{e}</div>)}
                 {vsnetParsed.errors.length > 10 && (
-                  <div>{t("tools.errors.more").replace("{n}", String(vsnetParsed.errors.length - 10))}</div>
+                  <div>{t("tools.errors.more", { n: vsnetParsed.errors.length - 10 })}</div>
                 )}
               </div>
             )}
@@ -405,7 +405,7 @@ export default function Tools() {
               <div className="text-xs text-destructive space-y-0.5">
                 {ascii3Parsed.errors.slice(0, 10).map((e, i) => <div key={i}>{e}</div>)}
                 {ascii3Parsed.errors.length > 10 && (
-                  <div>{t("tools.errors.more").replace("{n}", String(ascii3Parsed.errors.length - 10))}</div>
+                  <div>{t("tools.errors.more", { n: ascii3Parsed.errors.length - 10 })}</div>
                 )}
               </div>
             )}
