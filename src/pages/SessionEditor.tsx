@@ -1583,7 +1583,7 @@ export default function SessionEditor() {
 
         {/* Constellation nav (matches user image) */}
         {!rawMode && (
-        <Card className={`p-4 mb-4 ${simpleMode ? "bg-card" : "sticky top-[57px] z-20 backdrop-blur bg-card/80"}`}>
+        <Card className={`p-4 mb-4 sticky top-[57px] z-20 ${simpleMode ? "bg-card" : "backdrop-blur bg-card/80"}`}>
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
