@@ -1279,7 +1279,7 @@ const tolgee = builder.use(FormatSimple()).init({
 interface Ctx {
   lang: Lang;
   setLang: (l: Lang) => void;
-  t: (k: Key | string) => string;
+  t: (k: Key | string, params?: Record<string, string | number>) => string;
 }
 
 const I18nCtx = createContext<Ctx | null>(null);
@@ -1300,12 +1300,16 @@ function InnerProvider({ children }: { children: ReactNode }) {
       setLang: (l: Lang) => {
         tg.changeLanguage(toTolgee(l));
       },
-      t: (k) => {
+      t: (k, params) => {
         const key = k as string;
         const v = tTrans(key);
         const normalized = v?.replace(/[\u200B-\u200D\uFEFF]/g, "") ?? "";
         const skText = (dict.sk as Record<string, string>)[key];
         const enText = (dict.en as Record<string, string>)[key];
+        const interpolate = (s: string) =>
+          params
+            ? Object.entries(params).reduce((acc, [name, value]) => acc.replaceAll(`{${name}}`, String(value)), s)
+            : s;
         if (v && normalized !== key && !normalized.includes(key)) {
           // Tolgee can silently fall back to a *different* language's static data
           // when a key has no translation yet for the current one (e.g. a brand
@@ -1313,14 +1317,14 @@ function InnerProvider({ children }: { children: ReactNode }) {
           // specific case and prefer our own dict for the current language
           // instead -- but otherwise trust Tolgee's result, since sk/en labels
           // are user-editable there (e.g. renamed nav tab labels).
-          if (lang === "sk" && v === enText && skText) return skText;
-          if (lang === "en" && v === skText && enText) return enText;
-          return v;
+          if (lang === "sk" && v === enText && skText) return interpolate(skText);
+          if (lang === "en" && v === skText && enText) return interpolate(enText);
+          return interpolate(v);
         }
         // Fallback when a key isn't published for the current language yet:
         // English is far more widely understood than Slovak as a second-best guess.
         const base = lang === "sk" ? skText : lang === "en" ? enText : undefined;
-        return base ?? enText ?? skText ?? key;
+        return interpolate(base ?? enText ?? skText ?? key);
       },
     }),
     [lang, tg, tTrans],
