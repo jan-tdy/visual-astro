@@ -112,21 +112,52 @@ Deno.serve(async (req) => {
     const now = new Date();
     const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
       .toISOString().slice(0, 10);
-    const { data: usageRow } = await supabase
-      .from('ocr_usage')
-      .select('id,count')
-      .eq('user_id', userId)
-      .eq('used_on', monthStart)
-      .maybeSingle();
-    const used = (usageRow as any)?.count ?? 0;
-    if (!skipQuota && used >= monthlyLimit) {
-      return new Response(JSON.stringify({
-        error: `Mesačný limit AI skenov vyčerpaný (${used}/${monthlyLimit}). Potrebuješ viac? Napíš na j44soft@gmail.com.`,
-        limitReached: true, used, monthlyLimit, dailyLimit: monthlyLimit, isPlus,
-      }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
+    // Reservation, not a plain read: increment_ocr_usage() checks the limit
+    // and increments the counter in one atomic statement, so two concurrent
+    // requests can't both read the same count, both pass the check, and
+    // both write the same incremented value (see #109). Parts after the
+    // first in a Free-plan split scan never reserve, so just report the
+    // current count for display.
+    let used = 0;
+    let reserved = false;
+    if (skipQuota) {
+      const { data: usageRow } = await supabase
+        .from('ocr_usage')
+        .select('count')
+        .eq('user_id', userId)
+        .eq('used_on', monthStart)
+        .maybeSingle();
+      used = (usageRow as any)?.count ?? 0;
+    } else {
+      const { data: usageResult, error: usageErr } = await supabase
+        .rpc('increment_ocr_usage', { _user_id: userId, _used_on: monthStart, _limit: monthlyLimit })
+        .single();
+      if (usageErr) {
+        return new Response(JSON.stringify({ error: `Usage tracking error: ${usageErr.message}` }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      used = (usageResult as any).new_count;
+      if ((usageResult as any).limit_reached) {
+        return new Response(JSON.stringify({
+          error: `Mesačný limit AI skenov vyčerpaný (${used}/${monthlyLimit}). Potrebuješ viac? Napíš na j44soft@gmail.com.`,
+          limitReached: true, used, monthlyLimit, dailyLimit: monthlyLimit, isPlus,
+        }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      reserved = true;
     }
+
+    // Releases a reservation this request made if it ends up not completing
+    // a scan, so a failed attempt doesn't cost the user their quota.
+    const releaseReservation = () =>
+      reserved
+        ? supabase.rpc('decrement_ocr_usage', { _user_id: userId, _used_on: monthStart }).then(() => {})
+        : Promise.resolve();
+
     const key = Deno.env.get('LOVABLE_API_KEY');
     if (!key) {
+      await releaseReservation();
       return new Response(JSON.stringify({ error: 'Missing LOVABLE_API_KEY' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -193,27 +224,36 @@ Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
     // ~52s). Flash answers a small crop in seconds instead, which puts the
     // whole call comfortably inside the request path and makes both of those
     // failure modes unreachable rather than merely less likely.
-    const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${key}`,
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: [
-            { type: 'text', text: 'Prečítaj túto ručne písanú tabuľku (ceruzkou) a vráť JSON. Snaž sa rozlúštiť aj nečitateľné políčka.' },
-            { type: 'image_url', image_url: { url: image } },
-          ]},
-        ],
-        response_format: { type: 'json_object' },
-      }),
-    });
+    let aiRes: Response;
+    try {
+      aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: [
+              { type: 'text', text: 'Prečítaj túto ručne písanú tabuľku (ceruzkou) a vráť JSON. Snaž sa rozlúštiť aj nečitateľné políčka.' },
+              { type: 'image_url', image_url: { url: image } },
+            ]},
+          ],
+          response_format: { type: 'json_object' },
+        }),
+      });
+    } catch (e) {
+      await releaseReservation();
+      return new Response(JSON.stringify({ error: `AI gateway request failed: ${(e as Error).message}` }), {
+        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     if (!aiRes.ok) {
       const txt = await aiRes.text().catch(() => '');
+      await releaseReservation();
       return new Response(JSON.stringify({ error: `AI error ${aiRes.status}: ${txt}` }), {
         status: aiRes.status === 429 || aiRes.status === 402 ? aiRes.status : 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -227,6 +267,7 @@ Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
     // occurrence self-explanatory in the client's error log.
     const raw = await aiRes.text();
     if (!raw.trim()) {
+      await releaseReservation();
       return new Response(JSON.stringify({ error: 'AI gateway vrátila prázdnu odpoveď. Skús to prosím znova.' }), {
         status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -235,6 +276,7 @@ Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
     try {
       content = JSON.parse(raw)?.choices?.[0]?.message?.content ?? '';
     } catch {
+      await releaseReservation();
       return new Response(JSON.stringify({ error: 'AI gateway vrátila neplatnú odpoveď. Skús to prosím znova.' }), {
         status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -251,19 +293,9 @@ Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
       observations = extractPartialObservations(content);
     }
 
-    // Increment usage counter (best effort) — skipped for parts after
-    // the first in a Free-plan split scan, see skipQuota above.
-    if (!skipQuota) {
-      if (usageRow) {
-        await supabase.from('ocr_usage').update({ count: used + 1 }).eq('id', (usageRow as any).id);
-      } else {
-        await supabase.from('ocr_usage').insert({ user_id: userId, used_on: monthStart, count: 1 });
-      }
-    }
-
     return new Response(JSON.stringify({
       observations,
-      used: skipQuota ? used : used + 1,
+      used,
       monthlyLimit, dailyLimit: monthlyLimit, isPlus,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
