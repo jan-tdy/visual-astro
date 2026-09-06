@@ -56,8 +56,18 @@ function splitPositionLabel(part: number, total: number): string {
   return `časť ${part}/${total}`;
 }
 
+type OcrUsageResult = {
+  new_count: number;
+  limit_reached: boolean;
+};
+
+type SplitReservationResult = OcrUsageResult & {
+  reservation_id: string | null;
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  let releaseReservation = async () => {};
   try {
     const authHeader = req.headers.get('Authorization') ?? '';
     const token = authHeader.replace(/^Bearer\s+/i, '');
@@ -86,11 +96,12 @@ Deno.serve(async (req) => {
       .select('enterprise_ai_scans_per_month')
       .eq('user_id', userId)
       .maybeSingle();
-    const enterpriseLimit = (profileRow as any)?.enterprise_ai_scans_per_month;
+    const enterpriseLimit = (profileRow as { enterprise_ai_scans_per_month?: unknown } | null)
+      ?.enterprise_ai_scans_per_month;
     const isPlus = false;
     const monthlyLimit = typeof enterpriseLimit === 'number' && enterpriseLimit > 0 ? enterpriseLimit : 4;
 
-    const { image, splitPart, splitTotal } = await req.json();
+    const { image, splitPart, splitTotal, reservationId } = await req.json();
     if (!image || typeof image !== 'string') {
       return new Response(JSON.stringify({ error: 'image (data URL) required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -104,31 +115,107 @@ Deno.serve(async (req) => {
     // quota-checked and charged, the rest ride along for free. On Plus each
     // crop is billed normally (N scans for an N-way split), same as calling
     // this function N times for unrelated images.
-    const isSplitScan = typeof splitTotal === 'number' && splitTotal >= 2 &&
-      typeof splitPart === 'number' && splitPart >= 1 && splitPart <= splitTotal;
-    const skipQuota = isSplitScan && splitPart > 1;
+    const isSplitScan = Number.isInteger(splitTotal) && splitTotal >= 2 &&
+      Number.isInteger(splitPart) && splitPart >= 1 && splitPart <= splitTotal;
+    const isSplitContinuation = isSplitScan && splitPart > 1;
 
     // Mesačný agregát: prvý deň mesiaca ako "bucket" v ocr_usage.used_on
     const now = new Date();
     const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
       .toISOString().slice(0, 10);
 
-    // Reservation, not a plain read: increment_ocr_usage() checks the limit
-    // and increments the counter in one atomic statement, so two concurrent
-    // requests can't both read the same count, both pass the check, and
-    // both write the same incremented value (see #109). Parts after the
-    // first in a Free-plan split scan never reserve, so just report the
-    // current count for display.
+    const { error: cleanupErr } = await supabase.rpc('release_expired_ocr_scan_reservations');
+    if (cleanupErr) {
+      return new Response(JSON.stringify({ error: `Usage tracking error: ${cleanupErr.message}` }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Initial and standalone requests reserve quota atomically. A continuation
+    // may skip the increment only after claiming the opaque reservation made
+    // for part 1; the RPC binds it to this user, split, next part and expiry.
     let used = 0;
-    let reserved = false;
-    if (skipQuota) {
+    let standaloneReserved = false;
+    let sharedReservationId: string | null = null;
+
+    // Every crop retains ownership of the same split reservation. Database
+    // state makes release idempotent across requests, while the local guard
+    // preserves the existing exactly-once behavior for standalone scans.
+    let releaseFinished = false;
+    releaseReservation = async () => {
+      if (releaseFinished) return;
+      try {
+        const { error } = sharedReservationId
+          ? await supabase.rpc('release_ocr_scan_reservation', {
+              _reservation_id: sharedReservationId,
+              _user_id: userId,
+            })
+          : standaloneReserved
+          ? await supabase.rpc('decrement_ocr_usage', { _user_id: userId, _used_on: monthStart })
+          : { error: null };
+        releaseFinished = !error;
+      } catch {
+        // Expired split reservations are also released by the next request.
+      }
+    };
+
+    if (isSplitContinuation) {
+      const isUuid = typeof reservationId === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(reservationId);
+      if (!isUuid) {
+        return new Response(JSON.stringify({ error: 'A reservation ID is required for split continuations.' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const { data: claimResult, error: claimErr } = await supabase
+        .rpc('claim_ocr_scan_reservation', {
+          _reservation_id: reservationId,
+          _user_id: userId,
+          _split_part: splitPart,
+          _split_total: splitTotal,
+        })
+        .single();
+      if (claimErr) {
+        return new Response(JSON.stringify({ error: `Usage tracking error: ${claimErr.message}` }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (!(claimResult as { is_valid: boolean }).is_valid) {
+        return new Response(JSON.stringify({ error: 'Invalid or expired split-scan reservation.' }), {
+          status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      sharedReservationId = reservationId;
       const { data: usageRow } = await supabase
         .from('ocr_usage')
         .select('count')
         .eq('user_id', userId)
         .eq('used_on', monthStart)
         .maybeSingle();
-      used = (usageRow as any)?.count ?? 0;
+      used = (usageRow as { count?: number } | null)?.count ?? 0;
+    } else if (isSplitScan) {
+      const { data: usageResult, error: usageErr } = await supabase
+        .rpc('reserve_ocr_split_scan', {
+          _user_id: userId,
+          _used_on: monthStart,
+          _limit: monthlyLimit,
+          _split_total: splitTotal,
+        })
+        .single();
+      if (usageErr) {
+        return new Response(JSON.stringify({ error: `Usage tracking error: ${usageErr.message}` }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const splitUsage = usageResult as SplitReservationResult;
+      used = splitUsage.new_count;
+      if (splitUsage.limit_reached) {
+        return new Response(JSON.stringify({
+          error: `Mesačný limit AI skenov vyčerpaný (${used}/${monthlyLimit}). Potrebuješ viac? Napíš na j44soft@gmail.com.`,
+          limitReached: true, used, monthlyLimit, dailyLimit: monthlyLimit, isPlus,
+        }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      sharedReservationId = splitUsage.reservation_id;
     } else {
       const { data: usageResult, error: usageErr } = await supabase
         .rpc('increment_ocr_usage', { _user_id: userId, _used_on: monthStart, _limit: monthlyLimit })
@@ -138,22 +225,16 @@ Deno.serve(async (req) => {
           status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      used = (usageResult as any).new_count;
-      if ((usageResult as any).limit_reached) {
+      const usage = usageResult as OcrUsageResult;
+      used = usage.new_count;
+      if (usage.limit_reached) {
         return new Response(JSON.stringify({
           error: `Mesačný limit AI skenov vyčerpaný (${used}/${monthlyLimit}). Potrebuješ viac? Napíš na j44soft@gmail.com.`,
           limitReached: true, used, monthlyLimit, dailyLimit: monthlyLimit, isPlus,
         }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
-      reserved = true;
+      standaloneReserved = true;
     }
-
-    // Releases a reservation this request made if it ends up not completing
-    // a scan, so a failed attempt doesn't cost the user their quota.
-    const releaseReservation = () =>
-      reserved
-        ? supabase.rpc('decrement_ocr_usage', { _user_id: userId, _used_on: monthStart }).then(() => {})
-        : Promise.resolve();
 
     const key = Deno.env.get('LOVABLE_API_KEY');
     if (!key) {
@@ -293,12 +374,27 @@ Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
       observations = extractPartialObservations(content);
     }
 
+    if (isSplitScan && splitPart === splitTotal && sharedReservationId) {
+      const { data: completed, error: completeErr } = await supabase.rpc('complete_ocr_scan_reservation', {
+        _reservation_id: sharedReservationId,
+        _user_id: userId,
+      });
+      if (completeErr || !completed) {
+        await releaseReservation();
+        return new Response(JSON.stringify({ error: 'Could not complete split-scan reservation.' }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     return new Response(JSON.stringify({
       observations,
       used,
+      ...(isSplitScan && splitPart < splitTotal ? { reservationId: sharedReservationId } : {}),
       monthlyLimit, dailyLimit: monthlyLimit, isPlus,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
+    await releaseReservation();
     return new Response(JSON.stringify({ error: (e as Error).message }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

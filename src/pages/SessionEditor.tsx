@@ -1086,6 +1086,7 @@ export default function SessionEditor() {
       // duration turned out to be the model choice rather than anything
       // inherent, and paper-ocr now answers in seconds, so the plain call is
       // both the simplest and the most reliable option available.
+      let reservationId: string | undefined;
       const runPart = async (partImage: string, part: number) => {
         appendOcrLog(t("editor.ocrDialog.logStartPart").replace("{part}", String(part)).replace("{total}", String(total)));
         const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paper-ocr`, {
@@ -1095,7 +1096,12 @@ export default function SessionEditor() {
             Authorization: `Bearer ${token}`,
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ image: partImage, splitPart: part, splitTotal: total }),
+          body: JSON.stringify({
+            image: partImage,
+            splitPart: part,
+            splitTotal: total,
+            ...(part > 1 ? { reservationId } : {}),
+          }),
         });
 
         const bodyText = await res.text();
@@ -1104,6 +1110,12 @@ export default function SessionEditor() {
 
         if (!res.ok) throw new Error(body?.error || t("editor.ocrUnknown"));
         if (!body) throw new Error(t("editor.ocrUnknown"));
+        if (part < total) {
+          if (typeof body.reservationId !== "string" || !body.reservationId) {
+            throw new Error(t("editor.ocrUnknown"));
+          }
+          reservationId = body.reservationId;
+        }
 
         const obsArr: any[] = Array.isArray(body.observations) ? body.observations : [];
         appendOcrLog(
@@ -1113,11 +1125,9 @@ export default function SessionEditor() {
         return { observations: obsArr, used: body.used, lim: body.dailyLimit };
       };
 
-      // Only crop 1 is quota-charged, so a crop that fails after that
-      // shouldn't discard the ones that already succeeded — the observer
-      // would lose the whole scan's output for a transient failure on a
-      // single part while still paying for it. Collect per-part failures
-      // instead of letting the first one abort the loop, and import
+      // A crop failure releases the shared quota reservation, but it still
+      // shouldn't discard crops that already succeeded. Collect per-part
+      // failures instead of letting the first one abort the loop, and import
       // whatever did come back; only surface an error (no import) if every
       // part failed.
       const results: { observations: any[]; used?: number; lim?: number }[] = [];
