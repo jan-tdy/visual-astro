@@ -9,6 +9,8 @@ star magnitudes with the Nijland-Blazhko method, and export your results straigh
 
 **If you found this useful, please give this repo a star!** **Also check out my other repos!**
 
+You can take a look at my issue and pr queue if you are wondering why is something stale for days [here](https://github.com/issues/assigned?q=is%3Aissue+or+is%3Apr+state%3Aopen+archived%3Afalse+user%3Ajan-tdy+sort%3Acreated-asc)
+
 ## Features
 
 - **Sessions** — record observing sessions and individual magnitude estimates.
