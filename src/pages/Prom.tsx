@@ -140,7 +140,13 @@ export default function Prom() {
                       {entries.map(([k, v]) => `${k}=${v}`).join("  ")}
                     </td>
                     <td className="px-3 py-2 text-right">
-                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setEditing(r); }}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => { e.stopPropagation(); setEditing(r); }}
+                        aria-label={t("prom.edit")}
+                        title={t("prom.edit")}
+                      >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
@@ -151,6 +157,8 @@ export default function Prom() {
                           if (getPrefs().confirmDelete) setConfirmDelete(r.name);
                           else doDelete(r.name);
                         }}
+                        aria-label={t("prom.delete")}
+                        title={t("prom.delete")}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -308,7 +316,13 @@ function PromDialog({
                     placeholder="9.40"
                     inputMode="decimal"
                   />
-                  <Button variant="ghost" size="icon" onClick={() => removePair(i)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removePair(i)}
+                    aria-label={t("prom.dialog.removeLetter")}
+                    title={t("prom.dialog.removeLetter")}
+                  >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>

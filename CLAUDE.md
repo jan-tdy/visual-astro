@@ -38,6 +38,21 @@ drive-by. `@typescript-eslint/no-unused-vars` is enabled with an `^_` ignore
 pattern — prefix an intentionally-unused destructured field or arg with `_`
 (e.g. `{ id: _id, ...rest }`) rather than disabling the rule.
 
+## Issue and PR templates
+
+When filing a GitHub issue, use the matching form under
+`.github/ISSUE_TEMPLATE/` (`bug_report.yml` or `feature_request.yml`) rather
+than a freeform issue — fill in every required field, including the
+`[Module]` prefix in the title (e.g. `[Sessions]`, `[Pozor]`) using one of
+the module options the template lists.
+
+When opening a pull request, fill out `.github/pull_request_template.md`
+in full: a `Description`, the `Related Issues` links (`Fixes #123` to close
+an issue, `Related to #123` to reference one without closing it), the
+`Type of Change` checkbox, and the `Checklist`. Only keep the trailing
+`Note`/`FAQ` section for large, multi-issue PRs — delete it otherwise, as
+the template itself says.
+
 ## Architecture
 
 Visual Astro is a Vite + React + TypeScript SPA for logging visual variable-star
