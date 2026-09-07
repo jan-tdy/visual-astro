@@ -23,9 +23,12 @@ type Lang = (typeof SUPPORTED_LANGS)[number]["code"];
 
 export const dict = {
   sk: {
+    "auth.apple": "Pokračovať s Apple",
     "auth.created": "Účet vytvorený. Skontroluj e-mail.",
     "auth.email": "E-mail",
     "auth.error": "Chyba pri prihlásení",
+    "auth.google": "Pokračovať s Google",
+    "auth.or": "alebo",
     "auth.password": "Heslo",
     "auth.signin": "Prihlásiť",
     "auth.signup": "Registrovať",
@@ -623,9 +626,12 @@ export const dict = {
     "tools.vsnet.title": "Konvertor VSNET → AAVSO",
   },
   en: {
+    "auth.apple": "Continue with Apple",
     "auth.created": "Account created. Check email.",
     "auth.email": "Email",
     "auth.error": "Login error",
+    "auth.google": "Continue with Google",
+    "auth.or": "or",
     "auth.password": "Password",
     "auth.signin": "Sign In",
     "auth.signup": "Sign Up",
