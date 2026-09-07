@@ -157,7 +157,7 @@ export default function Auth() {
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-card px-2 text-muted-foreground">
-              {t("auth.or") === "auth.or" ? "or" : t("auth.or")}
+              {t("auth.or")}
             </span>
           </div>
         </div>
@@ -174,7 +174,7 @@ export default function Auth() {
             <path fill="#FBBC05" d="M10.4 28.3c-.5-1.5-.8-3-.8-4.8s.3-3.3.8-4.8l-7.8-6.1C1 15.9 0 19.8 0 23.5s1 7.6 2.6 10.9l7.8-6.1z"/>
             <path fill="#34A853" d="M24 47.5c6.2 0 11.5-2 15.5-5.6l-7.6-5.9c-2.1 1.4-4.8 2.3-7.9 2.3-6.4 0-11.7-4.2-13.6-10.2l-7.8 6.1C6.5 42.2 14.6 47.5 24 47.5z"/>
           </svg>
-          {t("auth.google") === "auth.google" ? "Continue with Google" : t("auth.google")}
+          {t("auth.google")}
         </Button>
         <Button
           type="button"
@@ -184,7 +184,7 @@ export default function Auth() {
           onClick={signInWithApple}
         >
           <Apple className="h-4 w-4 mr-2" aria-hidden />
-          {t("auth.apple") === "auth.apple" ? "Continue with Apple" : t("auth.apple")}
+          {t("auth.apple")}
         </Button>
         <Button
           type="button"
@@ -199,7 +199,7 @@ export default function Auth() {
             <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
             <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
           </svg>
-          {t("auth.microsoft") === "auth.microsoft" ? "Continue with Microsoft" : t("auth.microsoft")}
+          {t("auth.microsoft")}
         </Button>
         <button
           type="button"
