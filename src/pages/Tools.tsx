@@ -11,6 +11,7 @@ import { usePrefs } from "@/hooks/usePrefs";
 import { useI18n } from "@/hooks/useI18n";
 import { supabase } from "@/integrations/supabase/client";
 import { JdConverter } from "@/components/tools/JdConverter";
+import { RaDecConverter } from "@/components/tools/RaDecConverter";
 import {
   parseSIPS,
   buildVSNETFromSIPS,

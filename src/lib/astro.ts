@@ -161,3 +161,48 @@ export function parseLimitMagnitude(raw: string | null | undefined): number | nu
   const v = parseFloat(m[0]);
   return Number.isFinite(v) ? v : null;
 }
+
+/** Parse a sexagesimal coordinate string into decimal degrees.
+ *  Accepts formats like "12 34 56.7", "12:34:56.7", "12h34m56.7s" (RA)
+ *  or "+65 43 21.1", "-65:43:21.1", "65d43m21.1s" (Dec).
+ *  For RA (isHours=true) the result is hours*15.
+ *  Returns null if the input cannot be parsed meaningfully. */
+export function parseSexagesimal(raw: string | null | undefined, isHours = false): number | null {
+  if (!raw) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+
+  // Decimal-only fallback (e.g. "12.3456" or "-65.4321").
+  const plain = Number(s);
+  if (Number.isFinite(plain) && /^[-+]?\d+(\.\d+)?$/.test(s)) {
+    return isHours ? plain * 15 : plain;
+  }
+
+  const raPattern = /^\s*(\d{1,2})\s*[:h°d\s]\s*(\d{1,2})\s*[:m′'\s]\s*(\d{1,2}(?:\.\d+)?)\s*[:s″\"]?\s*$/i;
+  const decPattern = /^\s*([+-]?\d{1,3})\s*[:d°\s]\s*(\d{1,2})\s*[:m′'\s]\s*(\d{1,2}(?:\.\d+)?)\s*[:s″\"]?\s*$/i;
+
+  const m = isHours ? raPattern.exec(s) : decPattern.exec(s);
+  if (!m) return null;
+
+  const a = Number(m[1]);
+  const b = Number(m[2]);
+  const c = Number(m[3]);
+
+  if (b >= 60 || c >= 60) return null;
+
+  const sign = String(m[1]).startsWith("-") ? -1 : 1;
+  const value = (Math.abs(a) + b / 60 + c / 3600) * sign;
+
+  if (isHours) {
+    if (value < 0 || value >= 24) return null;
+    return value * 15;
+  }
+
+  if (value < -90 || value > 90) return null;
+  return value;
+}
+
+export function formatDecimalDegrees(v: number | null): string {
+  if (v === null || !Number.isFinite(v)) return "—";
+  return v.toFixed(6);
+}
