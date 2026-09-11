@@ -182,6 +182,10 @@ export default function Tools() {
           <JdConverter />
         </div>
 
+        <div>
+          <RaDecConverter />
+        </div>
+
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">{t("tools.converter.title")}</CardTitle>
