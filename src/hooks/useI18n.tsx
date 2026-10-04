@@ -1336,7 +1336,7 @@ function InnerProvider({ children }: { children: ReactNode }) {
         const enText = (dict.en as Record<string, string>)[key];
         const interpolate = (s: string) =>
           params
-            ? Object.entries(params).reduce((acc, [name, value]) => acc.replaceAll(`{${name}}`, String(value)), s)
+            ? Object.entries(params).reduce((acc, [name, value]) => acc.split(`{${name}}`).join(String(value)), s)
             : s;
         if (v && normalized !== key && !normalized.includes(key)) {
           // Tolgee can silently fall back to a *different* language's static data
