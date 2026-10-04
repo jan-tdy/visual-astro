@@ -175,7 +175,12 @@ export function parseSexagesimal(raw: string | null | undefined, isHours = false
   // Decimal-only fallback (e.g. "12.3456" or "-65.4321").
   const plain = Number(s);
   if (Number.isFinite(plain) && /^[-+]?\d+(\.\d+)?$/.test(s)) {
-    return isHours ? plain * 15 : plain;
+    if (isHours) {
+      if (plain < 0 || plain >= 24) return null;
+      return plain * 15;
+    }
+    if (plain < -90 || plain > 90) return null;
+    return plain;
   }
 
   const raPattern = /^\s*(\d{1,2})\s*[:h°d\s]\s*(\d{1,2})\s*[:m′'\s]\s*(\d{1,2}(?:\.\d+)?)\s*[:s″\"]?\s*$/i;
