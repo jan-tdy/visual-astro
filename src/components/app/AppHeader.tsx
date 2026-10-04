@@ -71,9 +71,14 @@ export function AppHeader() {
               <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/30">
                 beta
               </span>
-              <span className="text-[10px] font-medium text-muted-foreground">
+              <Link
+                to="/changelog"
+                onClick={(e) => e.stopPropagation()}
+                title="Changelog"
+                className="text-[10px] font-medium text-muted-foreground hover:text-primary underline-offset-2 hover:underline"
+              >
                 {__APP_VERSION__}
-              </span>
+              </Link>
             </span>
             <span className="text-[10px] font-medium text-muted-foreground tracking-wide">
               By JapySoft
