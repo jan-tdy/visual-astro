@@ -183,8 +183,8 @@ export function parseSexagesimal(raw: string | null | undefined, isHours = false
     return plain;
   }
 
-  const raPattern = /^\s*(\d{1,2})\s*[:h°d\s]\s*(\d{1,2})\s*[:m′'\s]\s*(\d{1,2}(?:\.\d+)?)\s*[:s″\"]?\s*$/i;
-  const decPattern = /^\s*([+-]?\d{1,3})\s*[:d°\s]\s*(\d{1,2})\s*[:m′'\s]\s*(\d{1,2}(?:\.\d+)?)\s*[:s″\"]?\s*$/i;
+  const raPattern = /^\s*(\d{1,2})\s*[:h°d\s]\s*(\d{1,2})\s*[:m′'\s]\s*(\d{1,2}(?:\.\d+)?)\s*[:s″"]?\s*$/i;
+  const decPattern = /^\s*([+-]?\d{1,3})\s*[:d°\s]\s*(\d{1,2})\s*[:m′'\s]\s*(\d{1,2}(?:\.\d+)?)\s*[:s″"]?\s*$/i;
 
   const m = isHours ? raPattern.exec(s) : decPattern.exec(s);
   if (!m) return null;
