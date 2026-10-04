@@ -20,6 +20,7 @@ import Settings from "./pages/Settings.tsx";
 import Tools from "./pages/Tools.tsx";
 import Info from "./pages/Info.tsx";
 import JulianDateConverterPage from "./pages/JulianDateConverter.tsx";
+import Changelog from "./pages/Changelog.tsx";
 
 import OAuthConsent from "./pages/OAuthConsent.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/info" element={<Info />} />
             <Route path="/julian-date-converter" element={<JulianDateConverterPage />} />
+            <Route path="/changelog" element={<Changelog />} />
 
             <Route path="/" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
             <Route path="/session/:id" element={<ProtectedRoute><SessionEditor /></ProtectedRoute>} />
