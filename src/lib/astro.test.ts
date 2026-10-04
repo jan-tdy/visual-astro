@@ -1,5 +1,32 @@
 import { describe, it, expect } from "vitest";
-import { applyUtTimeToDate, computeMagnitude, parseLimitMagnitude, resolveCompValue } from "@/lib/astro";
+import {
+  applyUtTimeToDate,
+  computeMagnitude,
+  parseLimitMagnitude,
+  parseSexagesimal,
+  resolveCompValue,
+} from "@/lib/astro";
+
+describe("parseSexagesimal — plain-decimal fallback", () => {
+  it("accepts in-range plain-decimal RA and Dec", () => {
+    expect(parseSexagesimal("12.3456", true)).toBeCloseTo(12.3456 * 15);
+    expect(parseSexagesimal("23.9999", true)).toBeCloseTo(23.9999 * 15);
+    expect(parseSexagesimal("-65.4321", false)).toBeCloseTo(-65.4321);
+    expect(parseSexagesimal("90", false)).toBeCloseTo(90);
+  });
+
+  it("rejects out-of-range plain-decimal RA (hours must be in [0, 24))", () => {
+    expect(parseSexagesimal("24", true)).toBeNull();
+    expect(parseSexagesimal("25.5", true)).toBeNull();
+    expect(parseSexagesimal("-1", true)).toBeNull();
+  });
+
+  it("rejects out-of-range plain-decimal Dec (degrees must be in [-90, 90])", () => {
+    expect(parseSexagesimal("90.1", false)).toBeNull();
+    expect(parseSexagesimal("-91", false)).toBeNull();
+    expect(parseSexagesimal("200", false)).toBeNull();
+  });
+});
 
 describe("resolveCompValue — AAVSO label convention", () => {
   it("reads a decimal-less label as the magnitude with the point restored", () => {
