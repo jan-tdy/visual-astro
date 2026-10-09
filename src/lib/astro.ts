@@ -162,39 +162,96 @@ export function parseLimitMagnitude(raw: string | null | undefined): number | nu
   return Number.isFinite(v) ? v : null;
 }
 
+/** A unit mark attached to one sexagesimal component, classified by which
+ *  slot it belongs in: "first" (h/d/°), "minute" (m/′/'), "second" (s/″/"),
+ *  or "generic" (a bare colon/space separator, which fits any slot). */
+type SexagesimalUnit = "first" | "minute" | "second" | "generic";
+
+function sexagesimalUnitOf(ch: string): SexagesimalUnit {
+  const c = ch.toLowerCase();
+  if (c === "h" || c === "d" || c === "°") return "first";
+  if (c === "m" || c === "′" || c === "'") return "minute";
+  if (c === "s" || c === "″" || c === '"') return "second";
+  return "generic";
+}
+
+/** Split a sign-free sexagesimal string into its 1-3 numeric components and
+ *  the unit mark (if any) that followed each one. Returns null if the whole
+ *  string isn't a clean sequence of (number, optional single separator). */
+function tokenizeSexagesimal(s: string): { nums: number[]; units: SexagesimalUnit[] } | null {
+  const nums: number[] = [];
+  const units: SexagesimalUnit[] = [];
+  const n = s.length;
+  let i = 0;
+  const isDigit = (ch: string) => ch >= "0" && ch <= "9";
+  while (i < n) {
+    while (i < n && /\s/.test(s[i])) i++;
+    if (i >= n) break;
+
+    const digitsStart = i;
+    while (i < n && isDigit(s[i])) i++;
+    if (i === digitsStart) return null;
+    if (s[i] === ".") {
+      const dotIdx = i;
+      i++;
+      const fracStart = i;
+      while (i < n && isDigit(s[i])) i++;
+      if (i === fracStart) { i = dotIdx; }
+    }
+    nums.push(Number(s.slice(digitsStart, i)));
+
+    while (i < n && /\s/.test(s[i])) i++;
+    let unit: SexagesimalUnit = "generic";
+    if (i < n && /[:hdms°′″'"]/i.test(s[i])) {
+      unit = sexagesimalUnitOf(s[i]);
+      i++;
+    }
+    units.push(unit);
+    while (i < n && /\s/.test(s[i])) i++;
+  }
+  if (nums.length < 1 || nums.length > 3) return null;
+  return { nums, units };
+}
+
 /** Parse a sexagesimal coordinate string into decimal degrees.
  *  Accepts formats like "12 34 56.7", "12:34:56.7", "12h34m56.7s" (RA)
  *  or "+65 43 21.1", "-65:43:21.1", "65d43m21.1s" (Dec).
  *  The seconds component (and its separator) may be omitted, e.g. "12 34"
  *  or "+65 43". A decimal comma ("12,3456", "12 34,5") is accepted anywhere
- *  a decimal point would be.
+ *  a decimal point would be. A sign is only honored on the whole coordinate
+ *  (its very first character); an explicit unit mark that lands on the
+ *  wrong component (e.g. "07h11s", hours then seconds with minutes skipped)
+ *  is rejected rather than silently mis-parsed.
  *  For RA (isHours=true) the result is hours*15.
  *  Returns null if the input cannot be parsed meaningfully. */
 export function parseSexagesimal(raw: string | null | undefined, isHours = false): number | null {
   if (!raw) return null;
   const trimmed = String(raw).trim();
   if (!trimmed) return null;
-  const sign = /^\s*-/.test(trimmed) ? -1 : 1;
 
-  // Normalise decimal commas and the usual unit/separator marks (colon,
-  // h/d/m/s, °/′/″, quotes) to plain whitespace, then split into one to
-  // three numeric components: a lone value is a plain decimal, two or three
-  // are H/D, M, (S) — seconds may be omitted.
-  const normalized = trimmed
-    .replace(/,/g, ".")
-    .replace(/[:hdms°′″'"]/gi, " ")
-    .trim();
+  let sign = 1;
+  let body = trimmed;
+  if (body[0] === "+" || body[0] === "-") {
+    if (body[0] === "-") sign = -1;
+    body = body.slice(1);
+  }
+  body = body.replace(/,/g, ".").trim();
+  if (!body) return null;
 
-  const parts = normalized.split(/\s+/).filter(Boolean);
-  if (!parts.length || parts.length > 3) return null;
-  if (!parts.every((p) => /^[-+]?\d+(\.\d+)?$/.test(p))) return null;
-  const nums = parts.map(Number);
+  const tokenized = tokenizeSexagesimal(body);
+  if (!tokenized) return null;
+  const { nums, units } = tokenized;
+
+  const expectedUnits: SexagesimalUnit[] = ["first", "minute", "second"];
+  for (let idx = 0; idx < units.length; idx++) {
+    if (units[idx] !== "generic" && units[idx] !== expectedUnits[idx]) return null;
+  }
 
   let value: number;
   if (nums.length === 1) {
-    value = Math.abs(nums[0]) * sign;
+    value = nums[0] * sign;
   } else {
-    const [a, b = 0, c = 0] = nums.map(Math.abs);
+    const [a, b = 0, c = 0] = nums;
     if (b >= 60 || c >= 60) return null;
     value = (a + b / 60 + c / 3600) * sign;
   }

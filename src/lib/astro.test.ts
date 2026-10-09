@@ -55,6 +55,20 @@ describe("parseSexagesimal — seconds omitted (\"HH MM\" / \"DD MM\")", () => {
   });
 });
 
+describe("parseSexagesimal — malformed input is rejected rather than mis-parsed", () => {
+  it("rejects a unit mark that lands on the wrong component (minutes skipped)", () => {
+    // "07h11s" names hours then seconds; silently reading "11" as minutes
+    // would be 7h00m11s read as 7h11m00s, a real (if rare) typo to catch.
+    expect(parseSexagesimal("07h11s", true)).toBeNull();
+    expect(parseSexagesimal("44d11s", false)).toBeNull();
+  });
+
+  it("rejects a sign on any component but the first", () => {
+    expect(parseSexagesimal("+44 -04", false)).toBeNull();
+    expect(parseSexagesimal("07 -11", true)).toBeNull();
+  });
+});
+
 describe("resolveCompValue — AAVSO label convention", () => {
   it("reads a decimal-less label as the magnitude with the point restored", () => {
     expect(resolveCompValue(undefined, "105")).toBe(10.5);
