@@ -28,6 +28,47 @@ describe("parseSexagesimal — plain-decimal fallback", () => {
   });
 });
 
+describe("parseSexagesimal — decimal comma", () => {
+  it("accepts a comma in place of the decimal point, plain or sexagesimal", () => {
+    expect(parseSexagesimal("12,3456", true)).toBeCloseTo(12.3456 * 15);
+    expect(parseSexagesimal("-65,4321", false)).toBeCloseTo(-65.4321);
+    expect(parseSexagesimal("07 11,5", true)).toBeCloseTo((7 + 11.5 / 60) * 15);
+    expect(parseSexagesimal("+65 43,5", false)).toBeCloseTo(65 + 43.5 / 60);
+  });
+});
+
+describe("parseSexagesimal — seconds omitted (\"HH MM\" / \"DD MM\")", () => {
+  it("parses RA given as hours and minutes only", () => {
+    expect(parseSexagesimal("07 11", true)).toBeCloseTo((7 + 11 / 60) * 15);
+    expect(parseSexagesimal("07:11", true)).toBeCloseTo((7 + 11 / 60) * 15);
+    expect(parseSexagesimal("07h11m", true)).toBeCloseTo((7 + 11 / 60) * 15);
+  });
+
+  it("parses Dec given as degrees and minutes only", () => {
+    expect(parseSexagesimal("+44 04", false)).toBeCloseTo(44 + 4 / 60);
+    expect(parseSexagesimal("-44:04", false)).toBeCloseTo(-(44 + 4 / 60));
+  });
+
+  it("still parses the full H M S / D M S form", () => {
+    expect(parseSexagesimal("07 11 26.0", true)).toBeCloseTo((7 + 11 / 60 + 26 / 3600) * 15);
+    expect(parseSexagesimal("+44 04 05", false)).toBeCloseTo(44 + 4 / 60 + 5 / 3600);
+  });
+});
+
+describe("parseSexagesimal — malformed input is rejected rather than mis-parsed", () => {
+  it("rejects a unit mark that lands on the wrong component (minutes skipped)", () => {
+    // "07h11s" names hours then seconds; silently reading "11" as minutes
+    // would be 7h00m11s read as 7h11m00s, a real (if rare) typo to catch.
+    expect(parseSexagesimal("07h11s", true)).toBeNull();
+    expect(parseSexagesimal("44d11s", false)).toBeNull();
+  });
+
+  it("rejects a sign on any component but the first", () => {
+    expect(parseSexagesimal("+44 -04", false)).toBeNull();
+    expect(parseSexagesimal("07 -11", true)).toBeNull();
+  });
+});
+
 describe("resolveCompValue — AAVSO label convention", () => {
   it("reads a decimal-less label as the magnitude with the point restored", () => {
     expect(resolveCompValue(undefined, "105")).toBe(10.5);
