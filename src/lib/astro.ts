@@ -165,38 +165,39 @@ export function parseLimitMagnitude(raw: string | null | undefined): number | nu
 /** Parse a sexagesimal coordinate string into decimal degrees.
  *  Accepts formats like "12 34 56.7", "12:34:56.7", "12h34m56.7s" (RA)
  *  or "+65 43 21.1", "-65:43:21.1", "65d43m21.1s" (Dec).
+ *  The seconds component (and its separator) may be omitted, e.g. "12 34"
+ *  or "+65 43". A decimal comma ("12,3456", "12 34,5") is accepted anywhere
+ *  a decimal point would be.
  *  For RA (isHours=true) the result is hours*15.
  *  Returns null if the input cannot be parsed meaningfully. */
 export function parseSexagesimal(raw: string | null | undefined, isHours = false): number | null {
   if (!raw) return null;
-  const s = String(raw).trim();
-  if (!s) return null;
+  const trimmed = String(raw).trim();
+  if (!trimmed) return null;
+  const sign = /^\s*-/.test(trimmed) ? -1 : 1;
 
-  // Decimal-only fallback (e.g. "12.3456" or "-65.4321").
-  const plain = Number(s);
-  if (Number.isFinite(plain) && /^[-+]?\d+(\.\d+)?$/.test(s)) {
-    if (isHours) {
-      if (plain < 0 || plain >= 24) return null;
-      return plain * 15;
-    }
-    if (plain < -90 || plain > 90) return null;
-    return plain;
+  // Normalise decimal commas and the usual unit/separator marks (colon,
+  // h/d/m/s, °/′/″, quotes) to plain whitespace, then split into one to
+  // three numeric components: a lone value is a plain decimal, two or three
+  // are H/D, M, (S) — seconds may be omitted.
+  const normalized = trimmed
+    .replace(/,/g, ".")
+    .replace(/[:hdms°′″'"]/gi, " ")
+    .trim();
+
+  const parts = normalized.split(/\s+/).filter(Boolean);
+  if (!parts.length || parts.length > 3) return null;
+  if (!parts.every((p) => /^[-+]?\d+(\.\d+)?$/.test(p))) return null;
+  const nums = parts.map(Number);
+
+  let value: number;
+  if (nums.length === 1) {
+    value = Math.abs(nums[0]) * sign;
+  } else {
+    const [a, b = 0, c = 0] = nums.map(Math.abs);
+    if (b >= 60 || c >= 60) return null;
+    value = (a + b / 60 + c / 3600) * sign;
   }
-
-  const raPattern = /^\s*(\d{1,2})\s*[:h°d\s]\s*(\d{1,2})\s*[:m′'\s]\s*(\d{1,2}(?:\.\d+)?)\s*[:s″"]?\s*$/i;
-  const decPattern = /^\s*([+-]?\d{1,3})\s*[:d°\s]\s*(\d{1,2})\s*[:m′'\s]\s*(\d{1,2}(?:\.\d+)?)\s*[:s″"]?\s*$/i;
-
-  const m = isHours ? raPattern.exec(s) : decPattern.exec(s);
-  if (!m) return null;
-
-  const a = Number(m[1]);
-  const b = Number(m[2]);
-  const c = Number(m[3]);
-
-  if (b >= 60 || c >= 60) return null;
-
-  const sign = String(m[1]).startsWith("-") ? -1 : 1;
-  const value = (Math.abs(a) + b / 60 + c / 3600) * sign;
 
   if (isHours) {
     if (value < 0 || value >= 24) return null;
