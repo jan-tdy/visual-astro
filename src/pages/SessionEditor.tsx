@@ -1078,6 +1078,7 @@ export default function SessionEditor() {
       appendOcrLog(t("editor.ocrDialog.logStart"));
       const quadrants = await splitImageIntoQuadrants(dataUrl);
       const total = quadrants.length;
+      let splitTokenRef: string | undefined;
 
       // One paper-ocr call per crop, awaited normally. Earlier versions of
       // this went through SSE relaying and then a background job + DB
@@ -1095,7 +1096,7 @@ export default function SessionEditor() {
             Authorization: `Bearer ${token}`,
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ image: partImage, splitPart: part, splitTotal: total }),
+          body: JSON.stringify({ image: partImage, splitPart: part, splitTotal: total, splitToken: splitTokenRef }),
         });
 
         const bodyText = await res.text();
@@ -1104,6 +1105,7 @@ export default function SessionEditor() {
 
         if (!res.ok) throw new Error(body?.error || t("editor.ocrUnknown"));
         if (!body) throw new Error(t("editor.ocrUnknown"));
+        if (part === 1 && typeof body.splitToken === "string") splitTokenRef = body.splitToken;
 
         const obsArr: any[] = Array.isArray(body.observations) ? body.observations : [];
         appendOcrLog(
