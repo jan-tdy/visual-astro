@@ -97,22 +97,21 @@ Deno.serve(async (req) => {
     const isPlus = false;
     const monthlyLimit = typeof enterpriseLimit === 'number' && enterpriseLimit > 0 ? enterpriseLimit : 4;
 
-    const { image, splitPart, splitTotal } = await req.json();
+    const { image, splitPart, splitTotal, splitToken } = await req.json();
     if (!image || typeof image !== 'string') {
       return new Response(JSON.stringify({ error: 'image (data URL) required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
     // A "split scan" is the client cutting one paper photo into several crops
-    // (currently a 2x2 grid) and calling this function once per crop (see
-    // SessionEditor's handleOcrFile), which keeps each AI call's *content*
-    // small enough for the model to answer quickly. On the Free plan all
-    // crops together are billed as a single scan — only part 1 is
-    // quota-checked and charged, the rest ride along for free. On Plus each
-    // crop is billed normally (N scans for an N-way split), same as calling
-    // this function N times for unrelated images.
-    const isSplitScan = typeof splitTotal === 'number' && splitTotal >= 2 &&
-      typeof splitPart === 'number' && splitPart >= 1 && splitPart <= splitTotal;
+    // (2x2 grid) and calling this function once per crop. All crops together
+    // are billed as one scan: part 1 is quota-charged and, on success, gets a
+    // server-issued splitToken. Later parts are free only with that token;
+    // each part number can be claimed once and the token expires shortly.
+    const isSplitScan = typeof splitTotal === 'number' && Number.isInteger(splitTotal) &&
+      splitTotal >= 2 && splitTotal <= 4 &&
+      typeof splitPart === 'number' && Number.isInteger(splitPart) &&
+      splitPart >= 1 && splitPart <= splitTotal;
     const skipQuota = isSplitScan && splitPart > 1;
 
     // Mesačný agregát: prvý deň mesiaca ako "bucket" v ocr_usage.used_on
@@ -120,14 +119,32 @@ Deno.serve(async (req) => {
     monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
       .toISOString().slice(0, 10);
 
-    // Reservation, not a plain read: increment_ocr_usage() checks the limit
-    // and increments the counter in one atomic statement, so two concurrent
-    // requests can't both read the same count, both pass the check, and
-    // both write the same incremented value (see #109). Parts after the
-    // first in a Free-plan split scan never reserve, so just report the
-    // current count for display.
+    const denySplit = () => new Response(JSON.stringify({ error: 'Invalid split scan token' }), {
+      status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
     let used = 0;
     if (skipQuota) {
+      if (typeof splitToken !== 'string' || !/^[0-9a-f-]{36}$/i.test(splitToken)) return denySplit();
+      const { data: tok } = await supabase
+        .from('ocr_split_tokens')
+        .select('id, split_total, used_parts, expires_at')
+        .eq('id', splitToken)
+        .eq('user_id', userId)
+        .maybeSingle();
+      const tk = tok as any;
+      const valid = tk && tk.split_total === splitTotal &&
+        new Date(tk.expires_at).getTime() > Date.now() &&
+        !(tk.used_parts as number[]).includes(splitPart);
+      if (!valid) return denySplit();
+      // Optimistic claim: only succeeds if used_parts is unchanged since read.
+      const { data: claimed } = await supabase
+        .from('ocr_split_tokens')
+        .update({ used_parts: [...tk.used_parts, splitPart] })
+        .eq('id', splitToken)
+        .eq('used_parts', `{${(tk.used_parts as number[]).join(',')}}`)
+        .select('id');
+      if (!claimed || (claimed as any[]).length === 0) return denySplit();
       const { data: usageRow } = await supabase
         .from('ocr_usage')
         .select('count')
@@ -303,9 +320,20 @@ Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
       observations = extractPartialObservations(content);
     }
 
+    let issuedToken: string | undefined;
+    if (isSplitScan && splitPart === 1) {
+      const { data: tokRow } = await supabase
+        .from('ocr_split_tokens')
+        .insert({ user_id: userId, split_total: splitTotal, used_parts: [1] })
+        .select('id')
+        .single();
+      issuedToken = (tokRow as any)?.id;
+    }
+
     return new Response(JSON.stringify({
       observations,
       used,
+      splitToken: issuedToken,
       monthlyLimit, dailyLimit: monthlyLimit, isPlus,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
