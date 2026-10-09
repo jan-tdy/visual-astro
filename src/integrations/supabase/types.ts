@@ -169,6 +169,33 @@ export type Database = {
           },
         ]
       }
+      ocr_split_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          split_total: number
+          used_parts: number[]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          split_total: number
+          used_parts?: number[]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          split_total?: number
+          used_parts?: number[]
+          user_id?: string
+        }
+        Relationships: []
+      }
       ocr_usage: {
         Row: {
           count: number
