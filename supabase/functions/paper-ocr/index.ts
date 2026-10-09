@@ -58,6 +58,13 @@ function splitPositionLabel(part: number, total: number): string {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  // Hoisted so the outer catch-all below can release a reservation made
+  // inside the try block, no matter which statement in there ends up
+  // throwing (see the comment on that catch for why this matters).
+  let supabase: ReturnType<typeof createClient> | undefined;
+  let userId: string | undefined;
+  let monthStart: string | undefined;
+  let reserved = false;
   try {
     const authHeader = req.headers.get('Authorization') ?? '';
     const token = authHeader.replace(/^Bearer\s+/i, '');
@@ -66,7 +73,7 @@ Deno.serve(async (req) => {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const supabase = createClient(
+    supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
@@ -76,7 +83,7 @@ Deno.serve(async (req) => {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const userId = userData.user.id;
+    userId = userData.user.id;
 
     // Single free plan for everyone: 4 AI scans per month. Enterprise accounts
     // get a per-user override negotiated individually (j44soft@gmail.com) and
@@ -110,7 +117,7 @@ Deno.serve(async (req) => {
 
     // Mesačný agregát: prvý deň mesiaca ako "bucket" v ocr_usage.used_on
     const now = new Date();
-    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+    monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
       .toISOString().slice(0, 10);
 
     // Reservation, not a plain read: increment_ocr_usage() checks the limit
@@ -120,7 +127,6 @@ Deno.serve(async (req) => {
     // first in a Free-plan split scan never reserve, so just report the
     // current count for display.
     let used = 0;
-    let reserved = false;
     if (skipQuota) {
       const { data: usageRow } = await supabase
         .from('ocr_usage')
@@ -149,11 +155,15 @@ Deno.serve(async (req) => {
     }
 
     // Releases a reservation this request made if it ends up not completing
-    // a scan, so a failed attempt doesn't cost the user their quota.
-    const releaseReservation = () =>
-      reserved
-        ? supabase.rpc('decrement_ocr_usage', { _user_id: userId, _used_on: monthStart }).then(() => {})
-        : Promise.resolve();
+    // a scan, so a failed attempt doesn't cost the user their quota. Clears
+    // `reserved` up front (not after the rpc resolves) so a concurrent or
+    // later release attempt — including the outer catch-all's safety net —
+    // can never decrement twice for the same reservation.
+    const releaseReservation = () => {
+      if (!reserved) return Promise.resolve();
+      reserved = false;
+      return supabase!.rpc('decrement_ocr_usage', { _user_id: userId, _used_on: monthStart }).then(() => {});
+    };
 
     const key = Deno.env.get('LOVABLE_API_KEY');
     if (!key) {
@@ -299,6 +309,15 @@ Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
       monthlyLimit, dailyLimit: monthlyLimit, isPlus,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
+    // Safety net: every known failure path above already calls
+    // releaseReservation() before returning, but an unexpected throw (e.g.
+    // aiRes.text() failing mid-stream, which isn't wrapped in its own
+    // try/catch) would otherwise skip that and leave the reservation this
+    // request made — if it made one — charged against the user's quota
+    // with no scan to show for it.
+    if (reserved && supabase && userId && monthStart) {
+      await supabase.rpc('decrement_ocr_usage', { _user_id: userId, _used_on: monthStart }).catch(() => {});
+    }
     return new Response(JSON.stringify({ error: (e as Error).message }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
