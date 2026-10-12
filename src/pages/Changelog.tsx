@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ExternalLink, Tag } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
 
@@ -19,16 +20,23 @@ type Release = {
   draft: boolean;
 };
 
-type CompareCommit = {
-  sha: string;
+type PrLabel = { name: string; color: string };
+
+// A merged pull request, as returned by the Search Issues API.
+type MergedPr = {
+  number: number;
+  title: string;
   html_url: string;
-  commit: { message: string; author: { date: string } | null };
+  labels: PrLabel[];
 };
 
-type Compare = {
-  ahead_by: number;
-  html_url: string;
-  commits: CompareCommit[];
+// Maps the labels release-drafter's autolabeler applies to a badge style, so
+// the "unreleased" list below shows the same category every published
+// release already groups its entries into (see .github/release-drafter.yml).
+const LABEL_BADGE: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; sk: string; en: string }> = {
+  enhancement: { variant: "default", sk: "feature", en: "feature" },
+  bug: { variant: "destructive", sk: "fix", en: "fix" },
+  dependencies: { variant: "secondary", sk: "bump", en: "bump" },
 };
 
 // Minimal, safe markdown rendering (no HTML injection): headings, bullets, bold, code, links.
@@ -91,23 +99,20 @@ export default function Changelog() {
   // real vX.Y.Z release).
   const lastStable = data?.find((r) => !r.prerelease);
 
-  const { data: compare } = useQuery({
-    queryKey: ["gh-compare", lastStable?.tag_name],
-    enabled: !!lastStable,
+  const { data: unreleasedPrs } = useQuery({
+    queryKey: ["gh-unreleased-prs", lastStable?.published_at],
+    enabled: !!lastStable?.published_at,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
+      const q = `repo:${REPO} is:pr is:merged base:${DEFAULT_BRANCH} merged:>${lastStable!.published_at}`;
       const r = await fetch(
-        `https://api.github.com/repos/${REPO}/compare/${lastStable!.tag_name}...${DEFAULT_BRANCH}`,
+        `https://api.github.com/search/issues?q=${encodeURIComponent(q)}&sort=created&order=desc&per_page=50`,
         { headers: { Accept: "application/vnd.github+json" } },
       );
       if (!r.ok) throw new Error(`GitHub ${r.status}`);
-      return (await r.json()) as Compare;
+      return ((await r.json()) as { items: MergedPr[] }).items;
     },
   });
-
-  const unreleasedCommits = (compare?.commits ?? [])
-    .filter((c) => !/^Merge /.test(c.commit.message))
-    .reverse();
 
   return (
     <main className="container mx-auto px-4 py-8 max-w-3xl">
@@ -123,7 +128,7 @@ export default function Changelog() {
       {isLoading && <p className="text-muted-foreground">{sk ? "Načítavam…" : "Loading…"}</p>}
       {error && <p className="text-destructive">{sk ? "Nepodarilo sa načítať zoznam verzií." : "Could not load releases."} ({String((error as Error).message)})</p>}
       {data && data.length === 0 && <p className="text-muted-foreground">{sk ? "Zatiaľ žiadne verzie." : "No releases yet."}</p>}
-      {unreleasedCommits.length > 0 && (
+      {unreleasedPrs && unreleasedPrs.length > 0 && (
         <Card className="p-5 mb-4 border-dashed">
           <div className="flex items-start justify-between gap-3 mb-2">
             <h2 className="text-lg font-semibold inline-flex items-center gap-2">
@@ -131,23 +136,25 @@ export default function Changelog() {
               {sk ? "Nevydané zmeny (dev)" : "Unreleased changes (dev)"}
               <span className="text-[10px] uppercase px-2 py-0.5 rounded-full bg-accent/15 text-accent">dev</span>
             </h2>
-            {compare && (
-              <a href={compare.html_url} target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="text-muted-foreground hover:text-foreground">
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            )}
           </div>
           <p className="text-xs text-muted-foreground mb-2">
             {sk
               ? `Od poslednej verzie ${lastStable?.tag_name} pribudlo na ${DEFAULT_BRANCH}:`
               : `Since the last release ${lastStable?.tag_name}, on ${DEFAULT_BRANCH}:`}
           </p>
-          <ul className="space-y-1 text-sm">
-            {unreleasedCommits.map((c) => (
-              <li key={c.sha} className="pl-4 relative before:content-['•'] before:absolute before:left-1 before:text-muted-foreground">
-                <a href={c.html_url} target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-2 hover:underline">
-                  {c.commit.message.split("\n")[0]}
+          <ul className="space-y-1.5 text-sm">
+            {unreleasedPrs.map((pr) => (
+              <li key={pr.number} className="pl-4 relative before:content-['•'] before:absolute before:left-1 before:text-muted-foreground flex items-center gap-2">
+                <a href={pr.html_url} target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-2 hover:underline">
+                  {pr.title}
                 </a>
+                {pr.labels
+                  .filter((l) => LABEL_BADGE[l.name])
+                  .map((l) => (
+                    <Badge key={l.name} variant={LABEL_BADGE[l.name].variant} className="text-[10px] px-1.5 py-0 shrink-0">
+                      {sk ? LABEL_BADGE[l.name].sk : LABEL_BADGE[l.name].en}
+                    </Badge>
+                  ))}
               </li>
             ))}
           </ul>
