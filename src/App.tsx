@@ -17,6 +17,7 @@ import Pozor from "./pages/Pozor.tsx";
 import Graphs from "./pages/Graphs.tsx";
 import Compare from "./pages/Compare.tsx";
 import Settings from "./pages/Settings.tsx";
+import AuditLog from "./pages/AuditLog.tsx";
 import Tools from "./pages/Tools.tsx";
 import Info from "./pages/Info.tsx";
 import JulianDateConverterPage from "./pages/JulianDateConverter.tsx";
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="/graphs" element={<ProtectedRoute><Graphs /></ProtectedRoute>} />
             <Route path="/compare" element={<ProtectedRoute><Compare /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/audit-log" element={<ProtectedRoute><AuditLog /></ProtectedRoute>} />
             <Route path="/tools" element={<ProtectedRoute><Tools /></ProtectedRoute>} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="*" element={<NotFound />} />

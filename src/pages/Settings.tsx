@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/app/AppHeader";
@@ -12,7 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, Sparkles, Database, RefreshCw, Lock, Upload, Copy, Cpu, TriangleAlert, LineChart as LineChartIcon, FileText, ScanLine } from "lucide-react";
+import { Check, Sparkles, Database, RefreshCw, Lock, Upload, Copy, Cpu, TriangleAlert, LineChart as LineChartIcon, FileText, ScanLine, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
 import { usePrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
@@ -531,6 +532,17 @@ export default function Settings() {
                   })}
                 </div>
               </div>
+            </Card>
+
+            <Card className="p-6 space-y-3">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-lg font-semibold">{t("settings.auditLog.title")}</h2>
+              </div>
+              <p className="text-sm text-muted-foreground">{t("settings.auditLog.desc")}</p>
+              <Button variant="outline" asChild>
+                <Link to="/audit-log">{t("settings.auditLog.open")}</Link>
+              </Button>
             </Card>
 
             <div>
