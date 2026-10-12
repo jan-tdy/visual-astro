@@ -179,13 +179,8 @@ export default function Catalog() {
   const runImport = async (replace: boolean) => {
     if (!user || !confirmImport) return;
     const { data } = confirmImport;
-    if (replace) {
-      const { error: delErr } = await supabase.from("stars").delete().eq("user_id", user.id);
-      if (delErr) { toast.error(delErr.message); return; }
-    }
     const baseSort = replace ? 0 : Math.max(0, ...stars.map((x) => x.sort_order));
     const rows = data.map((s: any, i: number) => ({
-      user_id: user.id,
       name: String(s.name ?? "").trim(),
       constellation: String(s.constellation ?? "").trim(),
       type: (TYPES as readonly string[]).includes(s.type) ? s.type : "VISUAL",
@@ -196,10 +191,62 @@ export default function Catalog() {
       sort_order: typeof s.sort_order === "number" ? s.sort_order : baseSort + i + 1,
     })).filter((r) => r.name && r.constellation);
     if (rows.length === 0) { toast.error(t("catalog.toast.noRows")); setConfirmImport(null); return; }
-    for (let i = 0; i < rows.length; i += 200) {
-      const { error } = await supabase.from("stars").insert(rows.slice(i, i + 200));
-      if (error) { toast.error(error.message); return; }
+
+    if (replace) {
+      // "Replace" used to delete every existing star for this user and reinsert the
+      // import as fresh rows with brand-new ids. observations.star_id cascades on
+      // delete, so that silently wiped every observation ever recorded against any
+      // star — across every session — the instant someone replaced their catalog.
+      // Match by (name, constellation) instead and UPDATE in place so a star that's
+      // still in the new catalog keeps its id, and therefore keeps its history.
+      const key = (name: string, constellation: string) => `${name.toLowerCase()}|${constellation.toLowerCase()}`;
+      const existingByKey = new Map(stars.map((s) => [key(s.name, s.constellation), s]));
+      const importedKeys = new Set(rows.map((r) => key(r.name, r.constellation)));
+
+      const inserts: typeof rows = [];
+      for (const r of rows) {
+        const existing = existingByKey.get(key(r.name, r.constellation));
+        if (existing) {
+          const { error } = await supabase.from("stars").update(r).eq("id", existing.id);
+          if (error) { toast.error(error.message); return; }
+        } else {
+          inserts.push(r);
+        }
+      }
+      for (let i = 0; i < inserts.length; i += 200) {
+        const { error } = await supabase
+          .from("stars")
+          .insert(inserts.slice(i, i + 200).map((r) => ({ ...r, user_id: user.id })));
+        if (error) { toast.error(error.message); return; }
+      }
+
+      // Stars dropped from the new catalog: only delete the ones nobody has ever
+      // observed. One no longer imports but still has recorded observations stays
+      // in the catalog rather than taking its history down with it.
+      const droppedIds = stars
+        .filter((s) => !importedKeys.has(key(s.name, s.constellation)))
+        .map((s) => s.id);
+      if (droppedIds.length > 0) {
+        const { data: stillUsed } = await supabase
+          .from("observations")
+          .select("star_id")
+          .in("star_id", droppedIds);
+        const usedIds = new Set((stillUsed ?? []).map((o) => o.star_id));
+        const safeToDelete = droppedIds.filter((id) => !usedIds.has(id));
+        for (let i = 0; i < safeToDelete.length; i += 200) {
+          const { error } = await supabase.from("stars").delete().in("id", safeToDelete.slice(i, i + 200));
+          if (error) { toast.error(error.message); return; }
+        }
+      }
+    } else {
+      for (let i = 0; i < rows.length; i += 200) {
+        const { error } = await supabase
+          .from("stars")
+          .insert(rows.slice(i, i + 200).map((r) => ({ ...r, user_id: user.id })));
+        if (error) { toast.error(error.message); return; }
+      }
     }
+
     toast.success(t("catalog.toast.imported").replace("{n}", String(rows.length)));
     setConfirmImport(null);
     reload();
