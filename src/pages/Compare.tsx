@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AppHeader } from "@/components/app/AppHeader";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -84,6 +84,10 @@ export default function Compare() {
   const [loading, setLoading] = useState(false);
   const [series, setSeries] = useState<Series[]>([]);
   const [queried, setQueried] = useState(false);
+  // Aborts the previous run's still-in-flight fetches when inputs change and
+  // the user re-runs the comparison, so a slower, now-stale response can't
+  // resolve after a newer one and overwrite it.
+  const abortRef = useRef<AbortController | null>(null);
 
   const updateStar = (id: string, patch: Partial<StarConfig>) => {
     setStars(stars.map((s) => (s.id === id ? { ...s, ...patch } : s)));
@@ -146,11 +150,21 @@ export default function Compare() {
       );
     if (jobs.length === 0) return;
 
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setQueried(true);
     const results = await Promise.allSettled(
-      jobs.map(({ star, t0, filter }) => fetchAavsoObservations(star.name, t0 - rangeBefore, t0 + rangeAfter, filter)),
+      jobs.map(({ star, t0, filter }) =>
+        fetchAavsoObservations(star.name, t0 - rangeBefore, t0 + rangeAfter, filter, controller.signal),
+      ),
     );
+    // A newer run already superseded this one (it aborted us above) — its
+    // own results will land, so don't clobber them with our stale ones.
+    if (abortRef.current !== controller) return;
+
     const nextSeries: Series[] = results.map((res, i) => {
       const { star, color, t0, filter } = jobs[i];
       const id = `${star.id}::${filter}`;

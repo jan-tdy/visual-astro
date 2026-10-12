@@ -63,7 +63,12 @@ describe("parseAavsoDelim", () => {
     expect(rows.map((r) => r.jd)).toEqual([2460001, 2460002]);
   });
 
-  it("returns no rows for empty input", () => {
-    expect(parseAavsoDelim("")).toEqual([]);
+  it("throws on empty input instead of treating it as no observations", () => {
+    expect(() => parseAavsoDelim("")).toThrow(/unexpected response/i);
+  });
+
+  it("throws on a non-delimited (HTML error page) body", () => {
+    const html = "<!DOCTYPE html>\n<html><body><h1>503 Service Unavailable</h1></body></html>";
+    expect(() => parseAavsoDelim(html)).toThrow(/unexpected response/i);
   });
 });
