@@ -23,11 +23,15 @@
 --    legitimate autosave UPDATEs, so logging every one would bury the
 --    signal (and the table) in noise without helping catch a wipe.
 
+-- service_role bypasses RLS by design, but TRUNCATE on these tables isn't
+-- something any service-role caller legitimately needs either, and leaving
+-- it in place would let a service-key client empty a table without ever
+-- firing the DELETE triggers below — silently defeating the audit log.
 REVOKE TRUNCATE ON
   public.sessions, public.observations, public.stars, public.profiles,
   public.ccd_catalogs, public.ccd_targets, public.plus_bonuses,
   public.pozor_locations, public.subscriptions, public.ocr_usage
-FROM anon, authenticated;
+FROM anon, authenticated, service_role;
 
 CREATE TABLE public.audit_log (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

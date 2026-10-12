@@ -40,17 +40,19 @@ export default function AuditLog() {
   const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<AuditRow[]>([]);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     (async () => {
       setLoading(true);
-      const { data } = await supabase
+      const { data, error: fetchError } = await supabase
         .from("audit_log")
         .select("id, table_name, row_id, user_id, actor_id, old_data, created_at")
         .order("created_at", { ascending: false })
         .limit(200);
-      setRows((data as AuditRow[] | null) ?? []);
+      setError(!!fetchError);
+      setRows(fetchError ? [] : ((data as AuditRow[] | null) ?? []));
       setLoading(false);
     })();
   }, [user]);
@@ -69,6 +71,8 @@ export default function AuditLog() {
           <div className="flex justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
+        ) : error ? (
+          <Card className="p-8 text-center text-destructive">{t("auditLog.error")}</Card>
         ) : rows.length === 0 ? (
           <Card className="p-8 text-center text-muted-foreground">{t("auditLog.none")}</Card>
         ) : (
@@ -84,7 +88,7 @@ export default function AuditLog() {
                   </div>
                 </div>
                 <Badge variant={r.actor_id ? "secondary" : "destructive"}>
-                  {r.actor_id ? t("auditLog.viaApp") : t("auditLog.outsideApp")}
+                  {r.actor_id ? t("auditLog.userIdentified") : t("auditLog.noUserIdentified")}
                 </Badge>
               </Card>
             ))}
