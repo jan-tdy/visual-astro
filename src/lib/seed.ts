@@ -31,67 +31,81 @@ export const SEED_LAST_SESSION: SeedObs[] = (seedData as any).last_session;
  * Idempotent: relies on profiles.catalog_seeded.
  */
 export async function seedCatalogIfNeeded(userId: string): Promise<void> {
-  const { data: profile } = await supabase
+  // Atomically claim the seeding job before writing anything: an UPDATE that
+  // only succeeds while catalog_seeded is still false. The previous
+  // check-then-act (SELECT the flag, seed, SET it true at the end) let two
+  // near-simultaneous calls — e.g. the observer navigating away and back
+  // before the first finished — both read catalog_seeded=false and both
+  // insert a full duplicate catalog and demo session. Only the caller whose
+  // UPDATE actually flips the row proceeds; everyone else bails immediately.
+  const { data: claimed, error: claimErr } = await supabase
     .from("profiles")
-    .select("catalog_seeded")
+    .update({ catalog_seeded: true })
     .eq("user_id", userId)
-    .maybeSingle();
+    .eq("catalog_seeded", false)
+    .select("user_id");
+  if (claimErr) throw claimErr;
+  if (!claimed || claimed.length === 0) return;
 
-  if (profile?.catalog_seeded) return;
+  try {
+    // Insert stars in batches of 100
+    const starRows = SEED_STARS.map((s) => ({ ...s, user_id: userId }));
+    for (let i = 0; i < starRows.length; i += 100) {
+      const chunk = starRows.slice(i, i + 100);
+      const { error } = await supabase.from("stars").insert(chunk);
+      if (error) throw error;
+    }
 
-  // Insert stars in batches of 100
-  const starRows = SEED_STARS.map((s) => ({ ...s, user_id: userId }));
-  for (let i = 0; i < starRows.length; i += 100) {
-    const chunk = starRows.slice(i, i + 100);
-    const { error } = await supabase.from("stars").insert(chunk);
-    if (error) throw error;
+    // Fetch inserted stars to map name -> id
+    const { data: insertedStars, error: fetchErr } = await supabase
+      .from("stars")
+      .select("id,name,constellation")
+      .eq("user_id", userId);
+    if (fetchErr) throw fetchErr;
+    const idByKey = new Map<string, string>();
+    insertedStars?.forEach((s) =>
+      idByKey.set(`${s.constellation}::${s.name}`, s.id),
+    );
+
+    // Create initial session = "template" from the spreadsheet's last entries
+    const { data: session, error: sessErr } = await supabase
+      .from("sessions")
+      .insert({
+        user_id: userId,
+        observed_at_utc: new Date().toISOString(),
+        notes: "Importované z Reducciones2604.ods",
+      })
+      .select()
+      .single();
+    if (sessErr) throw sessErr;
+
+    const obsRows = SEED_LAST_SESSION.map((o) => {
+      const sid = idByKey.get(`${o.constellation}::${o.name}`);
+      if (!sid) return null;
+      return {
+        session_id: session.id,
+        user_id: userId,
+        star_id: sid,
+        a: o.a,
+        pasos_a: o.pasos_a,
+        pasos_b: o.pasos_b,
+        b: o.b,
+        limit_value: o.limit_value,
+        ut_time: o.ut_time,
+        note: o.note,
+      };
+    }).filter(Boolean) as any[];
+
+    for (let i = 0; i < obsRows.length; i += 100) {
+      const chunk = obsRows.slice(i, i + 100);
+      const { error } = await supabase.from("observations").insert(chunk);
+      if (error) throw error;
+    }
+  } catch (e) {
+    // Seeding failed partway through — release the claim so the next load
+    // retries instead of leaving the user stuck with an empty/partial
+    // catalog forever just because one insert hit a transient error.
+    await supabase.from("profiles").update({ catalog_seeded: false }).eq("user_id", userId);
+    throw e;
   }
-
-  // Fetch inserted stars to map name -> id
-  const { data: insertedStars, error: fetchErr } = await supabase
-    .from("stars")
-    .select("id,name,constellation")
-    .eq("user_id", userId);
-  if (fetchErr) throw fetchErr;
-  const idByKey = new Map<string, string>();
-  insertedStars?.forEach((s) =>
-    idByKey.set(`${s.constellation}::${s.name}`, s.id),
-  );
-
-  // Create initial session = "template" from the spreadsheet's last entries
-  const { data: session, error: sessErr } = await supabase
-    .from("sessions")
-    .insert({
-      user_id: userId,
-      observed_at_utc: new Date().toISOString(),
-      notes: "Importované z Reducciones2604.ods",
-    })
-    .select()
-    .single();
-  if (sessErr) throw sessErr;
-
-  const obsRows = SEED_LAST_SESSION.map((o) => {
-    const sid = idByKey.get(`${o.constellation}::${o.name}`);
-    if (!sid) return null;
-    return {
-      session_id: session.id,
-      user_id: userId,
-      star_id: sid,
-      a: o.a,
-      pasos_a: o.pasos_a,
-      pasos_b: o.pasos_b,
-      b: o.b,
-      limit_value: o.limit_value,
-      ut_time: o.ut_time,
-      note: o.note,
-    };
-  }).filter(Boolean) as any[];
-
-  for (let i = 0; i < obsRows.length; i += 100) {
-    const chunk = obsRows.slice(i, i + 100);
-    const { error } = await supabase.from("observations").insert(chunk);
-    if (error) throw error;
-  }
-
-  await supabase.from("profiles").update({ catalog_seeded: true }).eq("user_id", userId);
 }
