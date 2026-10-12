@@ -1,0 +1,58 @@
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+
+categories:
+  - title: '✨ Features'
+    labels:
+      - enhancement
+  - title: '🐛 Fixes'
+    labels:
+      - bug
+  - title: '📦 Dependency Updates'
+    labels:
+      - dependencies
+
+exclude-labels:
+  - skip-changelog
+
+change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
+change-title-escapes: '\<*_&'
+
+version-resolver:
+  minor:
+    labels:
+      - enhancement
+  patch:
+    labels:
+      - bug
+      - dependencies
+  default: patch
+
+autolabeler:
+  # PR template "Type of Change" checkboxes
+  - label: enhancement
+    body:
+      - '/-\s*\[x\]\s*New feature/i'
+    branch:
+      - '/^feature\/.+/i'
+    title:
+      - '/^feat(ure)?(\(.+\))?!?:/i'
+  - label: bug
+    body:
+      - '/-\s*\[x\]\s*Bug fix/i'
+    branch:
+      - '/^(fix|bugfix)\/.+/i'
+    title:
+      - '/^fix(\(.+\))?!?:/i'
+  # Dependabot already labels its own PRs "dependencies"; this also
+  # catches manual version bump PRs ("Bump X to Y") by title/branch.
+  - label: dependencies
+    title:
+      - '/^(chore\(deps\)|bump)/i'
+    branch:
+      - '/^bump\/.+/i'
+
+template: |
+  ## What's Changed
+
+  $CHANGES
