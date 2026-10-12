@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_log: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          id: string
+          old_data: Json
+          row_id: string
+          table_name: string
+          user_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          old_data: Json
+          row_id: string
+          table_name: string
+          user_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          old_data?: Json
+          row_id?: string
+          table_name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       ccd_catalogs: {
         Row: {
           created_at: string
