@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/app/AppHeader";
+import { DataLossNotice } from "@/components/app/DataLossNotice";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2, Plus, Trash2, Copy, Star, StarOff } from "lucide-react";
@@ -144,6 +145,7 @@ export default function Sessions() {
     <div className="min-h-screen">
       <AppHeader />
       <main className="container mx-auto px-4 py-8 max-w-4xl">
+        <DataLossNotice />
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <div>
             <h1 className="text-2xl font-semibold">{t("sessions.title")}</h1>
