@@ -9,11 +9,16 @@ currently deployed, is the only supported version.
 Please **do not open a public GitHub issue** for a security report —
 anyone can see it before it's fixed.
 
-Instead, email **j44soft@gmail.com** with:
+Instead, use GitHub's private reporting: go to the
+[**Security** tab](../../security) of this repository and click
+**"Report a vulnerability"** to open a private security advisory. Include:
 
 - What the issue is and why it's a security concern (not just a bug)
 - Steps to reproduce, or a proof of concept if you have one
 - Impact: what data or accounts it could affect
+
+If you can't use GitHub advisories for some reason, email
+**j44soft@gmail.com** instead.
 
 We'll acknowledge your report and let you know once a fix is out. Please
 give us a reasonable amount of time to fix the issue before disclosing it
