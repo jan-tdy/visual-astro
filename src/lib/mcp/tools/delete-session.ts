@@ -14,8 +14,9 @@ export default defineTool({
     const supabase = supabaseForUser(ctx);
     const { error: obsErr } = await supabase.from("observations").delete().eq("session_id", session_id);
     if (obsErr) return fail(obsErr.message);
-    const { error } = await supabase.from("sessions").delete().eq("id", session_id);
+    const { data, error } = await supabase.from("sessions").delete().eq("id", session_id).select("id");
     if (error) return fail(error.message);
+    if (!data || data.length === 0) return fail("Session not found (or not yours to delete).");
     return ok({ deleted: session_id }, { deleted: session_id });
   },
 });

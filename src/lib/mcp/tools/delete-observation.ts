@@ -12,8 +12,9 @@ export default defineTool({
   handler: async ({ observation_id }, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
     const supabase = supabaseForUser(ctx);
-    const { error } = await supabase.from("observations").delete().eq("id", observation_id);
+    const { data, error } = await supabase.from("observations").delete().eq("id", observation_id).select("id");
     if (error) return fail(error.message);
+    if (!data || data.length === 0) return fail("Observation not found (or not yours to delete).");
     return ok({ deleted: observation_id }, { deleted: observation_id });
   },
 });

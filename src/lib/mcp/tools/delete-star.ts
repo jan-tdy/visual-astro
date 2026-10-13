@@ -12,8 +12,9 @@ export default defineTool({
   handler: async ({ star_id }, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
     const supabase = supabaseForUser(ctx);
-    const { error } = await supabase.from("stars").delete().eq("id", star_id);
+    const { data, error } = await supabase.from("stars").delete().eq("id", star_id).select("id");
     if (error) return fail(error.message);
+    if (!data || data.length === 0) return fail("Star not found (or not yours to delete).");
     return ok({ deleted: star_id }, { deleted: star_id });
   },
 });
