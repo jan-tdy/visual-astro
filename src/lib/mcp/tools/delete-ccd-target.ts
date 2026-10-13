@@ -14,8 +14,9 @@ export default defineTool({
     if (!ctx.isAuthenticated()) return unauthenticated();
     if (!(await isPlusActive(ctx))) return plusRequired();
     const supabase = supabaseForUser(ctx);
-    const { error } = await supabase.from("ccd_targets").delete().eq("id", target_id);
+    const { data, error } = await supabase.from("ccd_targets").delete().eq("id", target_id).select("id");
     if (error) return fail(error.message);
+    if (!data || data.length === 0) return fail("CCD target not found (or not yours to delete).");
     return ok({ deleted: target_id }, { deleted: target_id });
   },
 });

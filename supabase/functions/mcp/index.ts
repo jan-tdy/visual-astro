@@ -3421,8 +3421,9 @@ var delete_session_default = defineTool8({
     const supabase = supabaseForUser(ctx);
     const { error: obsErr } = await supabase.from("observations").delete().eq("session_id", session_id);
     if (obsErr) return fail(obsErr.message);
-    const { error } = await supabase.from("sessions").delete().eq("id", session_id);
+    const { data, error } = await supabase.from("sessions").delete().eq("id", session_id).select("id");
     if (error) return fail(error.message);
+    if (!data || data.length === 0) return fail("Session not found (or not yours to delete).");
     return ok({ deleted: session_id }, { deleted: session_id });
   }
 });
@@ -3524,8 +3525,9 @@ var delete_observation_default = defineTool11({
   handler: async ({ observation_id }, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
     const supabase = supabaseForUser(ctx);
-    const { error } = await supabase.from("observations").delete().eq("id", observation_id);
+    const { data, error } = await supabase.from("observations").delete().eq("id", observation_id).select("id");
     if (error) return fail(error.message);
+    if (!data || data.length === 0) return fail("Observation not found (or not yours to delete).");
     return ok({ deleted: observation_id }, { deleted: observation_id });
   }
 });
@@ -3742,8 +3744,9 @@ var delete_star_default = defineTool15({
   handler: async ({ star_id }, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
     const supabase = supabaseForUser(ctx);
-    const { error } = await supabase.from("stars").delete().eq("id", star_id);
+    const { data, error } = await supabase.from("stars").delete().eq("id", star_id).select("id");
     if (error) return fail(error.message);
+    if (!data || data.length === 0) return fail("Star not found (or not yours to delete).");
     return ok({ deleted: star_id }, { deleted: star_id });
   }
 });
@@ -3866,8 +3869,9 @@ var delete_ccd_target_default = defineTool19({
     if (!ctx.isAuthenticated()) return unauthenticated();
     if (!await isPlusActive(ctx)) return plusRequired();
     const supabase = supabaseForUser(ctx);
-    const { error } = await supabase.from("ccd_targets").delete().eq("id", target_id);
+    const { data, error } = await supabase.from("ccd_targets").delete().eq("id", target_id).select("id");
     if (error) return fail(error.message);
+    if (!data || data.length === 0) return fail("CCD target not found (or not yours to delete).");
     return ok({ deleted: target_id }, { deleted: target_id });
   }
 });
