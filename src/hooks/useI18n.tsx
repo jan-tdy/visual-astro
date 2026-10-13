@@ -490,7 +490,7 @@ export const dict = {
     "sessions.title": "Pozorovacia session",
     "sessions.seedFailed": "Seed katalóg zlyhal",
     "notice.dataLoss.title": "Niektoré staršie pozorovania sa nemuseli uložiť",
-    "notice.dataLoss.body": "Zistili sme, že časť úprav urobených priamo v editore session (tabuľka aj Raw mode) sa v minulosti niekedy neuložila do databázy, hoci sa to v appke nijako neoznámilo. Ak máš pocit, že ti v niektorej session chýbajú zapísané odhady alebo UT časy, napíš prosím na j44soft@gmail.com — pozrieme sa na to a skúsime pomôcť s obnovou (napr. z tvojich VSNET/AAVSO exportov).",
+    "notice.dataLoss.body": "Zistili sme, že 11. 10. 2026 sa zmazali určité dáta (dôvod: json import mal bug). Ak máš pocit, že ti v niektorej session chýbajú zapísané odhady alebo UT časy, napíš prosím na j44soft@gmail.com — pozrieme sa na to a skúsime pomôcť s obnovou..",
     "notice.dataLoss.dismiss": "Zavrieť upozornenie",
     "settings.auditLog.title": "Bezpečnostný audit log",
     "settings.auditLog.desc": "Záznam o zmazaných sessions a pozorovaniach — kto a odkiaľ to spravil.",
