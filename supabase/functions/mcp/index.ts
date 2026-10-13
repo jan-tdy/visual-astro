@@ -3628,7 +3628,7 @@ var export_session_default = defineTool12({
       code = profile?.obs_code ?? "DPV";
     }
     const observedAt = new Date(session.observed_at_utc);
-    const rows = (obs ?? []).map((o) => {
+    const rows = (obs ?? []).filter((o) => !!o.ut_time && !!o.ut_time.trim()).map((o) => {
       const star = o.stars;
       return {
         a: o.a,
