@@ -38,6 +38,7 @@ const LABEL_BADGE: Record<string, { variant: "default" | "secondary" | "destruct
   "data-integrity": { variant: "destructive", sk: "dáta", en: "data" },
   improvement: { variant: "outline", sk: "vylepšenie", en: "improvement" },
   bug: { variant: "destructive", sk: "fix", en: "fix" },
+  documentation: { variant: "secondary", sk: "dokumentácia", en: "docs" },
   dependencies: { variant: "secondary", sk: "bump", en: "bump" },
 };
 
