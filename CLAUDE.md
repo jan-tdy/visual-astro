@@ -53,6 +53,42 @@ an issue, `Related to #123` to reference one without closing it), the
 `Note`/`FAQ` section for large, multi-issue PRs — delete it otherwise, as
 the template itself says.
 
+Keep every PR scoped to one concern — one bug, one feature (per
+`CONTRIBUTING.md`). This isn't just about reviewability: it's also what
+keeps release notes honest. A PR gets exactly one release-note label (see
+below), so bundling an unrelated data-integrity fix and a wording tweak
+into the same PR forces one of them under the wrong label, or forces a
+label onto the PR that fits neither change well. If unrelated fixes are
+found together (e.g. while investigating one bug), each still ships as its
+own separate PR.
+
+### Release-note labels
+
+`.github/release-drafter.yml` groups the draft release by label, and
+`src/pages/Changelog.tsx` renders that release body verbatim in-app — the
+label a PR gets decides which section end users see it under, not just how
+it's filed internally. Every merged PR needs exactly one of these (never
+`bug` alongside `data-integrity`/`improvement` on the same PR — categories
+aren't deduplicated, so it would show up twice):
+
+- `data-integrity` — fixes something that actually lost, corrupted, or
+  silently mismatched data (a cascade-delete, a check-then-act race, a bad
+  import wiping records). Takes priority over `bug` whenever it applies.
+- `improvement` — a refinement that isn't "something was broken" (wording,
+  UX polish, a non-data-loss behavior tweak) and isn't new functionality
+  either.
+- `bug` — any other correctness fix that doesn't fit the two above.
+- `enhancement` — new functionality, including process/tooling additions
+  (a new CI workflow, a new repo convention) even when nothing changes for
+  the end user in the app itself.
+- `dependencies` — applied automatically by Dependabot/the autolabeler;
+  leave it alone.
+
+`enhancement` on any PR since the last release bumps the next version as
+**minor** (`vX.(Y+1).0`); every other label bumps **patch**. There's no
+PR-count threshold for this — the bump reflects the most significant label
+in the set, not how many PRs merged.
+
 ## Architecture
 
 Visual Astro is a Vite + React + TypeScript SPA for logging visual variable-star
