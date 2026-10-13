@@ -106,6 +106,10 @@ export default function Sessions() {
         const rows = lastObs.map((o) => ({
           ...o,
           ut_time: null,
+          // The template's note described its own observation (e.g. "OUTBURST");
+          // carrying it onto this unobserved row would mislabel it before anything
+          // new has actually been measured.
+          note: null,
           session_id: created.id,
           user_id: user.id,
         }));
