@@ -22,6 +22,13 @@ categories:
   - title: '🐛 Fixes'
     labels:
       - bug
+  # Docs-only changes (CLAUDE.md, CONTRIBUTING.md, README, etc.) — no code,
+  # so neither a fix nor a feature. Without its own category these fall
+  # through to the un-categorized "What's Changed" list above every
+  # section, which reads like an orphaned entry rather than a real one.
+  - title: '📝 Documentation'
+    labels:
+      - documentation
   - title: '📦 Dependency Updates'
     labels:
       - dependencies
@@ -42,6 +49,7 @@ version-resolver:
       - dependencies
       - data-integrity
       - improvement
+      - documentation
   default: patch
 
 autolabeler:
@@ -67,6 +75,11 @@ autolabeler:
       - '/^(chore\(deps\)|bump)/i'
     branch:
       - '/^bump\/.+/i'
+  - label: documentation
+    title:
+      - '/^docs(\(.+\))?:/i'
+    branch:
+      - '/^docs\/.+/i'
 
 template: |
   ## What's Changed

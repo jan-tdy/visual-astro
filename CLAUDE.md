@@ -81,6 +81,9 @@ aren't deduplicated, so it would show up twice):
 - `enhancement` — new functionality, including process/tooling additions
   (a new CI workflow, a new repo convention) even when nothing changes for
   the end user in the app itself.
+- `documentation` — a docs-only change (this file, `CONTRIBUTING.md`,
+  `README.md`) with no code. Leaving a PR unlabeled instead drops it into
+  the un-categorized list above every section in the draft release.
 - `dependencies` — applied automatically by Dependabot/the autolabeler;
   leave it alone.
 
