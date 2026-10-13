@@ -177,15 +177,10 @@ export default function Catalog() {
   };
 
   const runImport = async (replace: boolean) => {
-    if (!user || !confirmImport) return;
+    if (!user || !confirmImport || loading) return;
     const { data } = confirmImport;
-    if (replace) {
-      const { error: delErr } = await supabase.from("stars").delete().eq("user_id", user.id);
-      if (delErr) { toast.error(delErr.message); return; }
-    }
     const baseSort = replace ? 0 : Math.max(0, ...stars.map((x) => x.sort_order));
     const rows = data.map((s: any, i: number) => ({
-      user_id: user.id,
       name: String(s.name ?? "").trim(),
       constellation: String(s.constellation ?? "").trim(),
       type: (TYPES as readonly string[]).includes(s.type) ? s.type : "VISUAL",
@@ -196,10 +191,100 @@ export default function Catalog() {
       sort_order: typeof s.sort_order === "number" ? s.sort_order : baseSort + i + 1,
     })).filter((r) => r.name && r.constellation);
     if (rows.length === 0) { toast.error(t("catalog.toast.noRows")); setConfirmImport(null); return; }
-    for (let i = 0; i < rows.length; i += 200) {
-      const { error } = await supabase.from("stars").insert(rows.slice(i, i + 200));
-      if (error) { toast.error(error.message); return; }
+
+    if (replace) {
+      // "Replace" used to delete every existing star for this user and reinsert the
+      // import as fresh rows with brand-new ids. observations.star_id cascades on
+      // delete, so that silently wiped every observation ever recorded against any
+      // star — across every session — the instant someone replaced their catalog.
+      //
+      // Instead, match each imported row to at most one existing star so a star
+      // that's still in the new catalog keeps its id (and therefore its history),
+      // and gets UPDATEd in place rather than replaced — renamed, retyped, or
+      // reordered, but still the same star. The plain-JSON export has no
+      // persistent id, so identity is inferred: a VSNET or AAVSO code is treated
+      // as the star's stable identifier when the row has one (so renaming a star
+      // but keeping its code still matches it to the same row), falling back to
+      // (name, constellation) otherwise. A star with neither a code nor an
+      // unchanged name+constellation can't be told apart from "deleted, then a
+      // different star added" — there's nothing left in the file to match it by.
+      // No unique DB constraint enforces any of these keys, so several existing
+      // stars can share one; each key holds a queue and a star is claimed by at
+      // most one imported row.
+      const norm = (v: string | null | undefined) => (v ?? "").trim().toLowerCase();
+      const nameKey = (name: string, constellation: string) => `${name.toLowerCase()}|${constellation.toLowerCase()}`;
+
+      const byVsnet = new Map<string, Star[]>();
+      const byAavso = new Map<string, Star[]>();
+      const byNameConst = new Map<string, Star[]>();
+      const enqueue = (map: Map<string, Star[]>, key: string, s: Star) => {
+        if (!key) return;
+        const arr = map.get(key);
+        if (arr) arr.push(s);
+        else map.set(key, [s]);
+      };
+      for (const s of stars) {
+        enqueue(byVsnet, norm(s.vsnet_code), s);
+        enqueue(byAavso, norm(s.aavso_code), s);
+        enqueue(byNameConst, nameKey(s.name, s.constellation), s);
+      }
+
+      const claimedIds = new Set<string>();
+      const claim = (map: Map<string, Star[]>, key: string): Star | null => {
+        if (!key) return null;
+        const arr = map.get(key);
+        if (!arr) return null;
+        while (arr.length > 0) {
+          const candidate = arr.shift()!;
+          if (!claimedIds.has(candidate.id)) {
+            claimedIds.add(candidate.id);
+            return candidate;
+          }
+        }
+        return null;
+      };
+
+      const inserts: typeof rows = [];
+      for (const r of rows) {
+        const existing =
+          claim(byVsnet, norm(r.vsnet_code)) ??
+          claim(byAavso, norm(r.aavso_code)) ??
+          claim(byNameConst, nameKey(r.name, r.constellation));
+        if (existing) {
+          const { error } = await supabase.from("stars").update(r).eq("id", existing.id);
+          if (error) { toast.error(error.message); return; }
+        } else {
+          inserts.push(r);
+        }
+      }
+      for (let i = 0; i < inserts.length; i += 200) {
+        const { error } = await supabase
+          .from("stars")
+          .insert(inserts.slice(i, i + 200).map((r) => ({ ...r, user_id: user.id })));
+        if (error) { toast.error(error.message); return; }
+      }
+
+      // Stars dropped from the new catalog: only delete the ones nobody has ever
+      // observed — one no longer imports but still has recorded observations stays
+      // in the catalog rather than taking its history down with it. Done as one
+      // DB-side statement (see delete_unobserved_stars) instead of a client-side
+      // check-then-delete, so a new observation landing in between can't race it
+      // into getting deleted anyway, and so it isn't capped by PostgREST's
+      // ~1000-row response limit the way a plain SELECT would be.
+      const droppedIds = stars.filter((s) => !claimedIds.has(s.id)).map((s) => s.id);
+      if (droppedIds.length > 0) {
+        const { error } = await supabase.rpc("delete_unobserved_stars", { p_star_ids: droppedIds });
+        if (error) { toast.error(error.message); return; }
+      }
+    } else {
+      for (let i = 0; i < rows.length; i += 200) {
+        const { error } = await supabase
+          .from("stars")
+          .insert(rows.slice(i, i + 200).map((r) => ({ ...r, user_id: user.id })));
+        if (error) { toast.error(error.message); return; }
+      }
     }
+
     toast.success(t("catalog.toast.imported").replace("{n}", String(rows.length)));
     setConfirmImport(null);
     reload();
@@ -346,8 +431,8 @@ export default function Catalog() {
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-wrap gap-2">
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <Button variant="outline" onClick={() => runImport(false)}>{t("catalog.import.append")}</Button>
-            <AlertDialogAction onClick={() => runImport(true)}>{t("catalog.import.replace")}</AlertDialogAction>
+            <Button variant="outline" disabled={loading} onClick={() => runImport(false)}>{t("catalog.import.append")}</Button>
+            <AlertDialogAction disabled={loading} onClick={() => runImport(true)}>{t("catalog.import.replace")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
