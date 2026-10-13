@@ -5,6 +5,20 @@ categories:
   - title: '✨ Features'
     labels:
       - enhancement
+  # Checked first so a PR labeled both `bug` and `data-integrity` (most of
+  # them are) lands here rather than in the generic Fixes bucket below —
+  # these are the ones where something was actually lost or corrupted, not
+  # just behaving wrong, and readers of the changelog should be able to
+  # tell the difference at a glance.
+  - title: '🔒 Data Integrity & Security'
+    labels:
+      - data-integrity
+  # Same reasoning, for a PR that's a refinement/polish rather than
+  # "this was broken" — wording tweaks, UX adjustments, non-data-loss
+  # behavior changes that don't fit "Features" either.
+  - title: '🧭 Improvements'
+    labels:
+      - improvement
   - title: '🐛 Fixes'
     labels:
       - bug
@@ -26,6 +40,8 @@ version-resolver:
     labels:
       - bug
       - dependencies
+      - data-integrity
+      - improvement
   default: patch
 
 autolabeler:

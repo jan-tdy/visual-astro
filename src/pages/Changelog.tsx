@@ -35,6 +35,8 @@ type MergedPr = {
 // release already groups its entries into (see .github/release-drafter.yml).
 const LABEL_BADGE: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; sk: string; en: string }> = {
   enhancement: { variant: "default", sk: "feature", en: "feature" },
+  "data-integrity": { variant: "destructive", sk: "dáta", en: "data" },
+  improvement: { variant: "outline", sk: "vylepšenie", en: "improvement" },
   bug: { variant: "destructive", sk: "fix", en: "fix" },
   dependencies: { variant: "secondary", sk: "bump", en: "bump" },
 };

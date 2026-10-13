@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
     types: [opened, reopened, synchronize]
+  # Lets the draft be regenerated on demand — e.g. after relabeling an
+  # already-merged PR, which doesn't itself produce a push or pull_request
+  # event on main.
+  workflow_dispatch: {}
 
 permissions:
   contents: read
