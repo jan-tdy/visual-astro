@@ -501,6 +501,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_unobserved_stars: {
+        Args: { p_star_ids: string[] }
+        Returns: string[]
+      }
       has_active_bonus: { Args: { _user_id: string }; Returns: boolean }
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
