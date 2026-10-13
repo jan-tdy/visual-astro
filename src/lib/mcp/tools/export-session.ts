@@ -38,22 +38,27 @@ export default defineTool({
       code = profile?.obs_code ?? "DPV";
     }
     const observedAt = new Date(session.observed_at_utc);
-    const rows: ExportRow[] = (obs ?? []).map((o) => {
-      const star = (o as { stars?: { name?: string; vsnet_code?: string | null; aavso_code?: string | null; chart_id?: string | null } }).stars;
-      return {
-        a: o.a,
-        b: o.b,
-        pasos_a: o.pasos_a,
-        pasos_b: o.pasos_b,
-        limit_value: o.limit_value,
-        ut_time: o.ut_time,
-        note: o.note,
-        star_name: star?.name ?? "",
-        vsnet_code: star?.vsnet_code ?? null,
-        aavso_code: star?.aavso_code ?? null,
-        chart_id: star?.chart_id ?? null,
-      };
-    });
+    // Mirrors SessionEditor's export dialog: a row with no UT time has no real
+    // observation instant yet, so it must be omitted rather than exported under
+    // the session's placeholder date (see rowDate()'s fallback in ../../exporters).
+    const rows: ExportRow[] = (obs ?? [])
+      .filter((o) => !!o.ut_time && !!o.ut_time.trim())
+      .map((o) => {
+        const star = (o as { stars?: { name?: string; vsnet_code?: string | null; aavso_code?: string | null; chart_id?: string | null } }).stars;
+        return {
+          a: o.a,
+          b: o.b,
+          pasos_a: o.pasos_a,
+          pasos_b: o.pasos_b,
+          limit_value: o.limit_value,
+          ut_time: o.ut_time,
+          note: o.note,
+          star_name: star?.name ?? "",
+          vsnet_code: star?.vsnet_code ?? null,
+          aavso_code: star?.aavso_code ?? null,
+          chart_id: star?.chart_id ?? null,
+        };
+      });
     const exportCtx = {
       observedAt,
       jd: session.jd != null ? Number(session.jd) : dateToJD(observedAt),
