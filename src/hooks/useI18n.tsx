@@ -1116,7 +1116,7 @@ export const dict = {
     "sessions.title": "Observing session",
     "sessions.seedFailed": "Catalogue seed failed",
     "notice.dataLoss.title": "Some older observations may not have been saved",
-    "notice.dataLoss.body": "We found that some edits made directly in the session editor (table and Raw mode) sometimes failed to save to the database in the past, without any error shown in the app. If you think a session is missing recorded estimates or UT times, please email j44soft@gmail.com — we'll look into it and try to help recover it (e.g. from your VSNET/AAVSO exports).",
+    "notice.dataLoss.body": "We found that on 11.10.2026 there was a data loss caused by JSON import (it had a bug). If you think a session is missing recorded estimates or UT times, please email j44soft@gmail.com — we'll look into it and try to help recover it (e.g. from your VSNET/AAVSO exports).",
     "notice.dataLoss.dismiss": "Dismiss notice",
     "settings.auditLog.title": "Security audit log",
     "settings.auditLog.desc": "Record of deleted sessions and observations — who did it, and from where.",
