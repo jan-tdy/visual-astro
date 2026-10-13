@@ -53,6 +53,15 @@ an issue, `Related to #123` to reference one without closing it), the
 `Note`/`FAQ` section for large, multi-issue PRs — delete it otherwise, as
 the template itself says.
 
+Keep every PR scoped to one concern — one bug, one feature (per
+`CONTRIBUTING.md`). This isn't just about reviewability: it's also what
+keeps release notes honest. A PR gets exactly one release-note label (see
+below), so bundling an unrelated data-integrity fix and a wording tweak
+into the same PR forces one of them under the wrong label, or forces a
+label onto the PR that fits neither change well. If unrelated fixes are
+found together (e.g. while investigating one bug), each still ships as its
+own separate PR.
+
 ### Release-note labels
 
 `.github/release-drafter.yml` groups the draft release by label, and
