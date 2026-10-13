@@ -81,8 +81,26 @@ export function exportPromJSON(): string {
   return JSON.stringify(getPromTable(), null, 2);
 }
 
+function isValidPromTable(value: unknown): value is PromTable {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const entries = Object.entries(value as Record<string, unknown>);
+  if (entries.length === 0) return false;
+  for (const [, letters] of entries) {
+    if (typeof letters !== "object" || letters === null || Array.isArray(letters)) return false;
+    for (const mag of Object.values(letters as Record<string, unknown>)) {
+      if (typeof mag !== "number" || !Number.isFinite(mag)) return false;
+    }
+  }
+  return true;
+}
+
+export class PromImportShapeError extends Error {}
+
 export function importPromJSON(json: string) {
-  const parsed = JSON.parse(json) as PromTable;
+  const parsed = JSON.parse(json);
+  if (!isValidPromTable(parsed)) {
+    throw new PromImportShapeError("Invalid prom catalogue file");
+  }
   // Store as full overrides so user-imported set takes precedence
   const ov: PromTable = {};
   // Tombstone bundled stars not present in import

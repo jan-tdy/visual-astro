@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   deletePromStar, exportPromJSON, getPromTable, importPromJSON,
-  renamePromStar, resetPromOverrides, subscribePromStore, upsertPromStar,
+  PromImportShapeError, renamePromStar, resetPromOverrides, subscribePromStore, upsertPromStar,
 } from "@/lib/promStore";
 import { useI18n } from "@/hooks/useI18n";
 import { getPrefs } from "@/hooks/usePrefs";
@@ -62,7 +62,7 @@ export default function Prom() {
         importPromJSON(String(reader.result));
         toast.success(t("prom.toast.imported"));
       } catch (e: any) {
-        toast.error(e.message ?? "Invalid JSON");
+        toast.error(e instanceof PromImportShapeError ? t("prom.toast.invalid") : (e.message ?? "Invalid JSON"));
       }
     };
     reader.readAsText(file);
