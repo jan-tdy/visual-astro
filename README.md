@@ -11,6 +11,11 @@ star magnitudes with the Nijland-Blazhko method, and export your results straigh
 
 You can take a look at my issue and pr queue if you are wondering why is something stale for days [here](https://github.com/issues/assigned?q=is%3Aissue+or+is%3Apr+state%3Aopen+archived%3Afalse+user%3Ajan-tdy+sort%3Acreated-asc)
 
+## Where to use it?
+
+Stable version: https://japysoft.bombol.space/
+Dev version: https://visual-astro.vercel.app/
+
 ## Features
 
 - **Sessions** — record observing sessions and individual magnitude estimates.
