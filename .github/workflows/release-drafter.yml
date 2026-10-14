@@ -122,7 +122,7 @@ jobs:
               "",
               "## 🪄 Direct Lovable Edits",
               "",
-              "_Pushed straight to `main` through the Lovable editor — it can't open pull requests, so these never get a release-note label. Listed here instead of being silently dropped:_",
+              "Edits pushed straight to `main` through the Lovable editor",
               "",
               ...bullets,
               "",
