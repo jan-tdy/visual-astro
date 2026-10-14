@@ -81,6 +81,15 @@ describe("resolveCompValue — AAVSO label convention", () => {
     expect(resolveCompValue(undefined, "9.4")).toBe(9.4);
   });
 
+  it("treats a decimal comma the same as a decimal point", () => {
+    // "9,40" must be 9.4 — parseFloat alone would stop at the comma and the
+    // missing "." would let the label convention rescale it.
+    expect(resolveCompValue(undefined, "9,40")).toBe(9.4);
+    expect(resolveCompValue(undefined, "13,1")).toBe(13.1);
+    // A comma value above the threshold is still a magnitude, never rescaled.
+    expect(resolveCompValue(undefined, "94,0")).toBe(94);
+  });
+
   it("keeps a value that is already an observable magnitude", () => {
     // Anything up to ~20 is a magnitude a visual observer could actually
     // record, including genuinely bright stars, so it is read literally.

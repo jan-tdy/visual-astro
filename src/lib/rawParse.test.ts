@@ -99,6 +99,12 @@ describe("parseRawLine", () => {
     });
   });
 
+  it("normalizes decimal commas to points in comparators", () => {
+    expect(parseRawLine("mvlyr12,51v312,92110", index)).toMatchObject({
+      starToken: "mvlyr", a: "12.5", pasos_a: 1, pasos_b: 3, b: "12.9", ut_time: "21:10",
+    });
+  });
+
   it("parses a limit line", () => {
     expect(parseRawLine("agdra<13-52108", index)).toMatchObject({
       starToken: "agdra", limit_value: "<13.5", ut_time: "21:08",

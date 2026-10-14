@@ -995,7 +995,7 @@ export default function SessionEditor() {
         const n = norm(String(nameRaw));
         const star = byName.get(n) ?? byName.get(n.replace(/\s+/g, ""));
         if (!star) { skipped++; continue; }
-        const num = (v: any) => (v == null || v === "" ? null : Number.isFinite(+v) ? parseFloat(String(v)) : null);
+        const num = (v: any) => (v == null || v === "" ? null : Number.isFinite(+String(v).replace(",", ".")) ? parseFloat(String(v).replace(",", ".")) : null);
         const patch: Partial<Obs> = {
           a: o.a != null && o.a !== "" ? String(o.a) : null,
           pasos_a: num(o.pasos_a),

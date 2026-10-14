@@ -89,11 +89,13 @@ export function resolveCompValue(
   if (raw == null) return NaN;
   const s = String(raw).trim();
   if (!s) return NaN;
-  const direct = parseFloat(s);
+  // Accept decimal commas ("9,40") the same as decimal points.
+  const sn = s.replace(/,/g, ".");
+  const direct = parseFloat(sn);
   if (Number.isFinite(direct) && /^-?\d/.test(s)) {
     // Values carrying an explicit decimal point are magnitudes already and
     // are never rescaled — see DEFAULT_COMP_LABEL_THRESHOLD above.
-    if (!s.includes(".") && Math.abs(direct) > labelThreshold) return direct / 10;
+    if (!sn.includes(".") && Math.abs(direct) > labelThreshold) return direct / 10;
     return direct;
   }
   if (!starName) return NaN;
