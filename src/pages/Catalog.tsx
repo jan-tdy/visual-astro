@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Loader2, Plus, Trash2, Save, Download, Upload, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -28,6 +29,7 @@ type Star = {
   chart_id: string | null;
   notes: string | null;
   sort_order: number;
+  active: boolean;
 };
 
 const TYPES = ["VISUAL", "BINAR", "ECL faint", "ECL bright"] as const;
@@ -108,6 +110,18 @@ export default function Catalog() {
     }
   };
 
+  const toggleActive = async (s: Star) => {
+    const active = !s.active;
+    setStars((prev) => prev.map((x) => (x.id === s.id ? { ...x, active } : x)));
+    const { error } = await supabase.from("stars").update({ active }).eq("id", s.id);
+    if (error) {
+      toast.error(error.message);
+      setStars((prev) => prev.map((x) => (x.id === s.id ? { ...x, active: s.active } : x)));
+    } else {
+      toast.success(active ? t("catalog.toast.activated") : t("catalog.toast.deactivated"));
+    }
+  };
+
   const remove = async (id: string) => {
     const { error } = await supabase.from("stars").delete().eq("id", id);
     if (error) toast.error(error.message);
@@ -125,6 +139,7 @@ export default function Catalog() {
         aavso_code: s.aavso_code,
         chart_id: s.chart_id,
         notes: s.notes,
+        active: s.active,
       })
       .eq("id", s.id);
     if (error) toast.error(error.message);
@@ -189,6 +204,7 @@ export default function Catalog() {
       chart_id: s.chart_id ?? null,
       notes: s.notes ?? null,
       sort_order: typeof s.sort_order === "number" ? s.sort_order : baseSort + i + 1,
+      active: typeof s.active === "boolean" ? s.active : true,
     })).filter((r) => r.name && r.constellation);
     if (rows.length === 0) { toast.error(t("catalog.toast.noRows")); setConfirmImport(null); return; }
 
@@ -339,6 +355,7 @@ export default function Catalog() {
                   <th className="px-3 py-2">{t("catalog.col.vsnet")}</th>
                   <th className="px-3 py-2">{t("catalog.col.aavso")}</th>
                   <th className="px-3 py-2">{t("catalog.col.chart")}</th>
+                  <th className="px-3 py-2">{t("catalog.col.active")}</th>
                   <th className="px-3 py-2 w-32"></th>
                 </tr>
               </thead>
@@ -349,13 +366,26 @@ export default function Catalog() {
                   const canUp = pos > 0;
                   const canDown = pos >= 0 && pos < siblings.length - 1;
                   return (
-                  <tr key={s.id} className="border-b border-border/50 hover:bg-secondary/20 cursor-pointer" onClick={() => setEditing(s)}>
+                  <tr
+                    key={s.id}
+                    className={`border-b border-border/50 hover:bg-secondary/20 cursor-pointer ${s.active ? "" : "opacity-50"}`}
+                    onClick={() => setEditing(s)}
+                  >
                     <td className="px-3 py-2 font-medium">{s.name}</td>
                     <td className="px-3 py-2 text-muted-foreground">{s.constellation}</td>
                     <td className="px-3 py-2 text-xs">{s.type}</td>
                     <td className="px-3 py-2 font-mono text-xs">{s.vsnet_code}</td>
                     <td className="px-3 py-2 font-mono text-xs">{s.aavso_code}</td>
                     <td className="px-3 py-2 font-mono text-xs">{s.chart_id}</td>
+                    <td className="px-3 py-2">
+                      <Switch
+                        checked={s.active}
+                        aria-label={s.active ? t("catalog.active.deactivate") : t("catalog.active.activate")}
+                        title={s.active ? t("catalog.active.deactivate") : t("catalog.active.activate")}
+                        onClick={(e) => e.stopPropagation()}
+                        onCheckedChange={() => toggleActive(s)}
+                      />
+                    </td>
                     <td className="px-3 py-2 text-right">
                       <Button variant="ghost" size="icon" disabled={!canUp} aria-label={t("catalog.moveUp")} title={t("catalog.moveUp")} onClick={(e) => { e.stopPropagation(); moveStar(s, -1); }}>
                         <ArrowUp className="h-4 w-4" />
@@ -452,7 +482,7 @@ function StarDialog({
   const { t } = useI18n();
   const [form, setForm] = useState({
     name: "", constellation: "", type: "VISUAL" as Star["type"],
-    vsnet_code: "", aavso_code: "", chart_id: "", notes: "",
+    vsnet_code: "", aavso_code: "", chart_id: "", notes: "", active: true,
   });
   const [constMode, setConstMode] = useState<"preset" | "other">("preset");
   useEffect(() => {
@@ -460,11 +490,11 @@ function StarDialog({
       setForm({
         name: star.name, constellation: star.constellation, type: star.type,
         vsnet_code: star.vsnet_code ?? "", aavso_code: star.aavso_code ?? "",
-        chart_id: star.chart_id ?? "", notes: star.notes ?? "",
+        chart_id: star.chart_id ?? "", notes: star.notes ?? "", active: star.active,
       });
       setConstMode(usedConstellations.includes(star.constellation) ? "preset" : "other");
     } else if (open) {
-      setForm({ name: "", constellation: "", type: "VISUAL", vsnet_code: "", aavso_code: "", chart_id: "", notes: "" });
+      setForm({ name: "", constellation: "", type: "VISUAL", vsnet_code: "", aavso_code: "", chart_id: "", notes: "", active: true });
       setConstMode("preset");
     }
   }, [star, open, usedConstellations]);
@@ -546,6 +576,13 @@ function StarDialog({
               <p className="text-xs text-muted-foreground mt-1">{hint}</p>
             </div>
           ))}
+          <div className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2">
+            <div>
+              <Label>{t("catalog.dialog.active")}</Label>
+              <p className="text-xs text-muted-foreground mt-1">{t("catalog.dialog.activeHint")}</p>
+            </div>
+            <Switch checked={form.active} onCheckedChange={(v) => setForm({ ...form, active: v })} />
+          </div>
           <Button className="w-full" onClick={() => onSave({ ...form, vsnet_code: form.vsnet_code || null, aavso_code: form.aavso_code || null, chart_id: form.chart_id || null, notes: form.notes || null })}>
             <Save className="h-4 w-4 mr-1.5" /> {t("catalog.dialog.save")}
           </Button>

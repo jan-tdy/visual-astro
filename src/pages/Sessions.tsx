@@ -98,12 +98,19 @@ export default function Sessions() {
     if (error) return toast.error(error.message);
 
     if (templateId) {
-      const { data: lastObs } = await supabase
-        .from("observations")
-        .select("star_id, a, pasos_a, pasos_b, b, limit_value, ut_time, note")
-        .eq("session_id", templateId);
-      if (lastObs && lastObs.length > 0) {
-        const rows = lastObs.map((o) => ({
+      const [{ data: lastObs }, { data: inactiveStars }] = await Promise.all([
+        supabase
+          .from("observations")
+          .select("star_id, a, pasos_a, pasos_b, b, limit_value, ut_time, note")
+          .eq("session_id", templateId),
+        supabase.from("stars").select("id").eq("active", false),
+      ]);
+      // Skip stars deactivated in the catalog since the template session was
+      // recorded — a new session shouldn't resurrect a blank row for them.
+      const inactiveIds = new Set((inactiveStars ?? []).map((s) => s.id));
+      const carried = (lastObs ?? []).filter((o) => !inactiveIds.has(o.star_id));
+      if (carried.length > 0) {
+        const rows = carried.map((o) => ({
           ...o,
           ut_time: null,
           // The template's note described its own observation (e.g. "OUTBURST");

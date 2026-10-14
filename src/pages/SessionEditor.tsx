@@ -39,6 +39,7 @@ type Star = {
   aavso_code: string | null;
   chart_id: string | null;
   sort_order: number;
+  active: boolean;
 };
 type Obs = {
   id?: string;
@@ -514,7 +515,6 @@ export default function SessionEditor() {
       }
       setObservedAt(new Date(session.observed_at_utc));
       setSessionName(session.name ?? "");
-      setStars(starsResult.data);
       const map: Record<string, Obs> = {};
       const extras: Record<string, Obs[]> = {};
       const sorted = (obsList ?? []).slice().sort(
@@ -527,6 +527,10 @@ export default function SessionEditor() {
           extras[o.star_id].push(o);
         }
       }
+      // A deactivated star drops out of the entry grid for new sessions, but a
+      // session that already recorded something against it before it was
+      // deactivated keeps showing it, so that data stays visible/editable here.
+      setStars(starsResult.data.filter((s) => s.active || map[s.id] || extras[s.id]));
       setObsByStar(map);
       setExtraByStar(extras);
       // Uložíme kópiu pôvodných hodnôt ako baseline (deep clone stačí plytký).
