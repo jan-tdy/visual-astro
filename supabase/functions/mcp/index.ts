@@ -2935,9 +2935,10 @@ function resolveCompValue(starName, raw, labelThreshold = DEFAULT_COMP_LABEL_THR
   if (raw == null) return NaN;
   const s = String(raw).trim();
   if (!s) return NaN;
-  const direct = parseFloat(s);
+  const sn = s.replace(/,/g, ".");
+  const direct = parseFloat(sn);
   if (Number.isFinite(direct) && /^-?\d/.test(s)) {
-    if (!s.includes(".") && Math.abs(direct) > labelThreshold) return direct / 10;
+    if (!sn.includes(".") && Math.abs(direct) > labelThreshold) return direct / 10;
     return direct;
   }
   if (!starName) return NaN;

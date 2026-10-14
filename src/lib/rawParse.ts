@@ -363,7 +363,7 @@ export function replaceRawLineNote(line: string, newNote: string): string {
   return trimmed ? `${body}#${trimmed}` : body;
 }
 
-const dashToDot = (v: string | null) => (v ? v.replace(/-/g, ".") : v);
+const dashToDot = (v: string | null) => (v ? v.replace(/[-,]/g, ".") : v);
 
 const utFromDigits = (d: string) =>
   d.length === 3 ? d[0] + ":" + d.slice(1) : d.slice(0, 2) + ":" + d.slice(2);
