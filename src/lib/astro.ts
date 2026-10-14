@@ -116,7 +116,10 @@ export function computeMagnitude(
   labelThreshold: number = DEFAULT_COMP_LABEL_THRESHOLD,
 ): { value: string | null; numeric: number | null } {
   if (o.limit_value && o.limit_value.trim()) {
-    return { value: o.limit_value.trim(), numeric: null };
+    // Accept decimal commas ("<14,9") the same as decimal points, matching
+    // resolveCompValue below — this field isn't run through formatAB's
+    // normalization since a "<" prefix doesn't survive that function.
+    return { value: o.limit_value.trim().replace(/,/g, "."), numeric: null };
   }
   const aNum = resolveCompValue(starName, o.a ?? null, labelThreshold);
   const bNum = resolveCompValue(starName, o.b ?? null, labelThreshold);
@@ -158,7 +161,8 @@ export function applyUtTimeToDate(d: Date, utTime: string | null | undefined): v
  */
 export function parseLimitMagnitude(raw: string | null | undefined): number | null {
   if (!raw) return null;
-  const m = String(raw).match(/-?\d+(\.\d+)?/);
+  const normalized = String(raw).replace(/,/g, ".");
+  const m = normalized.match(/-?\d+(\.\d+)?/);
   if (!m) return null;
   const v = parseFloat(m[0]);
   return Number.isFinite(v) ? v : null;

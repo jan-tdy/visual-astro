@@ -125,6 +125,10 @@ describe("computeMagnitude", () => {
   it("returns a limit as-is", () => {
     expect(computeMagnitude({ limit_value: "<16.0" }).value).toBe("<16.0");
   });
+
+  it("normalizes a decimal comma in a limit (sk locale input)", () => {
+    expect(computeMagnitude({ limit_value: "<14,9" }).value).toBe("<14.9");
+  });
 });
 
 describe("parseLimitMagnitude", () => {
@@ -149,6 +153,10 @@ describe("parseLimitMagnitude", () => {
   it("returns null when no number is present", () => {
     expect(parseLimitMagnitude("<")).toBeNull();
     expect(parseLimitMagnitude("n/a")).toBeNull();
+  });
+
+  it("accepts a decimal comma (sk locale input)", () => {
+    expect(parseLimitMagnitude("<14,9")).toBe(14.9);
   });
 });
 
