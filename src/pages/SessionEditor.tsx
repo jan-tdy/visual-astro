@@ -989,6 +989,13 @@ export default function SessionEditor() {
 
       let matched = 0, skipped = 0;
       const upserts: any[] = [];
+      // Tracks ids assigned earlier in *this* loop, since obsByStar itself only
+      // updates on the next render — without this, the same star appearing twice
+      // in the imported data (e.g. an OCR split-scan crop overlap duplicating a
+      // line) would read obsByStar[star.id]?.id as still unset both times and
+      // generate two different random ids, inserting a duplicate DB row for the
+      // first occurrence that the UI then never shows or updates again.
+      const assignedIds = new Map<string, string>();
       for (const o of obsArr) {
         const nameRaw = o?.star_name ?? o?.name ?? o?.estrella;
         if (!nameRaw) continue;
@@ -1005,7 +1012,8 @@ export default function SessionEditor() {
           ut_time: o.ut_time != null && o.ut_time !== "" ? String(o.ut_time) : null,
           note: o.note != null && o.note !== "" ? String(o.note) : null,
         };
-        const rowId = obsByStar[star.id]?.id ?? crypto.randomUUID();
+        const rowId = assignedIds.get(star.id) ?? obsByStar[star.id]?.id ?? crypto.randomUUID();
+        assignedIds.set(star.id, rowId);
         setObsByStar((prev) => {
           const cur = prev[star.id] ?? {
             star_id: star.id, a: null, pasos_a: null, pasos_b: null, b: null,
