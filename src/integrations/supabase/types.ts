@@ -406,6 +406,7 @@ export type Database = {
       stars: {
         Row: {
           aavso_code: string | null
+          active: boolean
           chart_id: string | null
           constellation: string
           created_at: string
@@ -420,6 +421,7 @@ export type Database = {
         }
         Insert: {
           aavso_code?: string | null
+          active?: boolean
           chart_id?: string | null
           constellation: string
           created_at?: string
@@ -434,6 +436,7 @@ export type Database = {
         }
         Update: {
           aavso_code?: string | null
+          active?: boolean
           chart_id?: string | null
           constellation?: string
           created_at?: string
