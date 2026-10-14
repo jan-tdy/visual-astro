@@ -2024,7 +2024,7 @@ export default function SessionEditor() {
                             <Input data-cell={`${r}-3`} onKeyDown={handleCellKey} value={o?.b ?? ""} onChange={(e) => updateObs(s.id, { b: formatAB(e.target.value) || null })} className="h-7 text-xs rounded-sm" />
                           </td>
                           <td className="px-1 py-1">
-                            <Input data-cell={`${r}-4`} onKeyDown={handleCellKey} value={o?.limit_value ?? ""} onChange={(e) => updateObs(s.id, { limit_value: e.target.value || null })} className="h-7 text-xs rounded-sm" placeholder="<14.9" />
+                            <Input data-cell={`${r}-4`} onKeyDown={handleCellKey} value={o?.limit_value ?? ""} onChange={(e) => updateObs(s.id, { limit_value: e.target.value.replace(/,/g, ".") || null })} className="h-7 text-xs rounded-sm" placeholder="<14.9" />
                           </td>
                           <td className="px-1 py-1">
                             <Input
@@ -2079,7 +2079,7 @@ export default function SessionEditor() {
                                 <Input value={eo.b ?? ""} onChange={(e) => updateExtra(s.id, ei, { b: formatAB(e.target.value) || null })} className="h-7 text-xs rounded-sm" />
                               </td>
                               <td className="px-1 py-1">
-                                <Input value={eo.limit_value ?? ""} onChange={(e) => updateExtra(s.id, ei, { limit_value: e.target.value || null })} className="h-7 text-xs rounded-sm" placeholder="<14.9" />
+                                <Input value={eo.limit_value ?? ""} onChange={(e) => updateExtra(s.id, ei, { limit_value: e.target.value.replace(/,/g, ".") || null })} className="h-7 text-xs rounded-sm" placeholder="<14.9" />
                               </td>
                               <td className="px-1 py-1">
                                 <Input

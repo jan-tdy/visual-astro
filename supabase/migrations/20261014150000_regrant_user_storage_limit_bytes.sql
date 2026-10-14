@@ -1,0 +1,11 @@
+-- Settings.tsx calls supabase.rpc("user_storage_limit_bytes", ...) directly
+-- as the authenticated role, which has been failing with "permission denied
+-- for function user_storage_limit_bytes" ever since 20260510132424 revoked
+-- ALL on this function from authenticated right after 20260510132413 had
+-- granted it. Every later redefinition (20260716174530, 20260818113740,
+-- 20260818120000, 20260821223416) used CREATE OR REPLACE FUNCTION, which
+-- preserves the function's existing grants rather than resetting them, so
+-- the revoke was never undone. The enforce_storage_quota trigger never
+-- surfaced this because it's SECURITY DEFINER and calls the function as its
+-- owner, which bypasses the authenticated-role grant check entirely.
+GRANT EXECUTE ON FUNCTION public.user_storage_limit_bytes(uuid) TO authenticated;
