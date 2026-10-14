@@ -39,12 +39,17 @@ jobs:
       # makes through the Lovable editor goes straight to main and was
       # previously invisible in the draft release notes. This folds those
       # commits in separately: run only on an actual push to main (not on
-      # PR events, which don't touch the persisted draft), skip merge
-      # commits (those came in through a PR and are already counted),
-      # collapse Lovable's many near-content-free "Changes"/"WIP" messages
-      # into a single tally instead of spamming one bullet each, and keep
-      # the rest as real bullets so a genuinely descriptive Lovable commit
-      # isn't silently dropped.
+      # PR events, which don't touch the persisted draft), skip only real
+      # GitHub PR merge commits (already counted by release-drafter under
+      # their PR) — NOT every multi-parent commit, since Lovable itself
+      # produces ordinary 2-parent merge commits as part of its own
+      # non-PR editing flow, and those often carry its one genuinely
+      # descriptive message (an earlier version of this filtered out all
+      # multi-parent commits and silently dropped exactly those) — collapse
+      # Lovable's many near-content-free "Changes"/"WIP" messages into a
+      # single tally instead of spamming one bullet each, and keep the rest
+      # as real bullets so a genuinely descriptive Lovable commit isn't
+      # silently dropped.
       - name: Fold in direct Lovable edits
         if: github.event_name == 'push' && steps.drafter.outputs.id != ''
         continue-on-error: true
@@ -81,10 +86,15 @@ jobs:
             const bullets = [];
             let noiseCount = 0;
 
+            // Only a real GitHub PR merge commit, e.g. "Merge pull request
+            // #227 from owner/branch" — not any commit with 2+ parents.
+            // Lovable produces its own ordinary merge commits outside the
+            // PR flow, and those still carry real signal.
+            const isPrMergeCommit = (msg) => /^merge pull request #\d+/i.test(msg);
+
             for (const c of cmp.commits) {
               const isBot = c.author?.login === BOT_LOGIN || c.commit.author?.name === BOT_LOGIN;
-              const isMergeCommit = (c.parents?.length ?? 1) > 1;
-              if (!isBot || isMergeCommit) continue;
+              if (!isBot || isPrMergeCommit(c.commit.message)) continue;
 
               const msg = c.commit.message.split("\n")[0].trim();
               const key = msg.toLowerCase();
