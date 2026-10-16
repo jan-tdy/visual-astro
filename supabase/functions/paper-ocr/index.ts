@@ -65,6 +65,11 @@ Deno.serve(async (req) => {
   let userId: string | undefined;
   let monthStart: string | undefined;
   let reserved = false;
+  // Set once a split-scan part >1 claims its slot on ocr_split_tokens, so a
+  // failure further down (AI call error, empty output) can hand the slot
+  // back instead of permanently burning it — mirrors `reserved` above, for
+  // the primary-scan quota reservation.
+  let splitClaim: { tokenId: string; part: number; previousUsedParts: number[] } | undefined;
   try {
     const authHeader = req.headers.get('Authorization') ?? '';
     const token = authHeader.replace(/^Bearer\s+/i, '');
@@ -145,6 +150,7 @@ Deno.serve(async (req) => {
         .eq('used_parts', `{${(tk.used_parts as number[]).join(',')}}`)
         .select('id');
       if (!claimed || (claimed as any[]).length === 0) return denySplit();
+      splitClaim = { tokenId: splitToken, part: splitPart, previousUsedParts: tk.used_parts as number[] };
       const { data: usageRow } = await supabase
         .from('ocr_usage')
         .select('count')
@@ -182,9 +188,26 @@ Deno.serve(async (req) => {
       return supabase!.rpc('decrement_ocr_usage', { _user_id: userId, _used_on: monthStart }).then(() => {});
     };
 
+    // Compensating action for a split-scan part >1: if anything below fails,
+    // give the claimed part back to the token instead of leaving it burned —
+    // without this, a transient AI gateway failure on e.g. part 3/4 would
+    // force the user to redo the whole scan from part 1.
+    const releaseSplitClaim = () => {
+      if (!splitClaim) return Promise.resolve();
+      const { tokenId, part, previousUsedParts } = splitClaim;
+      splitClaim = undefined;
+      return supabase!
+        .from('ocr_split_tokens')
+        .update({ used_parts: previousUsedParts })
+        .eq('id', tokenId)
+        .eq('used_parts', `{${[...previousUsedParts, part].join(',')}}`)
+        .then(() => {});
+    };
+    const releaseCharge = () => Promise.all([releaseReservation(), releaseSplitClaim()]).then(() => {});
+
     const key = Deno.env.get('LOVABLE_API_KEY');
     if (!key) {
-      await releaseReservation();
+      await releaseCharge();
       return new Response(JSON.stringify({ error: 'Missing LOVABLE_API_KEY' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -272,7 +295,7 @@ Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
         }),
       });
     } catch (e) {
-      await releaseReservation();
+      await releaseCharge();
       return new Response(JSON.stringify({ error: `AI gateway request failed: ${(e as Error).message}` }), {
         status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -280,7 +303,7 @@ Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
 
     if (!aiRes.ok) {
       const txt = await aiRes.text().catch(() => '');
-      await releaseReservation();
+      await releaseCharge();
       return new Response(JSON.stringify({ error: `AI error ${aiRes.status}: ${txt}` }), {
         status: aiRes.status === 429 || aiRes.status === 402 ? aiRes.status : 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -294,7 +317,7 @@ Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
     // occurrence self-explanatory in the client's error log.
     const raw = await aiRes.text();
     if (!raw.trim()) {
-      await releaseReservation();
+      await releaseCharge();
       return new Response(JSON.stringify({ error: 'AI gateway vrátila prázdnu odpoveď. Skús to prosím znova.' }), {
         status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -303,8 +326,18 @@ Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
     try {
       content = JSON.parse(raw)?.choices?.[0]?.message?.content ?? '';
     } catch {
-      await releaseReservation();
+      await releaseCharge();
       return new Response(JSON.stringify({ error: 'AI gateway vrátila neplatnú odpoveď. Skús to prosím znova.' }), {
+        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    // The model itself can answer with no content at all (safety block, hit
+    // some other limit before writing anything). That's not the same as it
+    // legitimately transcribing an empty table — treat it as a failed scan
+    // instead of silently returning `observations: []` as if it succeeded.
+    if (!content.trim()) {
+      await releaseCharge();
+      return new Response(JSON.stringify({ error: 'AI model vrátil prázdnu odpoveď. Skús to prosím znova.' }), {
         status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -338,13 +371,23 @@ Prázdne polia vráť ako null. Nepridávaj žiadny text mimo JSON.`;
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
     // Safety net: every known failure path above already calls
-    // releaseReservation() before returning, but an unexpected throw (e.g.
+    // releaseCharge() before returning, but an unexpected throw (e.g.
     // aiRes.text() failing mid-stream, which isn't wrapped in its own
     // try/catch) would otherwise skip that and leave the reservation this
     // request made — if it made one — charged against the user's quota
-    // with no scan to show for it.
+    // with no scan to show for it. Same for a split-scan part's claim on
+    // ocr_split_tokens, which would otherwise stay burned with no result.
     if (reserved && supabase && userId && monthStart) {
       await supabase.rpc('decrement_ocr_usage', { _user_id: userId, _used_on: monthStart }).catch(() => {});
+    }
+    if (splitClaim && supabase) {
+      const { tokenId, part, previousUsedParts } = splitClaim;
+      await supabase
+        .from('ocr_split_tokens')
+        .update({ used_parts: previousUsedParts })
+        .eq('id', tokenId)
+        .eq('used_parts', `{${[...previousUsedParts, part].join(',')}}`)
+        .catch(() => {});
     }
     return new Response(JSON.stringify({ error: (e as Error).message }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
