@@ -12,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
   import { Loader2, Download, FileText, ChevronLeft, X, Upload, FileJson, Plus, ScanLine, Printer, Search, PanelLeftClose, PanelLeftOpen, Table as TableIcon, Type, ArrowUp, ArrowDown, Sparkles, Minus, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD, filenameDate } from "@/lib/astro";
-import { buildAAVSO, buildExportSummary, buildVSNET, downloadText, type ExportRow } from "@/lib/exporters";
+import { buildAAVSO, buildExportSummary, buildVSNET, downloadText, type ExportRow, type SkippedRow } from "@/lib/exporters";
 import { openPortalWithFallback } from "@/lib/popup";
 import { getPrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -909,19 +909,35 @@ export default function SessionEditor() {
     open: t("editor.popupBlockedOpen"),
   });
 
+  const skippedReasonKeys: Record<SkippedRow["reason"], string> = {
+    noMag: "editor.exportSkipped.reason.noMag",
+    noVsnetCode: "editor.exportSkipped.reason.noVsnetCode",
+    noAavsoCode: "editor.exportSkipped.reason.noAavsoCode",
+  };
+  const skippedReasonLabel = (reason: SkippedRow["reason"]) => t(skippedReasonKeys[reason]);
+
+  const reportSkipped = (skipped: SkippedRow[]) => {
+    if (!skipped.length) return;
+    toast.warning(t("editor.exportSkipped").replace("{n}", String(skipped.length)), {
+      description: skipped.map((s) => `${s.star}: ${skippedReasonLabel(s.reason)}`).join("\n"),
+      duration: 12000,
+    });
+  };
+
   const exportFile = (kind: "vsnet" | "aavso", preview = false) => {
     const rows = buildExportRows();
     const ctx = { observedAt, jd, obsCode, compLabelThreshold: getPrefs().compLabelThreshold };
-    let text: string, filename: string, name: string;
+    let text: string, filename: string, name: string, skipped: SkippedRow[];
     if (kind === "vsnet") {
-      text = buildVSNET(rows, ctx);
+      ({ text, skipped } = buildVSNET(rows, ctx));
       filename = `vsnet_${filenameDate(observedAt)}.txt`;
       name = "VSNET";
     } else {
-      text = buildAAVSO(rows, ctx);
+      ({ text, skipped } = buildAAVSO(rows, ctx));
       filename = `aavso_${filenameDate(observedAt)}.txt`;
       name = "AAVSO";
     }
+    reportSkipped(skipped);
     if (preview) setPreviewing({ name, text, filename, kind });
     else {
       downloadText(filename, text);

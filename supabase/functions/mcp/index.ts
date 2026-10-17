@@ -3,10 +3,10 @@
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
 // src/lib/mcp/index.ts
-import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.26.3";
 
 // src/lib/mcp/tools/list-sessions.ts
-import { defineTool } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/supabase.ts
@@ -86,7 +86,7 @@ var list_sessions_default = defineTool({
 });
 
 // src/lib/mcp/tools/list-observations.ts
-import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z2 } from "npm:zod@^3.25.76";
 var list_observations_default = defineTool2({
   name: "list_observations",
@@ -112,7 +112,7 @@ var list_observations_default = defineTool2({
 });
 
 // src/lib/mcp/tools/list-stars.ts
-import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z3 } from "npm:zod@^3.25.76";
 var list_stars_default = defineTool3({
   name: "list_stars",
@@ -140,7 +140,7 @@ var list_stars_default = defineTool3({
 });
 
 // src/lib/mcp/tools/list-ccd-targets.ts
-import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z4 } from "npm:zod@^3.25.76";
 
 // src/lib/pozor.ts
@@ -3327,7 +3327,7 @@ var list_ccd_targets_default = defineTool4({
 });
 
 // src/lib/mcp/tools/create-session.ts
-import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z5 } from "npm:zod@^3.25.76";
 var create_session_default = defineTool5({
   name: "create_session",
@@ -3357,7 +3357,7 @@ var create_session_default = defineTool5({
 });
 
 // src/lib/mcp/tools/get-session.ts
-import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z6 } from "npm:zod@^3.25.76";
 var get_session_default = defineTool6({
   name: "get_session",
@@ -3382,7 +3382,7 @@ var get_session_default = defineTool6({
 });
 
 // src/lib/mcp/tools/update-session.ts
-import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z7 } from "npm:zod@^3.25.76";
 var update_session_default = defineTool7({
   name: "update_session",
@@ -3409,7 +3409,7 @@ var update_session_default = defineTool7({
 });
 
 // src/lib/mcp/tools/delete-session.ts
-import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z8 } from "npm:zod@^3.25.76";
 var delete_session_default = defineTool8({
   name: "delete_session",
@@ -3430,7 +3430,7 @@ var delete_session_default = defineTool8({
 });
 
 // src/lib/mcp/tools/add-observation.ts
-import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z9 } from "npm:zod@^3.25.76";
 var add_observation_default = defineTool9({
   name: "add_observation",
@@ -3485,7 +3485,7 @@ var add_observation_default = defineTool9({
 });
 
 // src/lib/mcp/tools/update-observation.ts
-import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z10 } from "npm:zod@^3.25.76";
 var update_observation_default = defineTool10({
   name: "update_observation",
@@ -3515,7 +3515,7 @@ var update_observation_default = defineTool10({
 });
 
 // src/lib/mcp/tools/delete-observation.ts
-import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z11 } from "npm:zod@^3.25.76";
 var delete_observation_default = defineTool11({
   name: "delete_observation",
@@ -3534,7 +3534,7 @@ var delete_observation_default = defineTool11({
 });
 
 // src/lib/mcp/tools/export-session.ts
-import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z12 } from "npm:zod@^3.25.76";
 
 // src/lib/exporters/index.ts
@@ -3554,17 +3554,24 @@ function rowDate(row, ctx) {
 function buildVSNET(rows, ctx) {
   const compLabelThreshold = ctx.compLabelThreshold ?? DEFAULT_COMP_LABEL_THRESHOLD;
   const lines = [];
+  const skipped = [];
   for (const r of rows) {
     const mag = magOrLimit(r, compLabelThreshold);
-    if (!mag) continue;
-    if (!r.vsnet_code) continue;
+    if (!mag) {
+      skipped.push({ star: r.star_name, reason: "noMag" });
+      continue;
+    }
+    if (!r.vsnet_code) {
+      skipped.push({ star: r.star_name, reason: "noVsnetCode" });
+      continue;
+    }
     const code = r.vsnet_code.trim().padEnd(8, " ");
     const dateStr = vsnetDate(rowDate(r, ctx));
-    const rawNote = (r.note ?? "").trim();
+    const rawNote = csvSafe(r.note ?? "");
     const suffix = rawNote ? ` ${rawNote}` : "";
     lines.push(`${code} ${dateStr} ${mag.padStart(5, " ")} ${ctx.obsCode}${suffix}`);
   }
-  return lines.join("\n") + "\n";
+  return { text: lines.join("\n") + "\n", skipped };
 }
 function buildAAVSO(rows, ctx) {
   const compLabelThreshold = ctx.compLabelThreshold ?? DEFAULT_COMP_LABEL_THRESHOLD;
@@ -3577,10 +3584,17 @@ function buildAAVSO(rows, ctx) {
     "#OBSTYPE=Visual"
   ].join("\n");
   const body = [];
+  const skipped = [];
   for (const r of rows) {
     const mag = magOrLimit(r, compLabelThreshold);
-    if (!mag) continue;
-    if (!r.aavso_code) continue;
+    if (!mag) {
+      skipped.push({ star: r.star_name, reason: "noMag" });
+      continue;
+    }
+    if (!r.aavso_code) {
+      skipped.push({ star: r.star_name, reason: "noAavsoCode" });
+      continue;
+    }
     const isLimit = !!(r.limit_value && r.limit_value.trim());
     const aVal = resolveCompValue(r.star_name, r.a ?? null, compLabelThreshold);
     const bVal = resolveCompValue(r.star_name, r.b ?? null, compLabelThreshold);
@@ -3603,7 +3617,7 @@ function buildAAVSO(rows, ctx) {
       ].join(",")
     );
   }
-  return header + "\n" + body.join("\n") + "\n";
+  return { text: header + "\n" + body.join("\n") + "\n", skipped };
 }
 
 // src/lib/mcp/tools/export-session.ts
@@ -3652,16 +3666,16 @@ var export_session_default = defineTool12({
       jd: session.jd != null ? Number(session.jd) : dateToJD(observedAt),
       obsCode: code
     };
-    const text = format === "vsnet" ? buildVSNET(rows, exportCtx) : buildAAVSO(rows, exportCtx);
+    const { text, skipped } = format === "vsnet" ? buildVSNET(rows, exportCtx) : buildAAVSO(rows, exportCtx);
     return {
       content: [{ type: "text", text }],
-      structuredContent: { format, obs_code: code, rows: rows.length, text }
+      structuredContent: { format, obs_code: code, rows: rows.length, text, skipped }
     };
   }
 });
 
 // src/lib/mcp/tools/create-star.ts
-import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z13 } from "npm:zod@^3.25.76";
 var create_star_default = defineTool13({
   name: "create_star",
@@ -3703,7 +3717,7 @@ var create_star_default = defineTool13({
 });
 
 // src/lib/mcp/tools/update-star.ts
-import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z14 } from "npm:zod@^3.25.76";
 var update_star_default = defineTool14({
   name: "update_star",
@@ -3734,7 +3748,7 @@ var update_star_default = defineTool14({
 });
 
 // src/lib/mcp/tools/delete-star.ts
-import { defineTool as defineTool15 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool15 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z15 } from "npm:zod@^3.25.76";
 var delete_star_default = defineTool15({
   name: "delete_star",
@@ -3753,7 +3767,7 @@ var delete_star_default = defineTool15({
 });
 
 // src/lib/mcp/tools/list-ccd-catalogs.ts
-import { defineTool as defineTool16 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool16 } from "npm:@lovable.dev/mcp-js@0.26.3";
 var list_ccd_catalogs_default = defineTool16({
   name: "list_ccd_catalogs",
   title: "List POZOR catalogs",
@@ -3771,7 +3785,7 @@ var list_ccd_catalogs_default = defineTool16({
 });
 
 // src/lib/mcp/tools/create-ccd-target.ts
-import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z16 } from "npm:zod@^3.25.76";
 var create_ccd_target_default = defineTool17({
   name: "create_ccd_target",
@@ -3825,7 +3839,7 @@ var create_ccd_target_default = defineTool17({
 });
 
 // src/lib/mcp/tools/update-ccd-target.ts
-import { defineTool as defineTool18 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool18 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z17 } from "npm:zod@^3.25.76";
 var update_ccd_target_default = defineTool18({
   name: "update_ccd_target",
@@ -3858,7 +3872,7 @@ var update_ccd_target_default = defineTool18({
 });
 
 // src/lib/mcp/tools/delete-ccd-target.ts
-import { defineTool as defineTool19 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool19 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z18 } from "npm:zod@^3.25.76";
 var delete_ccd_target_default = defineTool19({
   name: "delete_ccd_target",
@@ -3878,7 +3892,7 @@ var delete_ccd_target_default = defineTool19({
 });
 
 // src/lib/mcp/tools/pozor-night.ts
-import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z19 } from "npm:zod@^3.25.76";
 import * as Astronomy2 from "npm:astronomy-engine@^2.1.19";
 var pozor_night_default = defineTool20({
@@ -3934,7 +3948,7 @@ var pozor_night_default = defineTool20({
 });
 
 // src/lib/mcp/tools/pozor-instant.ts
-import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z20 } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/tools/pozor-target.ts
@@ -4021,7 +4035,7 @@ var pozor_instant_default = defineTool21({
 });
 
 // src/lib/mcp/tools/pozor-journal.ts
-import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z21 } from "npm:zod@^3.25.76";
 var pozor_journal_default = defineTool22({
   name: "pozor_journal",
@@ -4072,7 +4086,7 @@ var pozor_journal_default = defineTool22({
 });
 
 // src/lib/mcp/tools/pozor-minima.ts
-import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z22 } from "npm:zod@^3.25.76";
 var pozor_minima_default = defineTool23({
   name: "pozor_minima",
@@ -4132,7 +4146,7 @@ var pozor_minima_default = defineTool23({
 });
 
 // src/lib/mcp/tools/jd-convert.ts
-import { defineTool as defineTool24 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool24 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z23 } from "npm:zod@^3.25.76";
 var jd_convert_default = defineTool24({
   name: "jd_convert",
@@ -4159,7 +4173,7 @@ var jd_convert_default = defineTool24({
 });
 
 // src/lib/mcp/tools/convert-sips.ts
-import { defineTool as defineTool25 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool25 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z24 } from "npm:zod@^3.25.76";
 
 // src/lib/sips.ts
@@ -4438,7 +4452,7 @@ var convert_sips_default = defineTool25({
 });
 
 // src/lib/mcp/tools/convert-vsnet.ts
-import { defineTool as defineTool26 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool26 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z25 } from "npm:zod@^3.25.76";
 var convert_vsnet_default = defineTool26({
   name: "convert_vsnet",
@@ -4474,7 +4488,7 @@ var convert_vsnet_default = defineTool26({
 });
 
 // src/lib/mcp/tools/get-profile.ts
-import { defineTool as defineTool27 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool27 } from "npm:@lovable.dev/mcp-js@0.26.3";
 var get_profile_default = defineTool27({
   name: "get_profile",
   title: "Get observer profile",
@@ -4503,7 +4517,7 @@ var get_profile_default = defineTool27({
 });
 
 // src/lib/mcp/tools/update-profile.ts
-import { defineTool as defineTool28 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool28 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z26 } from "npm:zod@^3.25.76";
 var update_profile_default = defineTool28({
   name: "update_profile",
@@ -4569,5 +4583,5 @@ var mcp_default = defineMcp({
 });
 
 // lovable-mcp-supabase-entry.ts
-import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@0.26.1/stacks/supabase";
+import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@0.26.3/stacks/supabase";
 Deno.serve(createSupabaseHandler(mcp_default, { functionName: "mcp" }));
