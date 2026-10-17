@@ -20,7 +20,7 @@ AS $$
 BEGIN
   IF NEW.enterprise_ai_scans_per_month IS DISTINCT FROM OLD.enterprise_ai_scans_per_month
      OR NEW.enterprise_storage_mb IS DISTINCT FROM OLD.enterprise_storage_mb THEN
-    IF current_user NOT IN ('postgres', 'supabase_admin', 'service_role')
+    IF session_user NOT IN ('postgres', 'supabase_admin', 'service_role')
        AND coalesce(auth.role(), '') <> 'service_role' THEN
       NEW.enterprise_ai_scans_per_month := OLD.enterprise_ai_scans_per_month;
       NEW.enterprise_storage_mb := OLD.enterprise_storage_mb;
