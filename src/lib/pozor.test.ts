@@ -3,7 +3,9 @@ import * as Astronomy from "astronomy-engine";
 import {
   altAz,
   airmass,
+  buildJournal,
   dateToJD,
+  DEFAULT_MIN_ALTITUDE,
   duskTime,
   firstRisingCrossing,
   getLocation,
@@ -12,8 +14,13 @@ import {
   instantInfo,
   isHlohovecSite,
   jdToDate,
+  minimaInRange,
   minimaTimesInRange,
   moonPhaseAt,
+  moonSeparationDeg,
+  nightInfo,
+  observabilityWindows,
+  observerOf,
   sampleNight,
   sunAltitude,
   twilightTimes,
@@ -284,6 +291,108 @@ describe("moonPhaseAt", () => {
       expect(info.angleDeg).toBeLessThan(360);
       expect(info.waxing).toBe(info.angleDeg < 180);
     }
+  });
+});
+
+describe("moonSeparationDeg", () => {
+  it("is ~0 when the target sits exactly where the Moon is", () => {
+    const date = EPOCH;
+    const time = Astronomy.MakeTime(date);
+    // Moon's own apparent (ofdate, topocentric) position, rotated back to J2000 so it
+    // can be fed in as a target's catalogue coordinates — mirrors what precessToDate
+    // does in the other direction inside moonSeparationDeg.
+    const moonEq = Astronomy.Equator(Astronomy.Body.Moon, time, observerOf(piconcillo), true, true);
+    const rot = Astronomy.Rotation_EQD_EQJ(time);
+    const v = Astronomy.RotateVector(rot, moonEq.vec);
+    const r = Math.hypot(v.x, v.y, v.z);
+    const raJ2000 = (((Math.atan2(v.y, v.x) * 180) / Math.PI / 15) % 24 + 24) % 24;
+    const decJ2000 = (Math.asin(v.z / r) * 180) / Math.PI;
+    expect(moonSeparationDeg(raJ2000, decJ2000, date, piconcillo)).toBeLessThan(0.01);
+  });
+
+  it("stays within [0, 180] for an arbitrary target", () => {
+    const sep = moonSeparationDeg(V808AUR.raHours, V808AUR.decDeg, EPOCH, piconcillo);
+    expect(sep).toBeGreaterThanOrEqual(0);
+    expect(sep).toBeLessThanOrEqual(180);
+  });
+});
+
+describe("observabilityWindows with a Moon filter", () => {
+  const night = nightInfo("2026-01-15", piconcillo);
+
+  it("matches the unfiltered windows when the filter can never trigger", () => {
+    const plain = observabilityWindows(V808AUR.raHours, V808AUR.decDeg, night, piconcillo);
+    expect(plain.length).toBeGreaterThan(0);
+    const filtered = observabilityWindows(V808AUR.raHours, V808AUR.decDeg, night, piconcillo, DEFAULT_MIN_ALTITUDE, {
+      maxPhasePercent: 101,
+      minSepDeg: -1,
+    });
+    expect(filtered).toEqual(plain);
+  });
+
+  it("empties the windows when maxPhasePercent can never be satisfied", () => {
+    const filtered = observabilityWindows(V808AUR.raHours, V808AUR.decDeg, night, piconcillo, DEFAULT_MIN_ALTITUDE, {
+      maxPhasePercent: -1,
+    });
+    expect(filtered).toEqual([]);
+  });
+
+  it("empties the windows when minSepDeg can never be satisfied", () => {
+    const filtered = observabilityWindows(V808AUR.raHours, V808AUR.decDeg, night, piconcillo, DEFAULT_MIN_ALTITUDE, {
+      minSepDeg: 181,
+    });
+    expect(filtered).toEqual([]);
+  });
+});
+
+describe("minimaInRange truncation", () => {
+  it("reports truncated and returns no events when the range holds too many epochs", () => {
+    const { events, truncated } = minimaInRange(
+      { ...V808AUR, epochJd: dateToJD(utcDate("2026-01-01")), periodDays: 0.001 },
+      "2026-01-01",
+      "2026-10-01",
+      piconcillo,
+    );
+    expect(truncated).toBe(true);
+    expect(events).toEqual([]);
+  });
+
+  it("does not report truncated for a normal-sized range", () => {
+    const { truncated } = minimaInRange(
+      { ...V808AUR, epochJd: dateToJD(utcDate("2026-01-01")), periodDays: 1.5 },
+      "2026-01-01",
+      "2026-02-01",
+      piconcillo,
+    );
+    expect(truncated).toBe(false);
+  });
+});
+
+describe("buildJournal truncation", () => {
+  it("reports truncated and stops at maxNights", () => {
+    const { rows, truncated } = buildJournal(
+      { ...V808AUR, epochJd: null, periodDays: null },
+      "2026-01-01",
+      "2026-01-20",
+      piconcillo,
+      DEFAULT_MIN_ALTITUDE,
+      5,
+    );
+    expect(truncated).toBe(true);
+    expect(rows).toHaveLength(5);
+  });
+
+  it("does not report truncated when every night fits", () => {
+    const { rows, truncated } = buildJournal(
+      { ...V808AUR, epochJd: null, periodDays: null },
+      "2026-01-01",
+      "2026-01-05",
+      piconcillo,
+      DEFAULT_MIN_ALTITUDE,
+      400,
+    );
+    expect(truncated).toBe(false);
+    expect(rows.length).toBeGreaterThan(0);
   });
 });
 

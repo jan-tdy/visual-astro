@@ -371,6 +371,22 @@ export function moonPhaseAt(date: Date): MoonPhaseInfo {
 }
 
 /**
+ * Angular separation between the Moon and a J2000 target, in degrees, as seen
+ * from `loc` at `date`. Both positions are resolved to the same (topocentric,
+ * equator-of-date) frame before comparing: the Moon via `Astronomy.Equator`
+ * (matching {@link moonAltitude}), the target via {@link precessToDate} +
+ * {@link unitVector} (matching {@link altAz}).
+ */
+export function moonSeparationDeg(raHoursJ2000: number, decDegJ2000: number, date: Date, loc: PozorLocation): number {
+  const time = Astronomy.MakeTime(date);
+  const observer = observerOf(loc);
+  const moonEq = Astronomy.Equator(Astronomy.Body.Moon, time, observer, true, true);
+  const { raHours, decDeg } = precessToDate(raHoursJ2000, decDegJ2000, date);
+  const [x, y, z] = unitVector(raHours, decDeg);
+  return Astronomy.AngleBetween(moonEq.vec, new Astronomy.Vector(x, y, z, time));
+}
+
+/**
  * Astronomical dusk (Sun at −18°) for the evening of `isoDate`, falling back to
  * nautical dusk (−12°) when the Sun never gets that low that night (e.g. near
  * the summer solstice at higher latitudes). Returns null if neither occurs.
@@ -546,9 +562,18 @@ export interface Window {
   to: Date;
 }
 
+/** Optional Moon-avoidance constraints for {@link observabilityWindows} / {@link buildJournal}. */
+export interface MoonFilter {
+  /** Require at least this much angular separation from the Moon, in degrees. */
+  minSepDeg?: number;
+  /** Require the Moon's illuminated fraction to be at or below this percent (0–100). */
+  maxPhasePercent?: number;
+}
+
 /**
  * Interval(s) during the astronomical night when the target stays above
- * `minAltDeg`. Scanned at 1-minute resolution.
+ * `minAltDeg` — and, when `moonFilter` is given, also clear of the Moon.
+ * Scanned at 1-minute resolution.
  */
 export function observabilityWindows(
   raHours: number,
@@ -556,6 +581,7 @@ export function observabilityWindows(
   night: NightInfo,
   loc: PozorLocation,
   minAltDeg = DEFAULT_MIN_ALTITUDE,
+  moonFilter?: MoonFilter,
 ): Window[] {
   if (!night.start || !night.end) return [];
   const step = 60e3;
@@ -563,7 +589,14 @@ export function observabilityWindows(
   let openFrom: Date | null = null;
   for (let t = night.start.getTime(); t <= night.end.getTime(); t += step) {
     const d = new Date(t);
-    const above = altAz(raHours, decDeg, d, loc).altDeg >= minAltDeg;
+    let above = altAz(raHours, decDeg, d, loc).altDeg >= minAltDeg;
+    if (above && moonFilter) {
+      if (moonFilter.maxPhasePercent != null && moonPhaseAt(d).pct > moonFilter.maxPhasePercent) {
+        above = false;
+      } else if (moonFilter.minSepDeg != null && moonSeparationDeg(raHours, decDeg, d, loc) < moonFilter.minSepDeg) {
+        above = false;
+      }
+    }
     if (above && !openFrom) openFrom = d;
     if (!above && openFrom) {
       out.push({ from: openFrom, to: new Date(t - step) });
@@ -590,6 +623,12 @@ export interface MinimumEvent {
   aboveMinAlt: boolean;
 }
 
+export interface MinimaResult {
+  events: MinimumEvent[];
+  /** True when the range held more than 200000 epochs and was returned empty instead of computed. */
+  truncated: boolean;
+}
+
 /**
  * All minima of an eclipsing target between two dates.
  * E = round((JD − JD0)/P), Tmin = JD0 + E·P.
@@ -601,14 +640,14 @@ export function minimaInRange(
   loc: PozorLocation,
   minAltDeg = DEFAULT_MIN_ALTITUDE,
   onlyObservable = true,
-): MinimumEvent[] {
+): MinimaResult {
   const { epochJd, periodDays } = target;
-  if (!periodDays || periodDays <= 0) return [];
+  if (!periodDays || periodDays <= 0) return { events: [], truncated: false };
   const jdFrom = dateToJD(utcDate(fromIso, 0));
   const jdTo = dateToJD(utcDate(toIso, 24));
   const eStart = Math.ceil((jdFrom - epochJd) / periodDays);
   const eEnd = Math.floor((jdTo - epochJd) / periodDays);
-  if (eEnd - eStart > 200000) return [];
+  if (eEnd - eStart > 200000) return { events: [], truncated: true };
 
   // Cache night boundaries per calendar date — nightInfo is relatively expensive.
   const nights = new Map<string, NightInfo>();
@@ -649,7 +688,7 @@ export function minimaInRange(
       aboveMinAlt,
     });
   }
-  return out;
+  return { events: out, truncated: false };
 }
 
 export interface MinimumTime {
@@ -787,6 +826,12 @@ export function heliocentricPhase(
   return p < 0 ? p + 1 : p;
 }
 
+export interface JournalResult {
+  rows: JournalRow[];
+  /** True when the range held more nights than `maxNights` and the journal was cut off. */
+  truncated: boolean;
+}
+
 export function buildJournal(
   target: { raHours: number; decDeg: number; epochJd: number | null; periodDays: number | null },
   fromIso: string,
@@ -794,14 +839,20 @@ export function buildJournal(
   loc: PozorLocation,
   minAltDeg = DEFAULT_MIN_ALTITUDE,
   maxNights = 400,
-): JournalRow[] {
+  moonFilter?: MoonFilter,
+): JournalResult {
   const rows: JournalRow[] = [];
   let cur = utcDate(fromIso, 0);
   const end = utcDate(toIso, 0);
-  while (cur <= end && rows.length < maxNights) {
+  let truncated = false;
+  while (cur <= end) {
+    if (rows.length >= maxNights) {
+      truncated = true;
+      break;
+    }
     const iso = toIsoDate(cur);
     const night = nightInfo(iso, loc);
-    const windows = observabilityWindows(target.raHours, target.decDeg, night, loc, minAltDeg);
+    const windows = observabilityWindows(target.raHours, target.decDeg, night, loc, minAltDeg, moonFilter);
     let altMax = -90;
     if (night.start && night.end) {
       for (let t = night.start.getTime(); t <= night.end.getTime(); t += 10 * 60e3) {
@@ -821,5 +872,5 @@ export function buildJournal(
     });
     cur = new Date(cur.getTime() + 86400e3);
   }
-  return rows;
+  return { rows, truncated };
 }

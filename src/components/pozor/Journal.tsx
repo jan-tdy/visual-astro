@@ -27,8 +27,8 @@ export function Journal({
   const location = resolveLocation(locations, settings.locationId);
   const target = targets.find((x) => x.id === targetId);
 
-  const rows = useMemo(() => {
-    if (!target) return [];
+  const { rows, truncated } = useMemo(() => {
+    if (!target) return { rows: [], truncated: false };
     return buildJournal(
       {
         raHours: target.ra_hours,
@@ -92,6 +92,12 @@ export function Journal({
           </Button>
         </div>
       </Card>
+
+      {truncated && (
+        <div className="rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-xs text-yellow-700 dark:text-yellow-300">
+          {t("pozor.journal.truncated").replace("{n}", String(rows.length))}
+        </div>
+      )}
 
       <Card className="p-4 overflow-x-auto">
         {!target ? (

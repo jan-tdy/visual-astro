@@ -3,10 +3,10 @@
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
 // src/lib/mcp/index.ts
-import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.26.3";
 
 // src/lib/mcp/tools/list-sessions.ts
-import { defineTool } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/supabase.ts
@@ -86,7 +86,7 @@ var list_sessions_default = defineTool({
 });
 
 // src/lib/mcp/tools/list-observations.ts
-import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z2 } from "npm:zod@^3.25.76";
 var list_observations_default = defineTool2({
   name: "list_observations",
@@ -112,7 +112,7 @@ var list_observations_default = defineTool2({
 });
 
 // src/lib/mcp/tools/list-stars.ts
-import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z3 } from "npm:zod@^3.25.76";
 var list_stars_default = defineTool3({
   name: "list_stars",
@@ -140,7 +140,7 @@ var list_stars_default = defineTool3({
 });
 
 // src/lib/mcp/tools/list-ccd-targets.ts
-import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z4 } from "npm:zod@^3.25.76";
 
 // src/lib/pozor.ts
@@ -3148,6 +3148,20 @@ function moonAltitude(date, loc) {
   const hor = Astronomy.Horizon(time, observer, eq.ra, eq.dec, "normal");
   return hor.altitude;
 }
+function moonPhaseAt(date) {
+  const time = Astronomy.MakeTime(date);
+  const pct = Astronomy.Illumination(Astronomy.Body.Moon, time).phase_fraction * 100;
+  const angleDeg = Astronomy.MoonPhase(time);
+  return { pct, angleDeg, waxing: angleDeg < 180 };
+}
+function moonSeparationDeg(raHoursJ2000, decDegJ2000, date, loc) {
+  const time = Astronomy.MakeTime(date);
+  const observer = observerOf(loc);
+  const moonEq = Astronomy.Equator(Astronomy.Body.Moon, time, observer, true, true);
+  const { raHours, decDeg } = precessToDate(raHoursJ2000, decDegJ2000, date);
+  const [x, y, z27] = unitVector(raHours, decDeg);
+  return Astronomy.AngleBetween(moonEq.vec, new Astronomy.Vector(x, y, z27, time));
+}
 function twilightTimes(isoDate, loc) {
   const observer = observerOf(loc);
   const noonLocal = utcDate(isoDate, 12 - loc.lon / 15);
@@ -3169,14 +3183,21 @@ function twilightTimes(isoDate, loc) {
   const sunrise = search(1, 0, civilDawn ?? noonLocal);
   return { sunset, civilDusk, nauticalDusk, astroDusk, astroDawn, nauticalDawn, civilDawn, sunrise };
 }
-function observabilityWindows(raHours, decDeg, night, loc, minAltDeg = DEFAULT_MIN_ALTITUDE) {
+function observabilityWindows(raHours, decDeg, night, loc, minAltDeg = DEFAULT_MIN_ALTITUDE, moonFilter) {
   if (!night.start || !night.end) return [];
   const step = 6e4;
   const out = [];
   let openFrom = null;
   for (let t = night.start.getTime(); t <= night.end.getTime(); t += step) {
     const d = new Date(t);
-    const above = altAz(raHours, decDeg, d, loc).altDeg >= minAltDeg;
+    let above = altAz(raHours, decDeg, d, loc).altDeg >= minAltDeg;
+    if (above && moonFilter) {
+      if (moonFilter.maxPhasePercent != null && moonPhaseAt(d).pct > moonFilter.maxPhasePercent) {
+        above = false;
+      } else if (moonFilter.minSepDeg != null && moonSeparationDeg(raHours, decDeg, d, loc) < moonFilter.minSepDeg) {
+        above = false;
+      }
+    }
     if (above && !openFrom) openFrom = d;
     if (!above && openFrom) {
       out.push({ from: openFrom, to: new Date(t - step) });
@@ -3188,12 +3209,12 @@ function observabilityWindows(raHours, decDeg, night, loc, minAltDeg = DEFAULT_M
 }
 function minimaInRange(target, fromIso, toIso, loc, minAltDeg = DEFAULT_MIN_ALTITUDE, onlyObservable = true) {
   const { epochJd, periodDays } = target;
-  if (!periodDays || periodDays <= 0) return [];
+  if (!periodDays || periodDays <= 0) return { events: [], truncated: false };
   const jdFrom = dateToJD(utcDate(fromIso, 0));
   const jdTo = dateToJD(utcDate(toIso, 24));
   const eStart = Math.ceil((jdFrom - epochJd) / periodDays);
   const eEnd = Math.floor((jdTo - epochJd) / periodDays);
-  if (eEnd - eStart > 2e5) return [];
+  if (eEnd - eStart > 2e5) return { events: [], truncated: true };
   const nights = /* @__PURE__ */ new Map();
   const nightFor = (d) => {
     const localHours = d.getUTCHours() + d.getUTCMinutes() / 60 + loc.lon / 15;
@@ -3228,7 +3249,7 @@ function minimaInRange(target, fromIso, toIso, loc, minAltDeg = DEFAULT_MIN_ALTI
       aboveMinAlt
     });
   }
-  return out;
+  return { events: out, truncated: false };
 }
 function heliocentricPhase(date, target) {
   if (!target.epochJd || !target.periodDays || target.periodDays <= 0) return null;
@@ -3237,14 +3258,19 @@ function heliocentricPhase(date, target) {
   const p = (jdHel - target.epochJd) / target.periodDays % 1;
   return p < 0 ? p + 1 : p;
 }
-function buildJournal(target, fromIso, toIso, loc, minAltDeg = DEFAULT_MIN_ALTITUDE, maxNights = 400) {
+function buildJournal(target, fromIso, toIso, loc, minAltDeg = DEFAULT_MIN_ALTITUDE, maxNights = 400, moonFilter) {
   const rows = [];
   let cur = utcDate(fromIso, 0);
   const end = utcDate(toIso, 0);
-  while (cur <= end && rows.length < maxNights) {
+  let truncated = false;
+  while (cur <= end) {
+    if (rows.length >= maxNights) {
+      truncated = true;
+      break;
+    }
     const iso2 = toIsoDate(cur);
     const night = nightInfo(iso2, loc);
-    const windows = observabilityWindows(target.raHours, target.decDeg, night, loc, minAltDeg);
+    const windows = observabilityWindows(target.raHours, target.decDeg, night, loc, minAltDeg, moonFilter);
     let altMax = -90;
     if (night.start && night.end) {
       for (let t = night.start.getTime(); t <= night.end.getTime(); t += 10 * 6e4) {
@@ -3264,7 +3290,7 @@ function buildJournal(target, fromIso, toIso, loc, minAltDeg = DEFAULT_MIN_ALTIT
     });
     cur = new Date(cur.getTime() + 864e5);
   }
-  return rows;
+  return { rows, truncated };
 }
 
 // src/lib/mcp/helpers.ts
@@ -3327,7 +3353,7 @@ var list_ccd_targets_default = defineTool4({
 });
 
 // src/lib/mcp/tools/create-session.ts
-import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z5 } from "npm:zod@^3.25.76";
 var create_session_default = defineTool5({
   name: "create_session",
@@ -3357,7 +3383,7 @@ var create_session_default = defineTool5({
 });
 
 // src/lib/mcp/tools/get-session.ts
-import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z6 } from "npm:zod@^3.25.76";
 var get_session_default = defineTool6({
   name: "get_session",
@@ -3382,7 +3408,7 @@ var get_session_default = defineTool6({
 });
 
 // src/lib/mcp/tools/update-session.ts
-import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z7 } from "npm:zod@^3.25.76";
 var update_session_default = defineTool7({
   name: "update_session",
@@ -3409,7 +3435,7 @@ var update_session_default = defineTool7({
 });
 
 // src/lib/mcp/tools/delete-session.ts
-import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z8 } from "npm:zod@^3.25.76";
 var delete_session_default = defineTool8({
   name: "delete_session",
@@ -3430,7 +3456,7 @@ var delete_session_default = defineTool8({
 });
 
 // src/lib/mcp/tools/add-observation.ts
-import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z9 } from "npm:zod@^3.25.76";
 var add_observation_default = defineTool9({
   name: "add_observation",
@@ -3485,7 +3511,7 @@ var add_observation_default = defineTool9({
 });
 
 // src/lib/mcp/tools/update-observation.ts
-import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z10 } from "npm:zod@^3.25.76";
 var update_observation_default = defineTool10({
   name: "update_observation",
@@ -3515,7 +3541,7 @@ var update_observation_default = defineTool10({
 });
 
 // src/lib/mcp/tools/delete-observation.ts
-import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z11 } from "npm:zod@^3.25.76";
 var delete_observation_default = defineTool11({
   name: "delete_observation",
@@ -3534,7 +3560,7 @@ var delete_observation_default = defineTool11({
 });
 
 // src/lib/mcp/tools/export-session.ts
-import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z12 } from "npm:zod@^3.25.76";
 
 // src/lib/exporters/index.ts
@@ -3661,7 +3687,7 @@ var export_session_default = defineTool12({
 });
 
 // src/lib/mcp/tools/create-star.ts
-import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z13 } from "npm:zod@^3.25.76";
 var create_star_default = defineTool13({
   name: "create_star",
@@ -3703,7 +3729,7 @@ var create_star_default = defineTool13({
 });
 
 // src/lib/mcp/tools/update-star.ts
-import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z14 } from "npm:zod@^3.25.76";
 var update_star_default = defineTool14({
   name: "update_star",
@@ -3734,7 +3760,7 @@ var update_star_default = defineTool14({
 });
 
 // src/lib/mcp/tools/delete-star.ts
-import { defineTool as defineTool15 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool15 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z15 } from "npm:zod@^3.25.76";
 var delete_star_default = defineTool15({
   name: "delete_star",
@@ -3753,7 +3779,7 @@ var delete_star_default = defineTool15({
 });
 
 // src/lib/mcp/tools/list-ccd-catalogs.ts
-import { defineTool as defineTool16 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool16 } from "npm:@lovable.dev/mcp-js@0.26.3";
 var list_ccd_catalogs_default = defineTool16({
   name: "list_ccd_catalogs",
   title: "List POZOR catalogs",
@@ -3771,7 +3797,7 @@ var list_ccd_catalogs_default = defineTool16({
 });
 
 // src/lib/mcp/tools/create-ccd-target.ts
-import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z16 } from "npm:zod@^3.25.76";
 var create_ccd_target_default = defineTool17({
   name: "create_ccd_target",
@@ -3825,7 +3851,7 @@ var create_ccd_target_default = defineTool17({
 });
 
 // src/lib/mcp/tools/update-ccd-target.ts
-import { defineTool as defineTool18 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool18 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z17 } from "npm:zod@^3.25.76";
 var update_ccd_target_default = defineTool18({
   name: "update_ccd_target",
@@ -3858,7 +3884,7 @@ var update_ccd_target_default = defineTool18({
 });
 
 // src/lib/mcp/tools/delete-ccd-target.ts
-import { defineTool as defineTool19 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool19 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z18 } from "npm:zod@^3.25.76";
 var delete_ccd_target_default = defineTool19({
   name: "delete_ccd_target",
@@ -3878,7 +3904,7 @@ var delete_ccd_target_default = defineTool19({
 });
 
 // src/lib/mcp/tools/pozor-night.ts
-import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z19 } from "npm:zod@^3.25.76";
 import * as Astronomy2 from "npm:astronomy-engine@^2.1.19";
 var pozor_night_default = defineTool20({
@@ -3934,7 +3960,7 @@ var pozor_night_default = defineTool20({
 });
 
 // src/lib/mcp/tools/pozor-instant.ts
-import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z20 } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/tools/pozor-target.ts
@@ -4021,7 +4047,7 @@ var pozor_instant_default = defineTool21({
 });
 
 // src/lib/mcp/tools/pozor-journal.ts
-import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z21 } from "npm:zod@^3.25.76";
 var pozor_journal_default = defineTool22({
   name: "pozor_journal",
@@ -4051,7 +4077,8 @@ var pozor_journal_default = defineTool22({
     if (error || !target) return fail(error ?? "Target not resolved.");
     const site = resolveLocation(input);
     const minAlt = input.min_altitude ?? MIN_ALT_DEFAULT;
-    const rows = buildJournal(target, input.from, input.to, site, minAlt).filter((r) => input.only_observable === false ? true : r.windows.length > 0).map((r) => ({
+    const { rows: journalRows, truncated } = buildJournal(target, input.from, input.to, site, minAlt);
+    const rows = journalRows.filter((r) => input.only_observable === false ? true : r.windows.length > 0).map((r) => ({
       date: r.isoDate,
       jdMidnight: r.jdMidnight,
       nightStart: iso(r.night.start),
@@ -4065,6 +4092,7 @@ var pozor_journal_default = defineTool22({
       target: { name: target.name, raHoursJ2000: target.raHours, decDegJ2000: target.decDeg },
       site: { key: site.key, label: site.label },
       minAltitudeDeg: minAlt,
+      truncated,
       nights: rows
     };
     return ok(payload, payload);
@@ -4072,7 +4100,7 @@ var pozor_journal_default = defineTool22({
 });
 
 // src/lib/mcp/tools/pozor-minima.ts
-import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z22 } from "npm:zod@^3.25.76";
 var pozor_minima_default = defineTool23({
   name: "pozor_minima",
@@ -4103,14 +4131,15 @@ var pozor_minima_default = defineTool23({
     if (!target.epochJd || !target.periodDays) return fail("This target has no epoch/period ephemeris.");
     const site = resolveLocation(input);
     const minAlt = input.min_altitude ?? MIN_ALT_DEFAULT;
-    const events = minimaInRange(
+    const { events: minimaEvents, truncated } = minimaInRange(
       { raHours: target.raHours, decDeg: target.decDeg, epochJd: target.epochJd, periodDays: target.periodDays },
       input.from,
       input.to,
       site,
       minAlt,
       input.only_observable !== false
-    ).map((e) => ({
+    );
+    const events = minimaEvents.map((e) => ({
       epoch: e.epoch,
       utc: iso(e.date),
       jd: e.jd,
@@ -4125,6 +4154,7 @@ var pozor_minima_default = defineTool23({
       target: { name: target.name, epochJd: target.epochJd, periodDays: target.periodDays },
       site: { key: site.key, label: site.label },
       minAltitudeDeg: minAlt,
+      truncated,
       minima: events
     };
     return ok(payload, payload);
@@ -4132,7 +4162,7 @@ var pozor_minima_default = defineTool23({
 });
 
 // src/lib/mcp/tools/jd-convert.ts
-import { defineTool as defineTool24 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool24 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z23 } from "npm:zod@^3.25.76";
 var jd_convert_default = defineTool24({
   name: "jd_convert",
@@ -4159,7 +4189,7 @@ var jd_convert_default = defineTool24({
 });
 
 // src/lib/mcp/tools/convert-sips.ts
-import { defineTool as defineTool25 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool25 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z24 } from "npm:zod@^3.25.76";
 
 // src/lib/sips.ts
@@ -4438,7 +4468,7 @@ var convert_sips_default = defineTool25({
 });
 
 // src/lib/mcp/tools/convert-vsnet.ts
-import { defineTool as defineTool26 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool26 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z25 } from "npm:zod@^3.25.76";
 var convert_vsnet_default = defineTool26({
   name: "convert_vsnet",
@@ -4474,7 +4504,7 @@ var convert_vsnet_default = defineTool26({
 });
 
 // src/lib/mcp/tools/get-profile.ts
-import { defineTool as defineTool27 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool27 } from "npm:@lovable.dev/mcp-js@0.26.3";
 var get_profile_default = defineTool27({
   name: "get_profile",
   title: "Get observer profile",
@@ -4503,7 +4533,7 @@ var get_profile_default = defineTool27({
 });
 
 // src/lib/mcp/tools/update-profile.ts
-import { defineTool as defineTool28 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool28 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z26 } from "npm:zod@^3.25.76";
 var update_profile_default = defineTool28({
   name: "update_profile",
@@ -4569,5 +4599,5 @@ var mcp_default = defineMcp({
 });
 
 // lovable-mcp-supabase-entry.ts
-import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@0.26.1/stacks/supabase";
+import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@0.26.3/stacks/supabase";
 Deno.serve(createSupabaseHandler(mcp_default, { functionName: "mcp" }));
