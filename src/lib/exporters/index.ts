@@ -17,6 +17,18 @@ export interface ExportContext {
   compLabelThreshold?: number;
 }
 
+export type SkipReason = "noMag" | "noVsnetCode" | "noAavsoCode";
+
+export interface SkippedRow {
+  star: string;
+  reason: SkipReason;
+}
+
+export interface ExportResult {
+  text: string;
+  skipped: SkippedRow[];
+}
+
 function magOrLimit(r: ExportRow, compLabelThreshold: number): string | null {
   const m = computeMagnitude(r, r.star_name, compLabelThreshold);
   // A "fainter-than" value is the user's raw limit_value text, so it needs the same
@@ -39,23 +51,26 @@ function rowDate(row: ExportRow, ctx: ExportContext): Date {
   return d;
 }
 
-export function buildVSNET(rows: ExportRow[], ctx: ExportContext): string {
+export function buildVSNET(rows: ExportRow[], ctx: ExportContext): ExportResult {
   const compLabelThreshold = ctx.compLabelThreshold ?? DEFAULT_COMP_LABEL_THRESHOLD;
   const lines: string[] = [];
+  const skipped: SkippedRow[] = [];
   for (const r of rows) {
     const mag = magOrLimit(r, compLabelThreshold);
-    if (!mag) continue;
-    if (!r.vsnet_code) continue;
+    if (!mag) { skipped.push({ star: r.star_name, reason: "noMag" }); continue; }
+    if (!r.vsnet_code) { skipped.push({ star: r.star_name, reason: "noVsnetCode" }); continue; }
     const code = r.vsnet_code.trim().padEnd(8, " ");
     const dateStr = vsnetDate(rowDate(r, ctx));
-    const rawNote = (r.note ?? "").trim();
+    // Same CSV-delimiter guard as the AAVSO note below: a note containing a line
+    // break would otherwise add an extra, unparseable line to the fixed-column output.
+    const rawNote = csvSafe(r.note ?? "");
     const suffix = rawNote ? ` ${rawNote}` : "";
     lines.push(`${code} ${dateStr} ${mag.padStart(5, " ")} ${ctx.obsCode}${suffix}`);
   }
-  return lines.join("\n") + "\n";
+  return { text: lines.join("\n") + "\n", skipped };
 }
 
-export function buildAAVSO(rows: ExportRow[], ctx: ExportContext): string {
+export function buildAAVSO(rows: ExportRow[], ctx: ExportContext): ExportResult {
   const compLabelThreshold = ctx.compLabelThreshold ?? DEFAULT_COMP_LABEL_THRESHOLD;
   const header = [
     "#TYPE=Visual",
@@ -66,10 +81,11 @@ export function buildAAVSO(rows: ExportRow[], ctx: ExportContext): string {
     "#OBSTYPE=Visual",
   ].join("\n");
   const body: string[] = [];
+  const skipped: SkippedRow[] = [];
   for (const r of rows) {
     const mag = magOrLimit(r, compLabelThreshold);
-    if (!mag) continue;
-    if (!r.aavso_code) continue;
+    if (!mag) { skipped.push({ star: r.star_name, reason: "noMag" }); continue; }
+    if (!r.aavso_code) { skipped.push({ star: r.star_name, reason: "noAavsoCode" }); continue; }
     const isLimit = !!(r.limit_value && r.limit_value.trim());
     // Resolve A/B (which may be a letter) to numeric magnitudes for the AAVSO comp fields.
     const aVal = resolveCompValue(r.star_name, r.a ?? null, compLabelThreshold);
@@ -95,7 +111,7 @@ export function buildAAVSO(rows: ExportRow[], ctx: ExportContext): string {
       ].join(","),
     );
   }
-  return header + "\n" + body.join("\n") + "\n";
+  return { text: header + "\n" + body.join("\n") + "\n", skipped };
 }
 
 function padNum(n: number, width: number): string {

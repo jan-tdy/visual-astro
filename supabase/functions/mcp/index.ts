@@ -3580,17 +3580,24 @@ function rowDate(row, ctx) {
 function buildVSNET(rows, ctx) {
   const compLabelThreshold = ctx.compLabelThreshold ?? DEFAULT_COMP_LABEL_THRESHOLD;
   const lines = [];
+  const skipped = [];
   for (const r of rows) {
     const mag = magOrLimit(r, compLabelThreshold);
-    if (!mag) continue;
-    if (!r.vsnet_code) continue;
+    if (!mag) {
+      skipped.push({ star: r.star_name, reason: "noMag" });
+      continue;
+    }
+    if (!r.vsnet_code) {
+      skipped.push({ star: r.star_name, reason: "noVsnetCode" });
+      continue;
+    }
     const code = r.vsnet_code.trim().padEnd(8, " ");
     const dateStr = vsnetDate(rowDate(r, ctx));
-    const rawNote = (r.note ?? "").trim();
+    const rawNote = csvSafe(r.note ?? "");
     const suffix = rawNote ? ` ${rawNote}` : "";
     lines.push(`${code} ${dateStr} ${mag.padStart(5, " ")} ${ctx.obsCode}${suffix}`);
   }
-  return lines.join("\n") + "\n";
+  return { text: lines.join("\n") + "\n", skipped };
 }
 function buildAAVSO(rows, ctx) {
   const compLabelThreshold = ctx.compLabelThreshold ?? DEFAULT_COMP_LABEL_THRESHOLD;
@@ -3603,10 +3610,17 @@ function buildAAVSO(rows, ctx) {
     "#OBSTYPE=Visual"
   ].join("\n");
   const body = [];
+  const skipped = [];
   for (const r of rows) {
     const mag = magOrLimit(r, compLabelThreshold);
-    if (!mag) continue;
-    if (!r.aavso_code) continue;
+    if (!mag) {
+      skipped.push({ star: r.star_name, reason: "noMag" });
+      continue;
+    }
+    if (!r.aavso_code) {
+      skipped.push({ star: r.star_name, reason: "noAavsoCode" });
+      continue;
+    }
     const isLimit = !!(r.limit_value && r.limit_value.trim());
     const aVal = resolveCompValue(r.star_name, r.a ?? null, compLabelThreshold);
     const bVal = resolveCompValue(r.star_name, r.b ?? null, compLabelThreshold);
@@ -3629,7 +3643,7 @@ function buildAAVSO(rows, ctx) {
       ].join(",")
     );
   }
-  return header + "\n" + body.join("\n") + "\n";
+  return { text: header + "\n" + body.join("\n") + "\n", skipped };
 }
 
 // src/lib/mcp/tools/export-session.ts
@@ -3678,10 +3692,10 @@ var export_session_default = defineTool12({
       jd: session.jd != null ? Number(session.jd) : dateToJD(observedAt),
       obsCode: code
     };
-    const text = format === "vsnet" ? buildVSNET(rows, exportCtx) : buildAAVSO(rows, exportCtx);
+    const { text, skipped } = format === "vsnet" ? buildVSNET(rows, exportCtx) : buildAAVSO(rows, exportCtx);
     return {
       content: [{ type: "text", text }],
-      structuredContent: { format, obs_code: code, rows: rows.length, text }
+      structuredContent: { format, obs_code: code, rows: rows.length, text, skipped }
     };
   }
 });
