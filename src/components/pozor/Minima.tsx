@@ -26,8 +26,8 @@ export function Minima({
   const target = targets.find((x) => x.id === targetId);
   const usable = !!target?.epoch_jd && !!target?.period_days;
 
-  const rows = useMemo(() => {
-    if (!target || !usable) return [];
+  const { events: rows, truncated } = useMemo(() => {
+    if (!target || !usable) return { events: [], truncated: false };
     return minimaInRange(
       {
         raHours: target.ra_hours,
@@ -78,14 +78,20 @@ export function Minima({
         </div>
       </Card>
 
+      {truncated && (
+        <div className="rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-xs text-yellow-700 dark:text-yellow-300">
+          {t("pozor.minima.truncated")}
+        </div>
+      )}
+
       <Card className="p-4 overflow-x-auto">
         {!target ? (
           <p className="text-sm text-muted-foreground">{t("pozor.pickTarget")}</p>
         ) : !usable ? (
           <p className="text-sm text-muted-foreground">{t("pozor.minima.needEpoch")}</p>
-        ) : rows.length === 0 ? (
+        ) : rows.length === 0 && !truncated ? (
           <p className="text-sm text-muted-foreground">{t("pozor.minima.none")}</p>
-        ) : (
+        ) : rows.length === 0 ? null : (
           <table className="w-full text-xs tabular-nums">
             <thead className="text-[11px] uppercase text-muted-foreground">
               <tr className="border-b border-border">

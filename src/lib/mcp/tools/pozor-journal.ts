@@ -35,7 +35,8 @@ export default defineTool({
     if (error || !target) return fail(error ?? "Target not resolved.");
     const site = resolveLocation(input);
     const minAlt = input.min_altitude ?? MIN_ALT_DEFAULT;
-    const rows = buildJournal(target, input.from, input.to, site, minAlt)
+    const { rows: journalRows, truncated } = buildJournal(target, input.from, input.to, site, minAlt);
+    const rows = journalRows
       .filter((r) => (input.only_observable === false ? true : r.windows.length > 0))
       .map((r) => ({
         date: r.isoDate,
@@ -51,6 +52,7 @@ export default defineTool({
       target: { name: target.name, raHoursJ2000: target.raHours, decDegJ2000: target.decDeg },
       site: { key: site.key, label: site.label },
       minAltitudeDeg: minAlt,
+      truncated,
       nights: rows,
     };
     return ok(payload, payload as unknown as Record<string, unknown>);

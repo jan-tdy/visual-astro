@@ -36,14 +36,15 @@ export default defineTool({
     if (!target.epochJd || !target.periodDays) return fail("This target has no epoch/period ephemeris.");
     const site = resolveLocation(input);
     const minAlt = input.min_altitude ?? MIN_ALT_DEFAULT;
-    const events = minimaInRange(
+    const { events: minimaEvents, truncated } = minimaInRange(
       { raHours: target.raHours, decDeg: target.decDeg, epochJd: target.epochJd, periodDays: target.periodDays },
       input.from,
       input.to,
       site,
       minAlt,
       input.only_observable !== false,
-    ).map((e) => ({
+    );
+    const events = minimaEvents.map((e) => ({
       epoch: e.epoch,
       utc: iso(e.date),
       jd: e.jd,
@@ -58,6 +59,7 @@ export default defineTool({
       target: { name: target.name, epochJd: target.epochJd, periodDays: target.periodDays },
       site: { key: site.key, label: site.label },
       minAltitudeDeg: minAlt,
+      truncated,
       minima: events,
     };
     return ok(payload, payload as unknown as Record<string, unknown>);
