@@ -64,10 +64,10 @@ export default defineTool({
       jd: session.jd != null ? Number(session.jd) : dateToJD(observedAt),
       obsCode: code,
     };
-    const text = format === "vsnet" ? buildVSNET(rows, exportCtx) : buildAAVSO(rows, exportCtx);
+    const { text, skipped } = format === "vsnet" ? buildVSNET(rows, exportCtx) : buildAAVSO(rows, exportCtx);
     return {
       content: [{ type: "text" as const, text }],
-      structuredContent: { format, obs_code: code, rows: rows.length, text },
+      structuredContent: { format, obs_code: code, rows: rows.length, text, skipped },
     };
   },
 });

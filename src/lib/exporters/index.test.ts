@@ -23,25 +23,51 @@ const baseRow: ExportRow = {
 
 describe("buildAAVSO", () => {
   it("strips commas from a note so columns don't shift", () => {
-    const out = buildAAVSO([{ ...baseRow, note: "faint, uncertain" }], ctx);
-    const line = out.split("\n").find((l) => l.startsWith("RCYG"));
+    const { text, skipped } = buildAAVSO([{ ...baseRow, note: "faint, uncertain" }], ctx);
+    const line = text.split("\n").find((l) => l.startsWith("RCYG"));
     expect(line?.split(",")).toHaveLength(8);
     expect(line).toContain("faint  uncertain");
+    expect(skipped).toEqual([]);
   });
 
   it("rolls a post-midnight UT observation onto the next JD", () => {
-    const out = buildAAVSO([{ ...baseRow, ut_time: "02:15" }], ctx);
-    const line = out.split("\n").find((l) => l.startsWith("RCYG"));
+    const { text } = buildAAVSO([{ ...baseRow, ut_time: "02:15" }], ctx);
+    const line = text.split("\n").find((l) => l.startsWith("RCYG"));
     const jd = parseFloat(line!.split(",")[1]);
     // 02:15 UT is ~15.75h after the 18:00 session placeholder, not before it.
     expect(jd).toBeGreaterThan(ctx.jd);
   });
+
+  it("reports a row with no AAVSO code as skipped instead of silently dropping it", () => {
+    const { text, skipped } = buildAAVSO([{ ...baseRow, aavso_code: null }], ctx);
+    expect(text.trim()).toBe(
+      ["#TYPE=Visual", `#OBSCODE=${ctx.obsCode}`, "#SOFTWARE=Visual-Astro (japysoft)", "#DELIM=,", "#DATE=JD", "#OBSTYPE=Visual"].join("\n"),
+    );
+    expect(skipped).toEqual([{ star: "R Cyg", reason: "noAavsoCode" }]);
+  });
+
+  it("reports a row with no computable magnitude as skipped", () => {
+    const { skipped } = buildAAVSO([{ ...baseRow, a: null, b: null, pasos_a: null, pasos_b: null }], ctx);
+    expect(skipped).toEqual([{ star: "R Cyg", reason: "noMag" }]);
+  });
 });
 
 describe("buildVSNET", () => {
-  it("omits rows with no computable magnitude", () => {
-    const out = buildVSNET([{ ...baseRow, a: null, b: null, pasos_a: null, pasos_b: null }], ctx);
-    expect(out.trim()).toBe("");
+  it("omits rows with no computable magnitude, and reports them as skipped", () => {
+    const { text, skipped } = buildVSNET([{ ...baseRow, a: null, b: null, pasos_a: null, pasos_b: null }], ctx);
+    expect(text.trim()).toBe("");
+    expect(skipped).toEqual([{ star: "R Cyg", reason: "noMag" }]);
+  });
+
+  it("reports a row with no VSNET code as skipped", () => {
+    const { text, skipped } = buildVSNET([{ ...baseRow, vsnet_code: null }], ctx);
+    expect(text.trim()).toBe("");
+    expect(skipped).toEqual([{ star: "R Cyg", reason: "noVsnetCode" }]);
+  });
+
+  it("strips a line break from a note so it can't inject an extra line", () => {
+    const { text } = buildVSNET([{ ...baseRow, note: "line1\nline2" }], ctx);
+    expect(text.trim().split("\n")).toHaveLength(1);
   });
 });
 
