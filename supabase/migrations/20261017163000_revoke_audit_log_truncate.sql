@@ -1,0 +1,16 @@
+-- audit_log was created in 20261012160000_audit_log_and_grant_hardening.sql,
+-- the same migration that revoked TRUNCATE on every other user-data table
+-- (sessions, observations, stars, profiles, ccd_catalogs, ccd_targets,
+-- plus_bonuses, pozor_locations, subscriptions, ocr_usage) specifically
+-- because TRUNCATE bypasses RLS entirely. audit_log itself was never added
+-- to that REVOKE list, so Supabase's default privileges left anon and
+-- authenticated with TRUNCATE on the very table meant to make a wipe
+-- diagnosable — able to erase the whole audit trail (not just rows they
+-- own) without tripping any RLS policy. PostgREST has no verb that issues
+-- TRUNCATE, so this isn't reachable through the app's own REST API today;
+-- same reasoning as the original hardening migration, closing the same gap
+-- consistently for the table that gap was introduced to protect. Also
+-- revoked from service_role, matching the original migration's stance that
+-- a compromised/misused service-role credential shouldn't be able to wipe
+-- the audit trail either.
+REVOKE TRUNCATE ON public.audit_log FROM anon, authenticated, service_role;
