@@ -8,6 +8,20 @@
       "when": 1791547713568,
       "tag": "0000_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792254113069,
+      "tag": "0001_restore_ocr_usage_rpcs",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792254135445,
+      "tag": "0002_revoke_ocr_usage_rpcs_from_clients",
+      "breakpoints": true
     }
   ]
 }

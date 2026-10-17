@@ -2949,7 +2949,7 @@ function resolveCompValue(starName, raw, labelThreshold = DEFAULT_COMP_LABEL_THR
 }
 function computeMagnitude(o, starName, labelThreshold = DEFAULT_COMP_LABEL_THRESHOLD) {
   if (o.limit_value && o.limit_value.trim()) {
-    return { value: o.limit_value.trim(), numeric: null };
+    return { value: o.limit_value.trim().replace(/,/g, "."), numeric: null };
   }
   const aNum = resolveCompValue(starName, o.a ?? null, labelThreshold);
   const bNum = resolveCompValue(starName, o.b ?? null, labelThreshold);

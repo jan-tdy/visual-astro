@@ -504,6 +504,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      decrement_ocr_usage: {
+        Args: { _used_on: string; _user_id: string }
+        Returns: undefined
+      }
       delete_unobserved_stars: {
         Args: { p_star_ids: string[] }
         Returns: string[]
@@ -512,6 +516,13 @@ export type Database = {
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean
+      }
+      increment_ocr_usage: {
+        Args: { _limit: number; _used_on: string; _user_id: string }
+        Returns: {
+          limit_reached: boolean
+          new_count: number
+        }[]
       }
       user_storage_bytes: { Args: { _user_id: string }; Returns: number }
       user_storage_limit_bytes: { Args: { _user_id: string }; Returns: number }
