@@ -11,13 +11,31 @@ import { useI18n } from "@/hooks/useI18n";
 import { lovable } from "@/integrations/lovable/index";
 import { Apple } from "lucide-react";
 
+// Only ever redirect back to a same-origin, same-document path. A plain
+// `startsWith("/") && !startsWith("//")` check is not enough: browsers (per
+// the WHATWG URL spec) treat "\" as "/" when resolving a URL for a special
+// scheme, so "/\evil.com" or "/\/evil.com" normalizes to a protocol-relative
+// "//evil.com" and sails right past that check. Resolving through `new URL`
+// and comparing the resulting origin closes that off regardless of how the
+// browser normalizes slashes/backslashes.
+function sanitizeNextPath(raw: string): string {
+  if (!raw || raw.includes("\\")) return "";
+  try {
+    const url = new URL(raw, window.location.origin);
+    if (url.origin !== window.location.origin) return "";
+    return url.pathname + url.search + url.hash;
+  } catch {
+    return "";
+  }
+}
+
 export default function Auth() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t, lang, setLang } = useI18n();
   const [params] = useSearchParams();
   const rawNext = params.get("next") ?? "";
-  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "";
+  const next = sanitizeNextPath(rawNext);
   const [mode, setMode] = useState<"signin" | "signup">(
     params.get("mode") === "signup" ? "signup" : "signin",
   );
