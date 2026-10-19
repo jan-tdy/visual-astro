@@ -27,7 +27,7 @@ jobs:
       # least once — including on the PR that first adds it. Non-blocking
       # so that bootstrap run doesn't sit red forever; once main has the
       # config, autolabeling on later PRs just works.
-      - uses: release-drafter/release-drafter@v6
+      - uses: release-drafter/release-drafter@v7
         id: drafter
         continue-on-error: true
         env:
