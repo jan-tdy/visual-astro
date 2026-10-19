@@ -27,10 +27,21 @@ export default defineTool({
     if (!(await isPlusActive(ctx))) return plusRequired();
     const supabase = supabaseForUser(ctx);
     let catalogId = input.catalog_id ?? null;
-    if (!catalogId) {
+    if (catalogId) {
+      // RLS also exposes the shared default catalog read-only, so check ownership explicitly.
+      const { data: owned, error: ownErr } = await supabase
+        .from("ccd_catalogs")
+        .select("id")
+        .eq("id", catalogId)
+        .eq("user_id", ctx.getUserId())
+        .maybeSingle();
+      if (ownErr) return fail(ownErr.message);
+      if (!owned) return fail("Catalog not found or not owned by you.");
+    } else {
       const { data: cats, error: catErr } = await supabase
         .from("ccd_catalogs")
         .select("id,name")
+        .eq("user_id", ctx.getUserId())
         .order("sort_order");
       if (catErr) return fail(catErr.message);
       const wanted = input.catalog_name?.trim().toLowerCase();

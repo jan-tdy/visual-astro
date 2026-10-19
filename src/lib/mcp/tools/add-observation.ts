@@ -25,9 +25,28 @@ export default defineTool({
   handler: async ({ session_id, star_id, star_name, ...row }, ctx) => {
     if (!ctx.isAuthenticated()) return unauthenticated();
     const supabase = supabaseForUser(ctx);
+    const userId = ctx.getUserId();
+    const { data: session, error: sessErr } = await supabase
+      .from("sessions")
+      .select("id")
+      .eq("id", session_id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (sessErr) return fail(sessErr.message);
+    if (!session) return fail("Session not found.");
     let starId = star_id ?? null;
     let resolvedName = star_name ?? null;
-    if (!starId) {
+    if (starId) {
+      const { data: star, error: starErr } = await supabase
+        .from("stars")
+        .select("id,name")
+        .eq("id", starId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (starErr) return fail(starErr.message);
+      if (!star) return fail("Star not found in your catalog.");
+      resolvedName = star.name;
+    } else {
       if (!star_name) return fail("Provide star_id or star_name.");
       const { data: matches, error } = await supabase
         .from("stars")
