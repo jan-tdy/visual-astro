@@ -147,7 +147,10 @@ CREATE TABLE public.telescope_events (
   ra text,
   dec text,
   status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'dismissed')),
-  matched_star_id uuid REFERENCES public.stars(id),
+  -- ON DELETE SET NULL: without it, deleting a star that's ever been linked
+  -- to an event fails outright (NO ACTION is the default) instead of just
+  -- dropping the link -- the observer couldn't delete their own star.
+  matched_star_id uuid REFERENCES public.stars(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (user_id, event_id)
 );
