@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AppHeader } from "@/components/app/AppHeader";
+import { AppShell } from "@/components/app/AppShell";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -397,9 +397,8 @@ export default function Graphs() {
   const totalSessions = sessions.length;
 
   return (
-    <div className="min-h-screen">
-      <AppHeader />
-      <main className="container mx-auto px-4 py-8 max-w-5xl">
+    <AppShell>
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
         <h1 className="text-2xl font-semibold mb-1">{t("graphs.title")}</h1>
         <p className="text-sm text-muted-foreground mb-6">{t("graphs.subtitle")}</p>
 
@@ -654,7 +653,7 @@ export default function Graphs() {
             </Tabs>
           </>
         )}
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

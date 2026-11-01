@@ -327,6 +327,7 @@ export type Database = {
           catalog_seeded: boolean
           created_at: string
           dev_plus_override: boolean
+          display_name: string | null
           enterprise_ai_scans_per_month: number | null
           enterprise_storage_mb: number | null
           fecha_referencia: string
@@ -341,6 +342,7 @@ export type Database = {
           catalog_seeded?: boolean
           created_at?: string
           dev_plus_override?: boolean
+          display_name?: string | null
           enterprise_ai_scans_per_month?: number | null
           enterprise_storage_mb?: number | null
           fecha_referencia?: string
@@ -355,6 +357,7 @@ export type Database = {
           catalog_seeded?: boolean
           created_at?: string
           dev_plus_override?: boolean
+          display_name?: string | null
           enterprise_ai_scans_per_month?: number | null
           enterprise_storage_mb?: number | null
           fecha_referencia?: string

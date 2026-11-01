@@ -19,7 +19,7 @@ export const SUPPORTED_LANGS = [
   { code: "pl", label: "Polski" },
 ] as const;
 
-type Lang = (typeof SUPPORTED_LANGS)[number]["code"];
+export type Lang = (typeof SUPPORTED_LANGS)[number]["code"];
 
 export const dict = {
   sk: {
@@ -452,6 +452,11 @@ export const dict = {
     "pozor.catalog.sharedHint": "Toto je zdie\u013ean\u00fd predvolen\u00fd katal\u00f3g. Pridan\u00edm hviezdy alebo importom si vytvor\u00ed\u0161 vlastn\u00fa k\u00f3piu.",
     "pozor.catalog.loading": "Na\u010d\u00edtavaj\u00fa sa katal\u00f3gy\u2026",
     "nav.themeToggle": "Prepnúť režim",
+    "nav.lightMode": "Svetlý režim",
+    "nav.darkMode": "Tmavý režim",
+    "nav.profile": "Profil",
+    "nav.useTopbar": "Horný panel namiesto bočného",
+    "nav.useSidebar": "Bočný panel namiesto horného",
     "nav.menu": "Menu",
     "notfound.home": "Späť na úvod",
     "notfound.message": "Hľadaná stránka neexistuje.",
@@ -567,6 +572,8 @@ export const dict = {
     "settings.confirmDelDesc": "Pýtať potvrdenie pri mazaní hviezd v katalógu a Prom katalógu.",
     "settings.defaultConst": "Predvolená oblasť po otvorení session",
     "settings.defaultConstHint": "Predvolená oblasť je dostupné v pláne",
+    "settings.displayName": "Zobrazované meno",
+    "settings.displayNameHint": "Použije sa na iniciálky v profilovej bublinke v navigácii. Fotka sa nenahráva.",
     "settings.dev.desc": "Si prihlásený ako vývojár ({email}). Jedným klikom si môžeš zapnúť alebo vypnúť plán Plus bez platby.",
     "settings.dev.off": "Plus deaktivovaný (dev)",
     "settings.dev.on": "Plus aktivovaný (dev)",
@@ -1091,6 +1098,11 @@ export const dict = {
     "pozor.catalog.sharedHint": "This is the shared default catalogue. Adding a star or importing will create your own copy.",
     "pozor.catalog.loading": "Loading catalogues…",
     "nav.themeToggle": "Toggle theme",
+    "nav.lightMode": "Light mode",
+    "nav.darkMode": "Dark mode",
+    "nav.profile": "Profile",
+    "nav.useTopbar": "Top bar instead of sidebar",
+    "nav.useSidebar": "Sidebar instead of top bar",
     "nav.menu": "Menu",
     "notfound.home": "Back to home",
     "notfound.message": "The requested page does not exist.",
@@ -1206,6 +1218,8 @@ export const dict = {
     "settings.confirmDelDesc": "Ask for confirmation when deleting stars in the catalog and the Prom catalog.",
     "settings.defaultConst": "Default Region upon Session Opening",
     "settings.defaultConstHint": "The default area is available in the plan",
+    "settings.displayName": "Display name",
+    "settings.displayNameHint": "Used for the initials shown in the profile avatar in the navigation. No photo upload.",
     "settings.dev.desc": "You're logged in as developer ({email}). With one click, you can turn on or off the Plus plan without payment.",
     "settings.dev.off": "Plus disabled (dev)",
     "settings.dev.on": "Plus enabled (dev)",
