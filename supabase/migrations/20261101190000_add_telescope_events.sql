@@ -4,13 +4,16 @@
 -- design (device-code pairing, offline queue, 1.42 min threshold applied on
 -- the Pi side, not here).
 --
--- Three tables:
+-- Four tables:
 --  - telescope_links: one row per paired Pi, keyed by a hash of its device
 --    token (the plaintext token itself is never stored).
 --  - telescope_pairing_requests: transient device-code handshake state.
 --    Never read with the anon/authenticated key — only the edge functions
 --    (service role) touch it, so it carries zero RLS policies (RLS enabled,
 --    default-deny for every non-service-role caller).
+--  - telescope_pair_claim_attempts: per-user lockout counter for
+--    telescope-pair-claim, so a logged-in user can't enumerate the 6-digit
+--    code space against other people's pending pairing requests.
 --  - telescope_events: the actual reported events, owned by the observer
 --    once ingested.
 
@@ -54,6 +57,30 @@ ALTER TABLE public.telescope_pairing_requests ENABLE ROW LEVEL SECURITY;
 -- (holds a plaintext device token for a short window), read and written
 -- only by service-role edge functions, which bypass RLS. anon/authenticated
 -- get zero access.
+
+-- Only one request can be actively claimable per code at a time (two
+-- Pis independently rolling the same 6-digit code within the same
+-- ~10-minute window is astronomically unlikely, but free to rule out).
+CREATE UNIQUE INDEX telescope_pairing_requests_pending_code_idx
+  ON public.telescope_pairing_requests (code_hash) WHERE status = 'pending';
+
+-- telescope-pair-claim's lockout state: without this, a logged-in user could
+-- brute-force the 10^6 code space against *any* currently-pending request
+-- from *any* other account and hijack that pairing. Locks out the calling
+-- user_id (not the code or the pairing row — the attack enumerates across
+-- all pending rows, not one) after a few wrong guesses.
+CREATE TABLE public.telescope_pair_claim_attempts (
+  user_id uuid PRIMARY KEY REFERENCES auth.users(id),
+  failed_count integer NOT NULL DEFAULT 0,
+  locked_until timestamptz
+);
+
+GRANT ALL ON public.telescope_pair_claim_attempts TO service_role;
+REVOKE TRUNCATE ON public.telescope_pair_claim_attempts FROM anon, authenticated, service_role;
+
+ALTER TABLE public.telescope_pair_claim_attempts ENABLE ROW LEVEL SECURITY;
+-- No policies: same posture as telescope_pairing_requests above — only
+-- telescope-pair-claim (service role) ever touches this table.
 
 CREATE TABLE public.telescope_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

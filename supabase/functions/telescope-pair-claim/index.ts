@@ -8,6 +8,16 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 // telescope_links, and stashes the plaintext token on the pairing row for
 // the Pi to pick up once (telescope-pair-fetch). Requires a normal Visual
 // Astro user session (verify_jwt stays on for this function).
+//
+// A 6-digit code is only ~20 bits of entropy, and this endpoint is reachable
+// by any logged-in Visual Astro user against *any* currently-pending
+// request, not just their own — without a limit, an attacker could script
+// through the whole code space within a pairing request's ~10-minute TTL
+// and hijack someone else's telescope link. telescope_pair_claim_attempts
+// locks out the calling user_id after a few wrong guesses.
+
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_MS = 15 * 60 * 1000;
 
 async function sha256Hex(input: string): Promise<string> {
   const data = new TextEncoder().encode(input);
@@ -45,6 +55,27 @@ Deno.serve(async (req) => {
     }
     const userId = userData.user.id;
 
+    const { data: lockState } = await supabase
+      .from('telescope_pair_claim_attempts')
+      .select('failed_count, locked_until')
+      .eq('user_id', userId)
+      .maybeSingle();
+    const locked = lockState as { failed_count: number; locked_until: string | null } | null;
+    if (locked?.locked_until && new Date(locked.locked_until).getTime() > Date.now()) {
+      return new Response(JSON.stringify({ error: 'Príliš veľa nesprávnych kódov. Skúste znova neskôr.' }), {
+        status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const recordFailure = async () => {
+      const nextCount = (locked?.failed_count ?? 0) + 1;
+      await supabase.from('telescope_pair_claim_attempts').upsert({
+        user_id: userId,
+        failed_count: nextCount >= MAX_FAILED_ATTEMPTS ? 0 : nextCount,
+        locked_until: nextCount >= MAX_FAILED_ATTEMPTS ? new Date(Date.now() + LOCKOUT_MS).toISOString() : null,
+      });
+    };
+
     const { code } = await req.json();
     if (typeof code !== 'string' || !/^\d{6}$/.test(code.trim())) {
       return new Response(JSON.stringify({ error: 'code must be 6 digits' }), {
@@ -60,6 +91,7 @@ Deno.serve(async (req) => {
       .eq('status', 'pending')
       .maybeSingle();
     if (!pending || new Date((pending as { expires_at: string }).expires_at).getTime() <= Date.now()) {
+      await recordFailure();
       return new Response(JSON.stringify({ error: 'Kód je nesprávny alebo vypršal.' }), {
         status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -95,6 +127,10 @@ Deno.serve(async (req) => {
         status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // Clear any accumulated failures now that this user has proven they hold
+    // a valid code.
+    await supabase.from('telescope_pair_claim_attempts').delete().eq('user_id', userId);
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
