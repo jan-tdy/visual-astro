@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Settings as SettingsIcon, Sun, Moon, LogOut, PanelLeft, PanelTop } from "lucide-react";
+import { Settings as SettingsIcon, Sun, Moon, LogOut, PanelLeft, PanelTop, History } from "lucide-react";
 
 function initialsFor(displayName: string, email: string | undefined) {
   const name = displayName.trim();
@@ -80,6 +80,11 @@ export function ProfileMenu({ navStyle, onToggleNavStyle, variant = "icon" }: Pr
         <DropdownMenuItem asChild>
           <Link to="/settings">
             <SettingsIcon className="h-4 w-4 mr-2" /> {t("nav.settings")}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/changelog">
+            <History className="h-4 w-4 mr-2" /> {t("nav.changelog")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={toggle}>
