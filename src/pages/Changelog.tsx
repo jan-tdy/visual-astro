@@ -42,6 +42,13 @@ const LABEL_BADGE: Record<string, { variant: "default" | "secondary" | "destruct
   dependencies: { variant: "secondary", sk: "bump", en: "bump" },
 };
 
+// http(s) absolute URLs or site-relative paths only — never a protocol-relative
+// "//host" or a non-http scheme like "javascript:" (see GitHub issue #235: release
+// bodies are built from merged PR titles, which aren't trusted HTML-adjacent input).
+function isSafeHref(url: string) {
+  return /^https?:\/\//i.test(url) || (url.startsWith("/") && !url.startsWith("//"));
+}
+
 // Minimal, safe markdown rendering (no HTML injection): headings, bullets, bold, code, links.
 function renderInline(text: string, key: string) {
   const parts: React.ReactNode[] = [];
@@ -57,7 +64,11 @@ function renderInline(text: string, key: string) {
     else if (s.startsWith("`")) parts.push(<code key={k} className="px-1 rounded bg-secondary text-xs">{s.slice(1, -1)}</code>);
     else if (s.startsWith("[")) {
       const mm = /\[([^\]]+)\]\(([^)]+)\)/.exec(s)!;
-      parts.push(<a key={k} href={mm[2]} target="_blank" rel="noopener noreferrer" className="text-primary underline">{mm[1]}</a>);
+      parts.push(
+        isSafeHref(mm[2])
+          ? <a key={k} href={mm[2]} target="_blank" rel="noopener noreferrer" className="text-primary underline">{mm[1]}</a>
+          : mm[1],
+      );
     } else parts.push(<a key={k} href={s} target="_blank" rel="noopener noreferrer" className="text-primary underline break-all">{s}</a>);
     last = m.index + s.length;
   }
@@ -65,7 +76,7 @@ function renderInline(text: string, key: string) {
   return parts;
 }
 
-function Markdown({ text }: { text: string }) {
+export function Markdown({ text }: { text: string }) {
   const lines = text.replace(/\r/g, "").split("\n");
   return (
     <div className="space-y-1.5 text-sm">
