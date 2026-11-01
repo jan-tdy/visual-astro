@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AppHeader } from "@/components/app/AppHeader";
+import { AppShell } from "@/components/app/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -171,9 +171,8 @@ export default function Tools() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppHeader />
-      <main className="container mx-auto px-4 py-6 max-w-6xl">
+    <AppShell>
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
         <h1 className="text-2xl font-semibold mb-1">{t("tools.title")} — Visual Astro</h1>
         <p className="text-sm text-muted-foreground mb-6">{t("tools.subtitle")}</p>
 
@@ -431,7 +430,7 @@ export default function Tools() {
           </CardContent>
         </Card>
         </div>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

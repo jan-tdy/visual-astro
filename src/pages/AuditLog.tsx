@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { AppHeader } from "@/components/app/AppHeader";
+import { AppShell } from "@/components/app/AppShell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, ShieldAlert } from "lucide-react";
@@ -58,9 +58,8 @@ export default function AuditLog() {
   }, [user]);
 
   return (
-    <div className="min-h-screen">
-      <AppHeader />
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+    <AppShell>
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="flex items-center gap-2 mb-1">
           <ShieldAlert className="h-5 w-5 text-muted-foreground" />
           <h1 className="text-2xl font-semibold">{t("auditLog.title")}</h1>
@@ -94,7 +93,7 @@ export default function AuditLog() {
             ))}
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

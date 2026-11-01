@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAllRows } from "@/lib/supabaseFetchAll";
-import { AppHeader } from "@/components/app/AppHeader";
+import { AppShell } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -307,9 +307,8 @@ export default function Catalog() {
   };
 
   return (
-    <div className="min-h-screen">
-      <AppHeader />
-      <main className="container mx-auto px-4 py-8 max-w-5xl">
+    <AppShell>
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <h1 className="text-2xl font-semibold">{t("catalog.title")}</h1>
           <div className="flex gap-2 flex-wrap">
@@ -415,7 +414,7 @@ export default function Catalog() {
             </table>
           </Card>
         )}
-      </main>
+      </div>
 
       <StarDialog
         open={!!editing || creating}
@@ -466,7 +465,7 @@ export default function Catalog() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AppShell>
   );
 }
 

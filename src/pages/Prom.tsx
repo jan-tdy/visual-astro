@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AppHeader } from "@/components/app/AppHeader";
+import { AppShell } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -69,9 +69,8 @@ export default function Prom() {
   };
 
   return (
-    <div className="min-h-screen">
-      <AppHeader />
-      <main className="container mx-auto px-4 py-8 max-w-5xl">
+    <AppShell>
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
           <div>
             <h1 className="text-2xl font-semibold">{t("prom.title")}</h1>
@@ -176,7 +175,7 @@ export default function Prom() {
             </tbody>
           </table>
         </Card>
-      </main>
+      </div>
 
       <PromDialog
         open={!!editing || creating}
@@ -222,7 +221,7 @@ export default function Prom() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AppShell>
   );
 }
 

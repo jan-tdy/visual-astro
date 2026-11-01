@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { AppHeader } from "@/components/app/AppHeader";
+import { AppShell } from "@/components/app/AppShell";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -219,9 +219,8 @@ export default function Compare() {
   const xDomain: [number, number] = validRange ? [-rangeBefore, rangeAfter] : [-1, 1];
 
   return (
-    <div className="min-h-screen">
-      <AppHeader />
-      <main className="container mx-auto px-4 py-8 max-w-5xl">
+    <AppShell>
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
         <h1 className="text-2xl font-semibold mb-1">{t("compare.title")}</h1>
         <p className="text-sm text-muted-foreground mb-6">{t("compare.subtitle")}</p>
 
@@ -402,7 +401,7 @@ export default function Compare() {
             </div>
           </Card>
         )}
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

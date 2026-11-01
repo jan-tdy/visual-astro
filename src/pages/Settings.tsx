@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { AppHeader } from "@/components/app/AppHeader";
+import { AppShell } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,7 @@ import { Check, Sparkles, Database, RefreshCw, Lock, Upload, Copy, Cpu, Triangle
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
 import { usePrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
+import { useProfile } from "@/hooks/useProfile";
 import { useI18n } from "@/hooks/useI18n";
 import { fetchAllRows } from "@/lib/supabaseFetchAll";
 import { LocationManager } from "@/components/pozor/LocationManager";
@@ -29,7 +30,9 @@ export default function Settings() {
   const { isPlusActive } = useSubscription();
   const { prefs, update: setPrefs } = usePrefs();
   const { settings: pozor, setSettings: setPozor } = usePozorSettings();
+  const { refresh: refreshProfile } = useProfile();
   const [obsCode, setObsCode] = useState("DPV");
+  const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
   const mcpUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mcp`;
   const [usage, setUsage] = useState<{
@@ -43,12 +46,13 @@ export default function Settings() {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("obs_code")
+      .select("obs_code, display_name")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
         if (data) {
           setObsCode(data.obs_code);
+          setDisplayName(data.display_name ?? "");
         }
       });
   }, [user]);
@@ -58,11 +62,14 @@ export default function Settings() {
     setBusy(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ obs_code: obsCode })
+      .update({ obs_code: obsCode, display_name: displayName.trim() || null })
       .eq("user_id", user.id);
     setBusy(false);
     if (error) toast.error(error.message);
-    else toast.success(t("settings.saved"));
+    else {
+      toast.success(t("settings.saved"));
+      refreshProfile();
+    }
   };
 
   const computeUsage = async () => {
@@ -116,9 +123,8 @@ export default function Settings() {
   const LIMIT_BYTES = limitMb * 1024 * 1024;
 
   return (
-    <div className="min-h-screen">
-      <AppHeader />
-      <main className="container mx-auto px-4 py-8 max-w-6xl">
+    <AppShell>
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
         <h1 className="text-2xl font-semibold mb-6">{t("settings.title")}</h1>
         <Tabs defaultValue="general" className="w-full">
           <TabsList className="mb-4">
@@ -130,6 +136,11 @@ export default function Settings() {
           <TabsContent value="general">
             <div className="columns-1 lg:columns-2 xl:columns-3 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
             <Card className="p-6 space-y-5">
+          <div>
+            <Label htmlFor="displayName">{t("settings.displayName")}</Label>
+            <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+            <p className="text-xs text-muted-foreground mt-1">{t("settings.displayNameHint")}</p>
+          </div>
           <div>
             <Label htmlFor="obs">{t("settings.obsCode")}</Label>
             <Input id="obs" value={obsCode} onChange={(e) => setObsCode(e.target.value)} />
@@ -712,7 +723,7 @@ export default function Settings() {
             </div>
           </TabsContent>
         </Tabs>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

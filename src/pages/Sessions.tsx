@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { AppHeader } from "@/components/app/AppHeader";
+import { AppShell } from "@/components/app/AppShell";
 import { DataLossNotice } from "@/components/app/DataLossNotice";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -153,9 +153,8 @@ export default function Sessions() {
   const hasFavorite = sessions.some((s) => s.is_favorite);
 
   return (
-    <div className="min-h-screen">
-      <AppHeader />
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+    <AppShell>
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
         <DataLossNotice />
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <div>
@@ -252,7 +251,7 @@ export default function Sessions() {
             ))}
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

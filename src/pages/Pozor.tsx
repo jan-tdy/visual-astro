@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Lock } from "lucide-react";
-import { AppHeader } from "@/components/app/AppHeader";
+import { AppShell } from "@/components/app/AppShell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,9 +39,8 @@ export default function Pozor() {
   const ownCatalogsCount = catalogs.filter((c) => c.user_id === user?.id).length;
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppHeader />
-      <main className="container mx-auto px-4 py-6 space-y-4">
+    <AppShell>
+      <div className="container mx-auto px-4 py-6 space-y-4">
         <header className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold">{t("nav.pozor")} — Visual Astro</h1>
@@ -116,7 +115,7 @@ export default function Pozor() {
             />
           </TabsContent>
         </Tabs>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

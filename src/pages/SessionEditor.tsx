@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { AppHeader } from "@/components/app/AppHeader";
+import { AppShell } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -1072,12 +1072,11 @@ export default function SessionEditor() {
 
   if (loading) {
     return (
-      <div className="min-h-screen">
-        <AppHeader />
+      <AppShell>
         <div className="flex justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
-      </div>
+      </AppShell>
     );
   }
 
@@ -1321,10 +1320,10 @@ export default function SessionEditor() {
   };
 
   return (
-    <div className={`min-h-screen ${simpleMode ? "simple-mode relative" : ""}`}>
+    <div className={simpleMode ? "simple-mode relative" : undefined}>
       {simpleMode && <div aria-hidden className="fixed inset-0 -z-10 bg-background" />}
-      <AppHeader />
-      <main className={leftAlign ? "pl-4 pr-4 py-6 max-w-6xl" : "container mx-auto px-4 py-6 max-w-6xl"}>
+      <AppShell>
+      <div className={leftAlign ? "pl-4 pr-4 py-6 max-w-6xl" : "container mx-auto px-4 py-6 max-w-6xl"}>
         <div className="flex items-center justify-between mb-3">
           <Button variant="ghost" size="sm" onClick={() => nav("/")}>
             <ChevronLeft className="h-4 w-4 mr-1" /> {t("editor.back")}
@@ -2139,7 +2138,8 @@ export default function SessionEditor() {
           ))}
         </div>
         )}
-      </main>
+      </div>
+      </AppShell>
 
       {/* Preview overlay */}
       {previewing && (
