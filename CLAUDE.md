@@ -102,12 +102,14 @@ contribution/PR conventions and migration rules.
 ### App shell and routing
 
 `src/App.tsx` nests the app in `QueryClientProvider` → `ThemeProvider` →
-`I18nProvider` → `AuthProvider` → `SubscriptionProvider`, then a flat
-`react-router-dom` route table. Every route except `/auth`, `/info`, and
-`/julian-date-converter` is wrapped in `ProtectedRoute` (auth required). Each
-top-level feature is one page under `src/pages/` (Sessions, Catalog, Prom,
-Pozor, Graphs, Compare, Tools, Settings) — there's no nested/lazy route tree,
-just direct imports.
+`I18nProvider` → `AuthProvider` → `ProfileProvider` → `SubscriptionProvider`,
+then a flat `react-router-dom` route table. Every route except `/auth`,
+`/info`, and `/julian-date-converter` is wrapped in `ProtectedRoute` (auth
+required). `/` is the Home dashboard (recent activity, this year's
+contribution graph, a few recent sessions); the full session list lives at
+`/sessions`. Each top-level feature is one page under `src/pages/` (Home,
+Sessions, Catalog, Prom, Pozor, Graphs, Compare, Tools, Settings) — there's no
+nested/lazy route tree, just direct imports.
 
 ### Internationalization (`src/hooks/useI18n.tsx`)
 

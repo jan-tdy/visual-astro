@@ -3,14 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/app/AppShell";
-import { DataLossNotice } from "@/components/app/DataLossNotice";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2, Plus, Trash2, Copy, Star, StarOff } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD } from "@/lib/astro";
 import { getPrefs } from "@/hooks/usePrefs";
-import { seedCatalogIfNeeded } from "@/lib/seed";
 import { useI18n } from "@/hooks/useI18n";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -37,15 +35,7 @@ export default function Sessions() {
 
   useEffect(() => {
     if (!user) return;
-    (async () => {
-      try {
-        await seedCatalogIfNeeded(user.id);
-      } catch (e: any) {
-        console.error(e);
-        toast.error(`${t("sessions.seedFailed")}: ${e.message}`);
-      }
-      await reload();
-    })();
+    reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -155,7 +145,6 @@ export default function Sessions() {
   return (
     <AppShell>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <DataLossNotice />
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <div>
             <h1 className="text-2xl font-semibold">{t("sessions.title")}</h1>

@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/hooks/useTheme";
 import { I18nProvider } from "@/hooks/useI18n";
 import { ErrorBoundary } from "@/components/app/ErrorBoundary";
 import Auth from "./pages/Auth.tsx";
+import Home from "./pages/Home.tsx";
 import Sessions from "./pages/Sessions.tsx";
 import SessionEditor from "./pages/SessionEditor.tsx";
 import Catalog from "./pages/Catalog.tsx";
@@ -48,7 +49,8 @@ const App = () => (
             <Route path="/julian-date-converter" element={<JulianDateConverterPage />} />
             <Route path="/changelog" element={<Changelog />} />
 
-            <Route path="/" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
+            <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+            <Route path="/sessions" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
             <Route path="/session/:id" element={<ProtectedRoute><SessionEditor /></ProtectedRoute>} />
             <Route path="/catalog" element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
             <Route path="/prom" element={<ProtectedRoute><Prom /></ProtectedRoute>} />

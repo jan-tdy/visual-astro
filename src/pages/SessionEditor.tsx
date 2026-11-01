@@ -510,7 +510,7 @@ export default function SessionEditor() {
         ]);
       if (!session) {
         toast.error(t("editor.sessionMissing"));
-        nav("/");
+        nav("/sessions");
         return;
       }
       setObservedAt(new Date(session.observed_at_utc));
@@ -1325,7 +1325,7 @@ export default function SessionEditor() {
       <AppShell>
       <div className={leftAlign ? "pl-4 pr-4 py-6 max-w-6xl" : "container mx-auto px-4 py-6 max-w-6xl"}>
         <div className="flex items-center justify-between mb-3">
-          <Button variant="ghost" size="sm" onClick={() => nav("/")}>
+          <Button variant="ghost" size="sm" onClick={() => nav("/sessions")}>
             <ChevronLeft className="h-4 w-4 mr-1" /> {t("editor.back")}
           </Button>
           <div className="flex items-center gap-1">
