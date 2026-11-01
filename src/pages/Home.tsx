@@ -12,7 +12,8 @@ import { Card } from "@/components/ui/card";
 import { Loader2, Plus, ListChecks, Star, Moon, Telescope } from "lucide-react";
 import { toast } from "sonner";
 import { computeMagnitude, dateToJD } from "@/lib/astro";
-import { moonPhaseAt } from "@/lib/pozor";
+import { formatUT, nightInfo } from "@/lib/pozor";
+import { resolveLocation, usePozorLocations, usePozorSettings, todayIso } from "@/components/pozor/shared";
 import { getPrefs } from "@/hooks/usePrefs";
 import { seedCatalogIfNeeded } from "@/lib/seed";
 import { useI18n } from "@/hooks/useI18n";
@@ -36,6 +37,8 @@ export default function Home() {
   const { t, lang } = useI18n();
   const [loading, setLoading] = useState(true);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
+  const { locations } = usePozorLocations();
+  const { settings } = usePozorSettings();
 
   useEffect(() => {
     if (!user) return;
@@ -120,8 +123,13 @@ export default function Home() {
     return sessions.filter((s) => s.observed_at_utc.slice(0, 7) === ym).length;
   }, [sessions]);
 
-  const moon = useMemo(() => moonPhaseAt(new Date()), []);
-  const moonLabel = moon.waxing ? t("home.tonight.waxing") : t("home.tonight.waning");
+  const tonightLocation = useMemo(() => resolveLocation(locations, settings.locationId), [locations, settings.locationId]);
+  const tonight = useMemo(() => nightInfo(todayIso(), tonightLocation), [tonightLocation]);
+  const darkness = useMemo(() => {
+    if (!tonight.start || !tonight.end) return null;
+    const totalMin = Math.round((tonight.end.getTime() - tonight.start.getTime()) / 60000);
+    return { h: Math.floor(totalMin / 60), m: totalMin % 60 };
+  }, [tonight]);
 
   const recent = sessions.slice(0, RECENT_COUNT);
   const locale = lang === "sk" ? "sk-SK" : "en-GB";
@@ -155,8 +163,16 @@ export default function Home() {
               <Moon className="h-4 w-4 text-primary" /> {t("home.tonight.title")}
             </div>
             <div>
-              <div className="text-3xl font-semibold tabular-nums">{Math.round(moon.pct)}%</div>
-              <div className="text-xs text-muted-foreground">{moonLabel}</div>
+              {darkness ? (
+                <>
+                  <div className="text-3xl font-semibold tabular-nums">{darkness.h}h {darkness.m}m</div>
+                  <div className="text-xs text-muted-foreground">
+                    {formatUT(tonight.start)}–{formatUT(tonight.end)} UT · {tonightLocation.label}
+                  </div>
+                </>
+              ) : (
+                <div className="text-sm text-muted-foreground">{t("home.tonight.noDarkness")}</div>
+              )}
             </div>
             <Button variant="ghost" size="sm" asChild className="px-0 h-auto text-primary hover:text-primary">
               <Link to="/pozor">
