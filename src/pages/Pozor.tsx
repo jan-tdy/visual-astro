@@ -43,7 +43,7 @@ export default function Pozor() {
       <div className="container mx-auto px-4 py-6 space-y-4">
         <header className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold">{t("nav.pozor")} — Visual Astro</h1>
+            <h1 className="text-2xl font-semibold">{t("nav.pozor")}</h1>
             <p className="text-sm text-muted-foreground">{t("pozor.subtitle")}</p>
           </div>
           <CatalogSwitcher

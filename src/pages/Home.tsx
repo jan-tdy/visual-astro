@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { AppShell } from "@/components/app/AppShell";
 import { DataLossNotice } from "@/components/app/DataLossNotice";
+import { WhatsNewBanner } from "@/components/app/WhatsNewBanner";
 import { YearContributionGraph } from "@/components/graphs/YearContributionGraph";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -128,6 +129,7 @@ export default function Home() {
   return (
     <AppShell>
       <div className="container mx-auto px-4 py-8 max-w-5xl space-y-6">
+        <WhatsNewBanner />
         <DataLossNotice />
 
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -210,7 +212,7 @@ export default function Home() {
             <div className="space-y-2">
               {recent.map((s) => (
                 <Link key={s.id} to={`/session/${s.id}`}>
-                  <Card className="p-4 hover:border-primary/40 transition-colors">
+                  <Card className="p-5 hover:border-primary/40 transition-colors">
                     <div className="font-medium">
                       {s.is_favorite && <Star className="inline h-3.5 w-3.5 mr-1 text-primary fill-current" />}
                       {s.name ? (

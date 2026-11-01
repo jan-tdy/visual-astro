@@ -173,8 +173,17 @@ export default function Tools() {
   return (
     <AppShell>
       <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <h1 className="text-2xl font-semibold mb-1">{t("tools.title")} — Visual Astro</h1>
-        <p className="text-sm text-muted-foreground mb-6">{t("tools.subtitle")}</p>
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold mb-1">{t("tools.title")}</h1>
+            <p className="text-sm text-muted-foreground">{t("tools.subtitle")}</p>
+          </div>
+          <Button variant="outline" size="sm" asChild>
+            <a href="https://jan-tdy.github.io/useless-astro" target="_blank" rel="noopener noreferrer">
+              {t("tools.moreTools")}
+            </a>
+          </Button>
+        </div>
 
         <div className="columns-1 lg:columns-2 xl:columns-3 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
         <div>
