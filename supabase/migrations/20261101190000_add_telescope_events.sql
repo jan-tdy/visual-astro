@@ -26,9 +26,13 @@ CREATE TABLE public.telescope_links (
   revoked_at timestamptz
 );
 
+-- This project's default privileges grant anon/authenticated ALL on every
+-- new table, independent of RLS — revoke down to least privilege rather
+-- than relying on RLS (zero policies for a command = deny for that role)
+-- as the only layer.
+REVOKE ALL ON public.telescope_links FROM anon, authenticated;
 GRANT SELECT ON public.telescope_links TO authenticated;
 GRANT ALL ON public.telescope_links TO service_role;
-REVOKE TRUNCATE ON public.telescope_links FROM anon, authenticated, service_role;
 
 ALTER TABLE public.telescope_links ENABLE ROW LEVEL SECURITY;
 
@@ -49,8 +53,10 @@ CREATE TABLE public.telescope_pairing_requests (
   expires_at timestamptz NOT NULL
 );
 
+-- No grants at all for anon/authenticated (not even SELECT) — see the note
+-- above telescope_links; this table briefly holds a plaintext device token.
+REVOKE ALL ON public.telescope_pairing_requests FROM anon, authenticated;
 GRANT ALL ON public.telescope_pairing_requests TO service_role;
-REVOKE TRUNCATE ON public.telescope_pairing_requests FROM anon, authenticated, service_role;
 
 ALTER TABLE public.telescope_pairing_requests ENABLE ROW LEVEL SECURITY;
 -- Deliberately no policies at all: this table is pairing-handshake state
@@ -75,8 +81,8 @@ CREATE TABLE public.telescope_pair_claim_attempts (
   locked_until timestamptz
 );
 
+REVOKE ALL ON public.telescope_pair_claim_attempts FROM anon, authenticated;
 GRANT ALL ON public.telescope_pair_claim_attempts TO service_role;
-REVOKE TRUNCATE ON public.telescope_pair_claim_attempts FROM anon, authenticated, service_role;
 
 ALTER TABLE public.telescope_pair_claim_attempts ENABLE ROW LEVEL SECURITY;
 -- No policies: same posture as telescope_pairing_requests above — only
@@ -100,9 +106,9 @@ CREATE TABLE public.telescope_events (
 
 CREATE INDEX telescope_events_user_day_idx ON public.telescope_events (user_id, started_at);
 
+REVOKE ALL ON public.telescope_events FROM anon, authenticated;
 GRANT SELECT, UPDATE ON public.telescope_events TO authenticated;
 GRANT ALL ON public.telescope_events TO service_role;
-REVOKE TRUNCATE ON public.telescope_events FROM anon, authenticated, service_role;
 
 ALTER TABLE public.telescope_events ENABLE ROW LEVEL SECURITY;
 
