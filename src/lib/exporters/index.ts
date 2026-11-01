@@ -7,6 +7,15 @@ export interface ExportRow extends ObsInput {
   chart_id?: string | null;
   note?: string | null;
   ut_time?: string | null;
+  /**
+   * This row's own observing date, when it differs from the session-wide
+   * `ExportContext.observedAt` (e.g. JapyScope: a shared "night" date picked
+   * from the observer's local calendar day can be a different UTC calendar
+   * date than some of that night's individual UTC-timestamped events).
+   * Falls back to `ExportContext.observedAt` when omitted, unchanged from
+   * previous behavior.
+   */
+  observedAtOverride?: Date;
 }
 
 export interface ExportContext {
@@ -45,8 +54,9 @@ function csvSafe(s: string): string {
 }
 
 function rowDate(row: ExportRow, ctx: ExportContext): Date {
-  if (!row.ut_time) return ctx.observedAt;
-  const d = new Date(ctx.observedAt);
+  const base = row.observedAtOverride ?? ctx.observedAt;
+  if (!row.ut_time) return base;
+  const d = new Date(base);
   applyUtTimeToDate(d, row.ut_time);
   return d;
 }

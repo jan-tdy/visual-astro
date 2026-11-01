@@ -28,11 +28,16 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
     const tokenHash = await sha256Hex(deviceToken);
-    await supabase
+    const { error: revokeError } = await supabase
       .from('telescope_links')
       .update({ revoked_at: new Date().toISOString() })
       .eq('device_token_hash', tokenHash)
       .is('revoked_at', null);
+    if (revokeError) {
+      return new Response(JSON.stringify({ error: revokeError.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

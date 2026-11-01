@@ -1445,7 +1445,7 @@ export const dict = {
     "japyscope.table.star": "Star",
     "japyscope.table.duration": "Duration",
     "japyscope.table.utTime": "Time (UT)",
-    "japyscope.table.localTime": "Local time",
+    "japyscope.table.localTime": "Prague time",
     "japyscope.table.a": "A",
     "japyscope.table.pasoA": "Step A",
     "japyscope.table.pasoB": "Step B",

@@ -16,9 +16,6 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 // and hijack someone else's telescope link. telescope_pair_claim_attempts
 // locks out the calling user_id after a few wrong guesses.
 
-const MAX_FAILED_ATTEMPTS = 5;
-const LOCKOUT_MS = 15 * 60 * 1000;
-
 async function sha256Hex(input: string): Promise<string> {
   const data = new TextEncoder().encode(input);
   const digest = await crypto.subtle.digest('SHA-256', data);
@@ -57,24 +54,23 @@ Deno.serve(async (req) => {
 
     const { data: lockState } = await supabase
       .from('telescope_pair_claim_attempts')
-      .select('failed_count, locked_until')
+      .select('locked_until')
       .eq('user_id', userId)
       .maybeSingle();
-    const locked = lockState as { failed_count: number; locked_until: string | null } | null;
+    const locked = lockState as { locked_until: string | null } | null;
     if (locked?.locked_until && new Date(locked.locked_until).getTime() > Date.now()) {
       return new Response(JSON.stringify({ error: 'Príliš veľa nesprávnych kódov. Skúste znova neskôr.' }), {
         status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const recordFailure = async () => {
-      const nextCount = (locked?.failed_count ?? 0) + 1;
-      await supabase.from('telescope_pair_claim_attempts').upsert({
-        user_id: userId,
-        failed_count: nextCount >= MAX_FAILED_ATTEMPTS ? 0 : nextCount,
-        locked_until: nextCount >= MAX_FAILED_ATTEMPTS ? new Date(Date.now() + LOCKOUT_MS).toISOString() : null,
-      });
-    };
+    // Atomic (single statement, no read-then-write race) via an RPC rather
+    // than a client-side read-increment-upsert — concurrent wrong guesses
+    // must not each see the same stale count and only add up to one failure
+    // between them. Never cleared on a later success (see below): anyone
+    // can self-claim a code via telescope-pair-init's own output, so letting
+    // success reset this would make the lockout a free, repeatable no-op.
+    const recordFailure = () => supabase.rpc('record_telescope_pair_claim_failure', { p_user_id: userId });
 
     const { code } = await req.json();
     if (typeof code !== 'string' || !/^\d{6}$/.test(code.trim())) {
@@ -118,19 +114,17 @@ Deno.serve(async (req) => {
       .update({ status: 'claimed', user_id: userId, plaintext_token: deviceToken })
       .eq('id', (pending as { id: string }).id)
       .eq('status', 'pending')
+      .gt('expires_at', new Date().toISOString())
       .select('id');
     if (claimErr || !claimed || claimed.length === 0) {
-      // Lost the race to another concurrent claim of the same code — undo
-      // the link we just created rather than leaving an orphan.
+      // Lost the race to another concurrent claim of the same code, or it
+      // expired between the lookup above and this update — undo the link
+      // we just created rather than leaving an orphan.
       await supabase.from('telescope_links').delete().eq('user_id', userId).eq('device_token_hash', deviceTokenHash);
       return new Response(JSON.stringify({ error: 'Kód je nesprávny alebo vypršal.' }), {
         status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    // Clear any accumulated failures now that this user has proven they hold
-    // a valid code.
-    await supabase.from('telescope_pair_claim_attempts').delete().eq('user_id', userId);
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

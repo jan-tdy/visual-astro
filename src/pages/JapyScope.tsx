@@ -78,7 +78,12 @@ export default function JapyScope() {
   const [createStarConst, setCreateStarConst] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const lookup: StarLookup = useMemo(() => buildStarLookup(stars), [stars]);
+  // Inactive stars are excluded from new-session observations elsewhere in
+  // the app (see Catalog); JapyScope's auto-suggest and manual picker must
+  // not hand one back either, since confirming one here creates exactly
+  // that kind of observation.
+  const activeStars = useMemo(() => stars.filter((s) => s.active), [stars]);
+  const lookup: StarLookup = useMemo(() => buildStarLookup(activeStars), [activeStars]);
   const starById = useMemo(() => new Map(stars.map((s) => [s.id, s])), [stars]);
 
   const reload = async () => {
@@ -225,7 +230,7 @@ export default function JapyScope() {
   const manualMatches = (query: string): StarRow[] => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
-    return stars.filter((s) =>
+    return activeStars.filter((s) =>
       s.name.toLowerCase().includes(q) ||
       (s.vsnet_code?.toLowerCase().includes(q) ?? false) ||
       (s.aavso_code?.toLowerCase().includes(q) ?? false)
@@ -243,6 +248,10 @@ export default function JapyScope() {
       rows.push({
         star_name: star.name, vsnet_code: star.vsnet_code, aavso_code: star.aavso_code, chart_id: star.chart_id,
         a: d.a, pasos_a: d.pasos_a, pasos_b: d.pasos_b, b: d.b, limit_value: d.limit_value, note: d.note, ut_time: d.ut_time,
+        // This event's own real UTC instant, not the shared Prague-day noon
+        // approximation below — a Prague calendar day spans two UTC dates,
+        // so an event near midnight UTC needs its own date, not the day's.
+        observedAtOverride: new Date(e.ended_at),
       });
     }
     return rows;
@@ -285,17 +294,34 @@ export default function JapyScope() {
       toast.error(error?.message ?? t("japyscope.loadError"));
       return;
     }
-    const obsRows = withStar.map(({ event, draft }) => ({
-      session_id: created.id,
-      user_id: user.id,
-      star_id: event.matched_star_id!,
-      a: draft.a, pasos_a: draft.pasos_a, pasos_b: draft.pasos_b, b: draft.b,
-      limit_value: draft.limit_value, ut_time: draft.ut_time, note: draft.note,
-      row_index: 0,
-    }));
+    // A star observed more than once the same night needs its own
+    // row_index per occurrence — not 0 for all of them, which the session
+    // editor would then show/export as a single row and silently drop the rest.
+    const nextRowIndex: Record<string, number> = {};
+    const obsRows = withStar.map(({ event, draft }) => {
+      const starId = event.matched_star_id!;
+      const rowIndex = nextRowIndex[starId] ?? 0;
+      nextRowIndex[starId] = rowIndex + 1;
+      return {
+        session_id: created.id,
+        user_id: user.id,
+        star_id: starId,
+        a: draft.a, pasos_a: draft.pasos_a, pasos_b: draft.pasos_b, b: draft.b,
+        limit_value: draft.limit_value, ut_time: draft.ut_time, note: draft.note,
+        row_index: rowIndex,
+      };
+    });
     const { error: obsErr } = await supabase.from("observations").insert(obsRows);
+    if (obsErr) {
+      // Don't leave an empty session behind — a retry would otherwise pile
+      // up a second one every time this insert fails (e.g. a storage-quota
+      // trigger rejecting it).
+      await supabase.from("sessions").delete().eq("id", created.id);
+      setBusy(false);
+      toast.error(obsErr.message);
+      return;
+    }
     setBusy(false);
-    if (obsErr) { toast.error(obsErr.message); return; }
     toast.success(t("japyscope.createSession.done"));
     nav(`/session/${created.id}`);
   };
@@ -319,7 +345,9 @@ export default function JapyScope() {
             <Calendar
               mode="single"
               selected={selectedJsDate}
-              onSelect={(d) => d && setSelectedKey(pragueDateKey(d.toISOString()))}
+              onSelect={(d) => d && setSelectedKey(
+                `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
+              )}
               modifiers={{ hasEvents: markedDays }}
               modifiersClassNames={{
                 hasEvents: "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:rounded-full after:bg-primary",

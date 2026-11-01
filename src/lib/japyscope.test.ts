@@ -51,6 +51,18 @@ describe("matchObjectName", () => {
     const lookup = buildStarLookup(stars);
     expect(matchObjectName("", lookup)).toBeNull();
   });
+
+  it("does not auto-match a token two different stars share", () => {
+    const ambiguousStars: MatchableStar[] = [
+      ...stars,
+      // Shares its VSNET code with star "1" above by mistake/coincidence.
+      { id: "4", name: "Some Other Star", vsnet_code: "v445her", aavso_code: null },
+    ];
+    const lookup = buildStarLookup(ambiguousStars);
+    expect(matchObjectName("V445Her", lookup)).toBeNull();
+    // Each star's own unambiguous token still matches fine.
+    expect(matchObjectName("Some Other Star", lookup)?.id).toBe("4");
+  });
 });
 
 describe("time formatting", () => {

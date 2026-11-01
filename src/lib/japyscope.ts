@@ -14,6 +14,8 @@ export type MatchableStar = {
 
 export type StarLookup = {
   byToken: Map<string, MatchableStar>;
+  /** Tokens shared by two or more stars (same normalised name, VSNET, or AAVSO code) — never auto-matched. */
+  ambiguousTokens: Set<string>;
   matchIndex: StarMatchIndex;
 };
 
@@ -22,12 +24,23 @@ const norm = (x: string) => x.toLowerCase().replace(/\s+/g, "");
 /** Same normalised name/VSNET/AAVSO-code index SessionEditor's RAW mode builds, extracted for reuse. */
 export function buildStarLookup(stars: MatchableStar[]): StarLookup {
   const byToken = new Map<string, MatchableStar>();
+  const ambiguousTokens = new Set<string>();
+  const put = (token: string, star: MatchableStar) => {
+    const prev = byToken.get(token);
+    if (prev && prev.id !== star.id) {
+      // Two different stars share this token (e.g. the same name typed with
+      // different catalogs) — picking either silently would risk assigning
+      // the wrong one, so leave it for the observer to match by hand instead.
+      ambiguousTokens.add(token);
+    }
+    byToken.set(token, star);
+  };
   for (const s of stars) {
-    byToken.set(norm(s.name), s);
-    if (s.vsnet_code) byToken.set(norm(s.vsnet_code), s);
-    if (s.aavso_code) byToken.set(norm(s.aavso_code), s);
+    put(norm(s.name), s);
+    if (s.vsnet_code) put(norm(s.vsnet_code), s);
+    if (s.aavso_code) put(norm(s.aavso_code), s);
   }
-  return { byToken, matchIndex: buildStarMatchIndex(Array.from(byToken.keys())) };
+  return { byToken, ambiguousTokens, matchIndex: buildStarMatchIndex(Array.from(byToken.keys())) };
 }
 
 /**
@@ -45,11 +58,11 @@ export function buildStarLookup(stars: MatchableStar[]): StarLookup {
  */
 export function matchObjectName(objectName: string, lookup: StarLookup): MatchableStar | null {
   const s = norm(objectName);
-  if (!s) return null;
+  if (!s || lookup.ambiguousTokens.has(s)) return null;
   const exact = lookup.byToken.get(s);
   if (exact) return exact;
   const m = matchStarToken(s, lookup.matchIndex, { fuzzy: true });
-  if (!m || m.consumed !== s.length) return null;
+  if (!m || m.consumed !== s.length || lookup.ambiguousTokens.has(m.token)) return null;
   return lookup.byToken.get(m.token) ?? null;
 }
 

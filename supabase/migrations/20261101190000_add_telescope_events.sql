@@ -59,10 +59,14 @@ REVOKE ALL ON public.telescope_pairing_requests FROM anon, authenticated;
 GRANT ALL ON public.telescope_pairing_requests TO service_role;
 
 ALTER TABLE public.telescope_pairing_requests ENABLE ROW LEVEL SECURITY;
--- Deliberately no policies at all: this table is pairing-handshake state
--- (holds a plaintext device token for a short window), read and written
--- only by service-role edge functions, which bypass RLS. anon/authenticated
--- get zero access.
+-- This table is pairing-handshake state (holds a plaintext device token for
+-- a short window), read and written only by service-role edge functions,
+-- which bypass RLS. RLS with zero policies already denies every command to
+-- every other role, but an explicit deny policy says so for anyone auditing
+-- the table, rather than relying on the absence of a policy being read
+-- correctly as "nothing is allowed".
+CREATE POLICY "telescope_pairing_requests_deny_clients" ON public.telescope_pairing_requests
+  FOR ALL TO anon, authenticated USING (false) WITH CHECK (false);
 
 -- Only one request can be actively claimable per code at a time (two
 -- Pis independently rolling the same 6-digit code within the same
@@ -78,6 +82,7 @@ CREATE UNIQUE INDEX telescope_pairing_requests_pending_code_idx
 CREATE TABLE public.telescope_pair_claim_attempts (
   user_id uuid PRIMARY KEY REFERENCES auth.users(id),
   failed_count integer NOT NULL DEFAULT 0,
+  last_failed_at timestamptz,
   locked_until timestamptz
 );
 
@@ -85,8 +90,51 @@ REVOKE ALL ON public.telescope_pair_claim_attempts FROM anon, authenticated;
 GRANT ALL ON public.telescope_pair_claim_attempts TO service_role;
 
 ALTER TABLE public.telescope_pair_claim_attempts ENABLE ROW LEVEL SECURITY;
--- No policies: same posture as telescope_pairing_requests above — only
--- telescope-pair-claim (service role) ever touches this table.
+-- Same posture as telescope_pairing_requests above — only
+-- telescope-pair-claim (service role) ever touches this table; explicit
+-- deny policy rather than relying on the absence of one.
+CREATE POLICY "telescope_pair_claim_attempts_deny_clients" ON public.telescope_pair_claim_attempts
+  FOR ALL TO anon, authenticated USING (false) WITH CHECK (false);
+
+-- telescope-pair-claim calls this to record a wrong guess. A single SQL
+-- statement rather than a client-side read-increment-write: concurrent
+-- wrong guesses from the same user_id must not each read the same stale
+-- count and collectively advance it by only one. failed_count resets after
+-- DECAY if the last failure is old enough, but is never cleared by a
+-- success -- telescope-pair-init has no auth, so anyone can mint themselves
+-- a valid code and self-claim it; letting success reset this counter would
+-- make the lockout a free, repeatable no-op (self-claim resets, guess wrong
+-- 4 more times, repeat).
+CREATE FUNCTION public.record_telescope_pair_claim_failure(p_user_id uuid) RETURNS void AS $$
+DECLARE
+  v_decay interval := interval '30 minutes';
+  v_lockout interval := interval '15 minutes';
+  v_max_attempts constant integer := 5;
+  v_count integer;
+BEGIN
+  INSERT INTO public.telescope_pair_claim_attempts (user_id, failed_count, last_failed_at)
+  VALUES (p_user_id, 1, now())
+  ON CONFLICT (user_id) DO UPDATE SET
+    failed_count = CASE
+      WHEN public.telescope_pair_claim_attempts.last_failed_at IS NULL
+        OR public.telescope_pair_claim_attempts.last_failed_at < now() - v_decay
+      THEN 1
+      ELSE public.telescope_pair_claim_attempts.failed_count + 1
+    END,
+    last_failed_at = now()
+  RETURNING failed_count INTO v_count;
+
+  IF v_count >= v_max_attempts THEN
+    UPDATE public.telescope_pair_claim_attempts
+    SET locked_until = now() + v_lockout
+    WHERE user_id = p_user_id;
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- Only telescope-pair-claim (via the service-role key) calls this.
+REVOKE ALL ON FUNCTION public.record_telescope_pair_claim_failure(uuid) FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.record_telescope_pair_claim_failure(uuid) TO service_role;
 
 CREATE TABLE public.telescope_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -107,7 +155,12 @@ CREATE TABLE public.telescope_events (
 CREATE INDEX telescope_events_user_day_idx ON public.telescope_events (user_id, started_at);
 
 REVOKE ALL ON public.telescope_events FROM anon, authenticated;
-GRANT SELECT, UPDATE ON public.telescope_events TO authenticated;
+GRANT SELECT ON public.telescope_events TO authenticated;
+-- Column-level, not the whole row: the guard trigger further down already
+-- rejects a client UPDATE that touches any other column, but a permission
+-- grant that only allows these two in the first place is one less thing
+-- that trigger has to be relied on for.
+GRANT UPDATE (status, matched_star_id) ON public.telescope_events TO authenticated;
 GRANT ALL ON public.telescope_events TO service_role;
 
 ALTER TABLE public.telescope_events ENABLE ROW LEVEL SECURITY;

@@ -46,6 +46,16 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
     const expiresAt = new Date(Date.now() + PAIRING_TTL_MS).toISOString();
+    // A lapsed pending row for this exact code_hash (left behind because
+    // nobody ever polled it to expiry) would otherwise collide with the
+    // partial unique index below and turn a 1-in-10^6 coincidence into a
+    // request that always 500s until that row happens to get cleaned up.
+    await supabase
+      .from('telescope_pairing_requests')
+      .delete()
+      .eq('code_hash', codeHash)
+      .eq('status', 'pending')
+      .lte('expires_at', new Date().toISOString());
     const { error } = await supabase.from('telescope_pairing_requests').insert({
       id: pairingId,
       code_hash: codeHash,

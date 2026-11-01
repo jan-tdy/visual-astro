@@ -37,6 +37,7 @@ function isValidEvent(e: unknown): e is IncomingEvent {
   if (typeof o.object_name !== 'string' || !o.object_name.trim()) return false;
   if (typeof o.started_at !== 'string' || isNaN(new Date(o.started_at).getTime())) return false;
   if (typeof o.ended_at !== 'string' || isNaN(new Date(o.ended_at).getTime())) return false;
+  if (new Date(o.ended_at).getTime() < new Date(o.started_at).getTime()) return false;
   if (o.ra !== undefined && o.ra !== null && typeof o.ra !== 'string') return false;
   if (o.dec !== undefined && o.dec !== null && typeof o.dec !== 'string') return false;
   return true;
@@ -98,8 +99,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Opportunistic cleanup of this user's stale pending backlog — no
-    // separate cron job needed for the "auto-discard after 14 days" rule.
+    // Opportunistic cleanup of this user's stale pending backlog. Known gap:
+    // a device that stops uploading for good leaves its own pending backlog
+    // undiscarded forever, since nothing else ever calls this path for that
+    // user. Closing that needs a scheduled job independent of any ingest
+    // call (e.g. pg_cron), which is new project infrastructure -- left for
+    // a follow-up rather than added silently here.
     const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
     await supabase
       .from('telescope_events')
