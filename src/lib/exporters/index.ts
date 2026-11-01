@@ -54,9 +54,16 @@ function csvSafe(s: string): string {
 }
 
 function rowDate(row: ExportRow, ctx: ExportContext): Date {
-  const base = row.observedAtOverride ?? ctx.observedAt;
-  if (!row.ut_time) return base;
-  const d = new Date(base);
+  if (row.observedAtOverride) {
+    // Already this row's own exact instant -- no rollover: that rule is for
+    // overlaying a time onto a *shared* evening date (ctx.observedAt below),
+    // not for a date that's already correct for this exact row.
+    const d = new Date(row.observedAtOverride);
+    if (row.ut_time) applyUtTimeToDate(d, row.ut_time, false);
+    return d;
+  }
+  if (!row.ut_time) return ctx.observedAt;
+  const d = new Date(ctx.observedAt);
   applyUtTimeToDate(d, row.ut_time);
   return d;
 }
