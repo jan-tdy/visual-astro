@@ -16,6 +16,7 @@ import SessionEditor from "./pages/SessionEditor.tsx";
 import Catalog from "./pages/Catalog.tsx";
 import Prom from "./pages/Prom.tsx";
 import Pozor from "./pages/Pozor.tsx";
+import JapyScope from "./pages/JapyScope.tsx";
 import Graphs from "./pages/Graphs.tsx";
 import Compare from "./pages/Compare.tsx";
 import Settings from "./pages/Settings.tsx";
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/catalog" element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
             <Route path="/prom" element={<ProtectedRoute><Prom /></ProtectedRoute>} />
             <Route path="/pozor" element={<ProtectedRoute><Pozor /></ProtectedRoute>} />
+            <Route path="/japyscope" element={<ProtectedRoute><JapyScope /></ProtectedRoute>} />
             <Route path="/graphs" element={<ProtectedRoute><Graphs /></ProtectedRoute>} />
             <Route path="/compare" element={<ProtectedRoute><Compare /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />

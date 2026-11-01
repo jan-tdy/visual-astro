@@ -1,1 +1,18 @@
 project_id = "tbmyxbratepxomskzzsq"
+
+# These four are called by a JapyScope Remote (Pi) device, authenticated by
+# its own device code / device token — never a Supabase user JWT — so the
+# platform's default JWT verification has to be turned off for them.
+# telescope-pair-claim is called by a logged-in Visual Astro user and keeps
+# the default (verify_jwt = true).
+[functions.telescope-pair-init]
+verify_jwt = false
+
+[functions.telescope-pair-fetch]
+verify_jwt = false
+
+[functions.telescope-ingest]
+verify_jwt = false
+
+[functions.telescope-revoke]
+verify_jwt = false

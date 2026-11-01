@@ -1,5 +1,5 @@
 import {
-  Home, BookOpen, ListChecks, Sparkles, BarChart3, Wrench, Telescope, GitCompare, type LucideIcon,
+  Home, BookOpen, ListChecks, Sparkles, BarChart3, Wrench, Telescope, GitCompare, Satellite, type LucideIcon,
 } from "lucide-react";
 
 export interface NavItem {
@@ -18,6 +18,7 @@ export const PRIMARY_NAV: NavItem[] = [
 
 export const SECONDARY_NAV: NavItem[] = [
   { to: "/pozor", key: "nav.pozor", icon: Telescope },
+  { to: "/japyscope", key: "nav.japyscope", icon: Satellite },
   { to: "/compare", key: "nav.compare", icon: GitCompare },
   { to: "/tools", key: "nav.tools", icon: Wrench },
 ];
