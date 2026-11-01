@@ -15,6 +15,7 @@ import { Journal } from "@/components/pozor/Journal";
 import { Minima } from "@/components/pozor/Minima";
 import { InstantInfo } from "@/components/pozor/InstantInfo";
 import { MoonCalendar } from "@/components/pozor/MoonCalendar";
+import { PozorHome } from "@/components/pozor/PozorHome";
 import {
   useCcdCatalogs, useCcdTargets, usePozorLocations, usePozorSettings,
 } from "@/components/pozor/shared";
@@ -34,6 +35,7 @@ export default function Pozor() {
   const { settings, setSettings } = usePozorSettings();
   const { locations } = usePozorLocations();
   const [moonYear, setMoonYear] = useState(new Date().getFullYear());
+  const [activeTab, setActiveTab] = useState("home");
   const activeCatalog = catalogs.find((c) => c.id === catalogId);
   const isOwnCatalog = !activeCatalog || activeCatalog.user_id === user?.id;
   const ownCatalogsCount = catalogs.filter((c) => c.user_id === user?.id).length;
@@ -55,8 +57,9 @@ export default function Pozor() {
             isOwnCatalog={isOwnCatalog}
           />
         </header>
-        <Tabs defaultValue="chart">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="flex-wrap h-auto">
+            <TabsTrigger value="home">{t("pozor.tab.home")}</TabsTrigger>
             <TabsTrigger value="chart">{t("pozor.tab.chart")}</TabsTrigger>
             <TabsTrigger value="journal">{t("pozor.tab.journal")}</TabsTrigger>
             <TabsTrigger value="minima" className="gap-1.5">
@@ -67,6 +70,9 @@ export default function Pozor() {
             <TabsTrigger value="moon">{t("pozor.tab.moon")}</TabsTrigger>
             <TabsTrigger value="catalog">{t("pozor.catalog")}</TabsTrigger>
           </TabsList>
+          <TabsContent value="home" className="mt-4">
+            <PozorHome onJumpTo={setActiveTab} />
+          </TabsContent>
           <TabsContent value="chart" className="mt-4">
             <NightChart targets={targets} settings={settings} setSettings={setSettings} locations={locations} />
           </TabsContent>
