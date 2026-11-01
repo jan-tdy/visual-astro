@@ -1,8 +1,9 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-// Step 3 of pairing: the Pi polls this with the pairing_id it generated in
-// step 1, waiting for the observer to claim the code (telescope-pair-claim).
+// Step 3 of pairing: the Pi polls this with the pairing_id telescope-pair-init
+// generated and returned to it in step 1 (unguessable — nobody else learns
+// it), waiting for the observer to claim the code (telescope-pair-claim).
 // Once claimed, this hands back the plaintext device token exactly once —
 // the row is deleted immediately after, so a device token never sits
 // readable in the database beyond this single handoff. verify_jwt is off

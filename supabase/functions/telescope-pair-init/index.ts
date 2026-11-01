@@ -1,36 +1,45 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-// Step 1 of pairing a JapyScope Remote (Pi) to a Visual Astro account. The
-// Pi generates a short-lived pairing_id + 6-digit code locally, shows the
-// code on its own display, and registers the code's hash here so that once
-// the observer types the same code into Settings → "Prepojiť teleskop"
-// (telescope-pair-claim), that function can find this request and hand a
-// freshly issued device token back to the Pi via telescope-pair-fetch.
+// Step 1 of pairing a JapyScope Remote (Pi) to a Visual Astro account.
+// Takes no input: the pairing_id and the 6-digit code are both generated
+// HERE, server-side, and returned to the caller in this one response — the
+// Pi never invents either value itself and never sends a code_hash.
+//
+// This matters: if the Pi generated the code/pairing_id and merely told us
+// their hash, anyone (this endpoint has no auth — see below) could register
+// their own pairing_id against a code_hash of their choosing, including
+// pre-registering hashes for the whole 6-digit space. Whichever code the
+// observer later types into telescope-pair-claim would then match the
+// attacker's row instead of the real Pi's, and the attacker could retrieve
+// the resulting device token via telescope-pair-fetch using the pairing_id
+// they chose. Minting both values here closes that off: a caller only ever
+// learns the pairing_id/code pair this endpoint generated for *their own*
+// call, never one influenced by, or usable to intercept, anyone else's.
+//
 // verify_jwt is off for this function (see supabase/config.toml) — the Pi
 // has no Supabase user session at this point.
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const HEX64_RE = /^[0-9a-f]{64}$/i;
 const PAIRING_TTL_MS = 10 * 60 * 1000;
+
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function randomSixDigitCode(): string {
+  const bytes = new Uint8Array(6);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map((b) => (b % 10).toString()).join('');
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
-    const { pairing_id, code_hash } = await req.json();
-    if (typeof pairing_id !== 'string' || !UUID_RE.test(pairing_id)) {
-      return new Response(JSON.stringify({ error: 'pairing_id must be a uuid' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    // The Pi hashes its own plaintext code before sending it here — the
-    // plaintext never leaves the device at this step.
-    if (typeof code_hash !== 'string' || !HEX64_RE.test(code_hash)) {
-      return new Response(JSON.stringify({ error: 'code_hash must be a hex-encoded sha256 digest' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const hash = code_hash.toLowerCase();
+    const pairingId = crypto.randomUUID();
+    const code = randomSixDigitCode();
+    const codeHash = await sha256Hex(code);
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -38,8 +47,8 @@ Deno.serve(async (req) => {
     );
     const expiresAt = new Date(Date.now() + PAIRING_TTL_MS).toISOString();
     const { error } = await supabase.from('telescope_pairing_requests').insert({
-      id: pairing_id,
-      code_hash: hash,
+      id: pairingId,
+      code_hash: codeHash,
       status: 'pending',
       expires_at: expiresAt,
     });
@@ -48,7 +57,7 @@ Deno.serve(async (req) => {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    return new Response(JSON.stringify({ ok: true, expires_at: expiresAt }), {
+    return new Response(JSON.stringify({ ok: true, pairing_id: pairingId, code, expires_at: expiresAt }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
