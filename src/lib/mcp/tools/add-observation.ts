@@ -35,7 +35,8 @@ export default defineTool({
     if (sessErr) return fail(sessErr.message);
     if (!session) return fail("Session not found.");
     let starId = star_id ?? null;
-    let resolvedName = star_name ?? null;
+    // Always set in one of the two branches below before it's read further down.
+    let resolvedName: string | null;
     if (starId) {
       const { data: star, error: starErr } = await supabase
         .from("stars")
