@@ -39,6 +39,7 @@ export interface UserPrefs {
   magCheckEnabled: boolean;      // porovnávať magnitúdy s priemerom minulých sessions
   magCheckTolerance: number;     // o koľko mag sa smie líšiť bez upozornenia (0.2–5.0)
   compLabelThreshold: number;    // nad touto hodnotou je "A"/"B" bez desatinnej čiarky štítok hviezdy (÷10), nie magnitúda (15–40)
+  pozorActivityLogging: boolean; // zaznamenávať, ktoré záložky Pozoru používaš (pre "Najpoužívanejšie" na Pozor Home tabe)
   openPortalAfterExport: {
     aavso: boolean;
     vsnet: boolean;
@@ -82,6 +83,7 @@ const DEFAULTS: UserPrefs = {
   magCheckEnabled: true,
   magCheckTolerance: DEFAULT_MAG_TOLERANCE,
   compLabelThreshold: DEFAULT_COMP_LABEL_THRESHOLD,
+  pozorActivityLogging: true,
   openPortalAfterExport: { aavso: false, vsnet: false },
   portalUrls: {
     aavso: SUBMISSION_PORTALS.aavso.url,

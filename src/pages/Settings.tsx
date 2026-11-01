@@ -409,6 +409,19 @@ export default function Settings() {
                   .replace("{anchor}", t(`settings.nightAnchor.${pozor.range.anchor}`))
                   .replace("{after}", String(pozor.range.padAfterMinutes))}
               </p>
+
+              <div className="flex items-start justify-between gap-4 pt-1 border-t">
+                <div className="space-y-0.5 pt-4">
+                  <Label htmlFor="pozorActivityLogging">{t("settings.pozorActivityLogging")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("settings.pozorActivityLoggingDesc")}</p>
+                </div>
+                <Switch
+                  id="pozorActivityLogging"
+                  className="mt-4"
+                  checked={prefs.pozorActivityLogging}
+                  onCheckedChange={(v) => setPrefs({ pozorActivityLogging: v })}
+                />
+              </div>
             </Card>
 
             <Card className="p-6 space-y-5">

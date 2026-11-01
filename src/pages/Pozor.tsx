@@ -5,8 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
+import { getPrefs } from "@/hooks/usePrefs";
 import { useSubscription } from "@/hooks/useSubscription";
 import { CatalogSwitcher } from "@/components/pozor/CatalogSwitcher";
 import { CcdCatalog } from "@/components/pozor/CcdCatalog";
@@ -15,6 +17,7 @@ import { Journal } from "@/components/pozor/Journal";
 import { Minima } from "@/components/pozor/Minima";
 import { InstantInfo } from "@/components/pozor/InstantInfo";
 import { MoonCalendar } from "@/components/pozor/MoonCalendar";
+import { PozorHome } from "@/components/pozor/PozorHome";
 import {
   useCcdCatalogs, useCcdTargets, usePozorLocations, usePozorSettings,
 } from "@/components/pozor/shared";
@@ -34,9 +37,22 @@ export default function Pozor() {
   const { settings, setSettings } = usePozorSettings();
   const { locations } = usePozorLocations();
   const [moonYear, setMoonYear] = useState(new Date().getFullYear());
+  const [activeTab, setActiveTab] = useState("home");
   const activeCatalog = catalogs.find((c) => c.id === catalogId);
   const isOwnCatalog = !activeCatalog || activeCatalog.user_id === user?.id;
   const ownCatalogsCount = catalogs.filter((c) => c.user_id === user?.id).length;
+
+  // Logs real usage of the planning tabs (never the Home tab itself) so the Home
+  // tab's "most used" chart reflects actual Pozor activity, not visual-estimate
+  // session data from elsewhere in the app.
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (tab !== "home" && user && getPrefs().pozorActivityLogging) {
+      supabase.from("pozor_tab_visits").insert({ user_id: user.id, tab }).then(({ error }) => {
+        if (error) console.error(error);
+      });
+    }
+  };
 
   return (
     <AppShell>
@@ -55,8 +71,9 @@ export default function Pozor() {
             isOwnCatalog={isOwnCatalog}
           />
         </header>
-        <Tabs defaultValue="chart">
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="flex-wrap h-auto">
+            <TabsTrigger value="home">{t("pozor.tab.home")}</TabsTrigger>
             <TabsTrigger value="chart">{t("pozor.tab.chart")}</TabsTrigger>
             <TabsTrigger value="journal">{t("pozor.tab.journal")}</TabsTrigger>
             <TabsTrigger value="minima" className="gap-1.5">
@@ -67,6 +84,9 @@ export default function Pozor() {
             <TabsTrigger value="moon">{t("pozor.tab.moon")}</TabsTrigger>
             <TabsTrigger value="catalog">{t("pozor.catalog")}</TabsTrigger>
           </TabsList>
+          <TabsContent value="home" className="mt-4">
+            <PozorHome onJumpTo={handleTabChange} />
+          </TabsContent>
           <TabsContent value="chart" className="mt-4">
             <NightChart targets={targets} settings={settings} setSettings={setSettings} locations={locations} />
           </TabsContent>
