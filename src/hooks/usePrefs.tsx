@@ -31,6 +31,7 @@ export interface PaperTemplatePrefs {
 }
 
 export interface UserPrefs {
+  navStyle: "sidebar" | "topbar"; // rozloženie hlavnej navigácie — bočný panel vľavo, alebo pôvodný horný panel
   autofillUtNow: boolean;       // pri otvorení nového riadku predvyplniť aktuálny UT čas
   confirmDelete: boolean;        // pýtať potvrdenie pri mazaní v katalógoch
   autosaveDelayMs: number;       // oneskorenie auto-save (300–2000)
@@ -73,6 +74,7 @@ const DEFAULT_PAPER_TEMPLATE: PaperTemplatePrefs = {
 };
 
 const DEFAULTS: UserPrefs = {
+  navStyle: "sidebar",
   autofillUtNow: false,
   confirmDelete: true,
   autosaveDelayMs: 600,

@@ -19,7 +19,7 @@ export const SUPPORTED_LANGS = [
   { code: "pl", label: "Polski" },
 ] as const;
 
-type Lang = (typeof SUPPORTED_LANGS)[number]["code"];
+export type Lang = (typeof SUPPORTED_LANGS)[number]["code"];
 
 export const dict = {
   sk: {
@@ -455,6 +455,8 @@ export const dict = {
     "nav.lightMode": "Svetlý režim",
     "nav.darkMode": "Tmavý režim",
     "nav.profile": "Profil",
+    "nav.useTopbar": "Horný panel namiesto bočného",
+    "nav.useSidebar": "Bočný panel namiesto horného",
     "nav.menu": "Menu",
     "notfound.home": "Späť na úvod",
     "notfound.message": "Hľadaná stránka neexistuje.",
@@ -1099,6 +1101,8 @@ export const dict = {
     "nav.lightMode": "Light mode",
     "nav.darkMode": "Dark mode",
     "nav.profile": "Profile",
+    "nav.useTopbar": "Top bar instead of sidebar",
+    "nav.useSidebar": "Sidebar instead of top bar",
     "nav.menu": "Menu",
     "notfound.home": "Back to home",
     "notfound.message": "The requested page does not exist.",

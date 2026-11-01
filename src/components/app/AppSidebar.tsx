@@ -1,8 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { useI18n } from "@/hooks/useI18n";
+import { useI18n, SUPPORTED_LANGS, type Lang } from "@/hooks/useI18n";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
@@ -12,33 +13,25 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import {
-  BookOpen, ListChecks, Sparkles, BarChart3, Wrench, Telescope, GitCompare,
-} from "lucide-react";
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { ProfileMenu } from "@/components/app/ProfileMenu";
+import { PRIMARY_NAV, SECONDARY_NAV, isNavActive, type NavItem } from "@/components/app/navItems";
 import logoUrl from "@/assets/visual-astro-logo.png";
 
-const PRIMARY_NAV = [
-  { to: "/", key: "nav.sessions", icon: ListChecks },
-  { to: "/catalog", key: "nav.catalog", icon: BookOpen },
-  { to: "/prom", key: "nav.prom", icon: Sparkles },
-  { to: "/graphs", key: "nav.graphs", icon: BarChart3 },
-] as const;
+interface AppSidebarProps {
+  onToggleNavStyle: () => void;
+}
 
-const SECONDARY_NAV = [
-  { to: "/pozor", key: "nav.pozor", icon: Telescope },
-  { to: "/compare", key: "nav.compare", icon: GitCompare },
-  { to: "/tools", key: "nav.tools", icon: Wrench },
-] as const;
-
-export function AppSidebar() {
-  const { t } = useI18n();
+export function AppSidebar({ onToggleNavStyle }: AppSidebarProps) {
+  const { t, lang, setLang } = useI18n();
   const loc = useLocation();
-  const isActive = (to: string) => loc.pathname === to || (to === "/" && loc.pathname.startsWith("/session"));
 
-  const renderItems = (items: typeof PRIMARY_NAV | typeof SECONDARY_NAV) => (
+  const renderItems = (items: NavItem[]) => (
     <SidebarMenu>
       {items.map(({ to, key, icon: Icon }) => (
         <SidebarMenuItem key={to}>
-          <SidebarMenuButton asChild isActive={isActive(to)}>
+          <SidebarMenuButton asChild isActive={isNavActive(loc.pathname, to)}>
             <Link to={to}>
               <Icon className="h-4 w-4" />
               <span>{t(key)}</span>
@@ -102,6 +95,26 @@ export function AppSidebar() {
           <SidebarGroupContent>{renderItems(SECONDARY_NAV)}</SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <Select value={lang} onValueChange={(v) => setLang(v as Lang)}>
+          <SelectTrigger
+            className="h-8 text-[11px] font-semibold uppercase tracking-wider px-2"
+            aria-label={t("lang.label")}
+            title={t("lang.label")}
+          >
+            <SelectValue>{lang.toUpperCase()}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {SUPPORTED_LANGS.map((l) => (
+              <SelectItem key={l.code} value={l.code} className="text-sm">
+                <span className="font-semibold uppercase tracking-wider mr-2">{l.code}</span>
+                <span className="text-muted-foreground">{l.label}</span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <ProfileMenu variant="full" navStyle="sidebar" onToggleNavStyle={onToggleNavStyle} />
+      </SidebarFooter>
     </Sidebar>
   );
 }
