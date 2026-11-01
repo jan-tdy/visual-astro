@@ -9,69 +9,55 @@ import { useI18n } from "@/hooks/useI18n";
 import { fetchAllRows } from "@/lib/supabaseFetchAll";
 import { moonPhaseAt } from "@/lib/pozor";
 
-type ObsRow = { star_id: string; ut_time: string | null };
-type StarRow = { id: string; name: string };
-
-const TOP_N = 5;
+type VisitRow = { tab: string };
 
 interface PozorHomeProps {
   onJumpTo: (tab: string) => void;
 }
 
+const TAB_DEFS: { tab: string; labelKey: string; icon: typeof Moon }[] = [
+  { tab: "chart", labelKey: "pozor.tab.chart", icon: Activity },
+  { tab: "journal", labelKey: "pozor.tab.journal", icon: BookOpen },
+  { tab: "minima", labelKey: "pozor.tab.minima", icon: CalendarDays },
+  { tab: "instant", labelKey: "pozor.tab.instant", icon: Info },
+  { tab: "moon", labelKey: "pozor.tab.moon", icon: Moon },
+  { tab: "catalog", labelKey: "pozor.catalog", icon: List },
+];
+
 /**
  * "Smart" overview tab for Pozor: tonight's moon phase plus the observer's own
- * most-observed stars (same aggregate the Graphs page computes), so there's an
- * at-a-glance reason to open one of the planning tabs below.
+ * most-used Pozor tabs, from the pozor_tab_visits activity log (Pozor usage
+ * only — deliberately not the Sessions/observations data Graphs computes).
  */
 export function PozorHome({ onJumpTo }: PozorHomeProps) {
   const { user } = useAuth();
   const { t } = useI18n();
-  const [obs, setObs] = useState<ObsRow[]>([]);
-  const [stars, setStars] = useState<StarRow[]>([]);
+  const [visits, setVisits] = useState<VisitRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
     (async () => {
       setLoading(true);
-      const [obsRes, starsRes] = await Promise.all([
-        fetchAllRows<ObsRow>((from, to) =>
-          supabase.from("observations").select("star_id,ut_time").order("id").range(from, to),
-        ),
-        fetchAllRows<StarRow>((from, to) =>
-          supabase.from("stars").select("id,name").order("id").range(from, to),
-        ),
-      ]);
-      setObs(obsRes.data);
-      setStars(starsRes.data);
+      const { data } = await fetchAllRows<VisitRow>((from, to) =>
+        supabase.from("pozor_tab_visits").select("tab").order("id").range(from, to),
+      );
+      setVisits(data);
       setLoading(false);
     })();
   }, [user?.id]);
 
-  const starById = useMemo(() => Object.fromEntries(stars.map((s) => [s.id, s])), [stars]);
-
-  const topStars = useMemo(() => {
+  const topTabs = useMemo(() => {
     const m = new Map<string, number>();
-    obs.forEach((o) => {
-      if (o.ut_time) m.set(o.star_id, (m.get(o.star_id) ?? 0) + 1);
-    });
-    return Array.from(m.entries())
-      .map(([id, count]) => ({ id, name: starById[id]?.name ?? "?", count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, TOP_N);
-  }, [obs, starById]);
+    visits.forEach((v) => m.set(v.tab, (m.get(v.tab) ?? 0) + 1));
+    return TAB_DEFS
+      .map((d) => ({ tab: d.tab, name: t(d.labelKey), count: m.get(d.tab) ?? 0 }))
+      .filter((d) => d.count > 0)
+      .sort((a, b) => b.count - a.count);
+  }, [visits, t]);
 
   const moon = useMemo(() => moonPhaseAt(new Date()), []);
   const moonLabel = moon.waxing ? t("home.tonight.waxing") : t("home.tonight.waning");
-
-  const quickLinks: { tab: string; label: string; icon: typeof Moon }[] = [
-    { tab: "chart", label: t("pozor.tab.chart"), icon: Activity },
-    { tab: "journal", label: t("pozor.tab.journal"), icon: BookOpen },
-    { tab: "minima", label: t("pozor.tab.minima"), icon: CalendarDays },
-    { tab: "instant", label: t("pozor.tab.instant"), icon: Info },
-    { tab: "moon", label: t("pozor.tab.moon"), icon: Moon },
-    { tab: "catalog", label: t("pozor.catalog"), icon: List },
-  ];
 
   return (
     <div className="space-y-4">
@@ -87,20 +73,27 @@ export function PozorHome({ onJumpTo }: PozorHomeProps) {
         </Card>
 
         <Card className="p-5 md:col-span-2">
-          <h3 className="text-sm font-medium mb-3">{t("graphs.stars.top")}</h3>
+          <h3 className="text-sm font-medium mb-3">{t("pozor.home.topTabs")}</h3>
           {loading ? (
             <p className="text-sm text-muted-foreground">{t("graphs.loading")}</p>
-          ) : topStars.length === 0 ? (
+          ) : topTabs.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("pozor.home.empty")}</p>
           ) : (
-            <div className="w-full" style={{ height: Math.max(120, topStars.length * 32) }}>
+            <div className="w-full" style={{ height: Math.max(120, topTabs.length * 32) }}>
               <ResponsiveContainer>
-                <BarChart data={topStars} layout="vertical" margin={{ top: 5, right: 20, left: 60, bottom: 5 }}>
+                <BarChart data={topTabs} layout="vertical" margin={{ top: 5, right: 20, left: 70, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} width={80} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} width={90} />
                   <Tooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", fontSize: 12 }} />
-                  <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} maxBarSize={22} />
+                  <Bar
+                    dataKey="count"
+                    fill="hsl(var(--primary))"
+                    radius={[0, 4, 4, 0]}
+                    maxBarSize={22}
+                    onClick={(d: { tab?: string }) => d.tab && onJumpTo(d.tab)}
+                    cursor="pointer"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -111,9 +104,9 @@ export function PozorHome({ onJumpTo }: PozorHomeProps) {
       <Card className="p-5">
         <h3 className="text-sm font-medium mb-3">{t("pozor.home.quickLinks")}</h3>
         <div className="flex flex-wrap gap-2">
-          {quickLinks.map(({ tab, label, icon: Icon }) => (
+          {TAB_DEFS.map(({ tab, labelKey, icon: Icon }) => (
             <Button key={tab} variant="outline" size="sm" onClick={() => onJumpTo(tab)}>
-              <Icon className="h-4 w-4 mr-1.5" /> {label}
+              <Icon className="h-4 w-4 mr-1.5" /> {t(labelKey)}
             </Button>
           ))}
         </div>

@@ -5,8 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
+import { getPrefs } from "@/hooks/usePrefs";
 import { useSubscription } from "@/hooks/useSubscription";
 import { CatalogSwitcher } from "@/components/pozor/CatalogSwitcher";
 import { CcdCatalog } from "@/components/pozor/CcdCatalog";
@@ -40,6 +42,18 @@ export default function Pozor() {
   const isOwnCatalog = !activeCatalog || activeCatalog.user_id === user?.id;
   const ownCatalogsCount = catalogs.filter((c) => c.user_id === user?.id).length;
 
+  // Logs real usage of the planning tabs (never the Home tab itself) so the Home
+  // tab's "most used" chart reflects actual Pozor activity, not visual-estimate
+  // session data from elsewhere in the app.
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (tab !== "home" && user && getPrefs().pozorActivityLogging) {
+      supabase.from("pozor_tab_visits").insert({ user_id: user.id, tab }).then(({ error }) => {
+        if (error) console.error(error);
+      });
+    }
+  };
+
   return (
     <AppShell>
       <div className="container mx-auto px-4 py-6 space-y-4">
@@ -57,7 +71,7 @@ export default function Pozor() {
             isOwnCatalog={isOwnCatalog}
           />
         </header>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="home">{t("pozor.tab.home")}</TabsTrigger>
             <TabsTrigger value="chart">{t("pozor.tab.chart")}</TabsTrigger>
@@ -71,7 +85,7 @@ export default function Pozor() {
             <TabsTrigger value="catalog">{t("pozor.catalog")}</TabsTrigger>
           </TabsList>
           <TabsContent value="home" className="mt-4">
-            <PozorHome onJumpTo={setActiveTab} />
+            <PozorHome onJumpTo={handleTabChange} />
           </TabsContent>
           <TabsContent value="chart" className="mt-4">
             <NightChart targets={targets} settings={settings} setSettings={setSettings} locations={locations} />

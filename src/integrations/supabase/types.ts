@@ -322,6 +322,27 @@ export type Database = {
         }
         Relationships: []
       }
+      pozor_tab_visits: {
+        Row: {
+          created_at: string
+          id: string
+          tab: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tab: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tab?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           catalog_seeded: boolean
