@@ -68,9 +68,6 @@ export function AppSidebar({ onToggleNavStyle }: AppSidebarProps) {
           <span className="flex flex-col leading-tight min-w-0">
             <span className="inline-flex items-center gap-2 text-base font-semibold tracking-wide text-primary">
               Visual Astro
-              <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/30">
-                beta
-              </span>
             </span>
             <span className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground tracking-wide">
               By JapySoft

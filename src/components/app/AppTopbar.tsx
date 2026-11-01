@@ -63,9 +63,6 @@ export function AppTopbar({ navStyle, onToggleNavStyle }: AppTopbarProps) {
           <span className="flex flex-col leading-tight">
             <span className="inline-flex items-center gap-2 text-lg">
               Visual Astro
-              <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/30">
-                beta
-              </span>
               <Link
                 to="/changelog"
                 onClick={(e) => e.stopPropagation()}
