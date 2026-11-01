@@ -125,3 +125,41 @@ CREATE POLICY "telescope_events_update_own" ON public.telescope_events
 -- telescope-ingest (service role), which validates the device token and
 -- sets user_id itself — a client can never insert an event claiming to be
 -- from a device it doesn't hold the token for.
+
+-- telescope_events_update_own's WITH CHECK only proves the row stays the
+-- caller's own — it says nothing about *which* columns changed or what
+-- matched_star_id points to. Without this trigger, an authenticated client
+-- could, on a row it legitimately owns, rewrite event_id/device_id/
+-- object_name/started_at/ended_at/ra/dec (the Pi-reported facts this
+-- feature exists to preserve) or set matched_star_id to a star_id it does
+-- not own (stars has its own RLS, so this wouldn't leak that star's data by
+-- itself, but a client should never be able to produce that reference).
+-- Only status and matched_star_id (to one of the caller's own stars) are
+-- meant to be client-editable.
+CREATE FUNCTION public.telescope_events_guard_update() RETURNS trigger AS $$
+BEGIN
+  IF NEW.event_id IS DISTINCT FROM OLD.event_id
+    OR NEW.user_id IS DISTINCT FROM OLD.user_id
+    OR NEW.device_id IS DISTINCT FROM OLD.device_id
+    OR NEW.object_name IS DISTINCT FROM OLD.object_name
+    OR NEW.started_at IS DISTINCT FROM OLD.started_at
+    OR NEW.ended_at IS DISTINCT FROM OLD.ended_at
+    OR NEW.ra IS DISTINCT FROM OLD.ra
+    OR NEW.dec IS DISTINCT FROM OLD.dec
+  THEN
+    RAISE EXCEPTION 'telescope_events: only status and matched_star_id can be updated';
+  END IF;
+  IF NEW.matched_star_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.stars s WHERE s.id = NEW.matched_star_id AND s.user_id = NEW.user_id
+  ) THEN
+    RAISE EXCEPTION 'telescope_events: matched_star_id must reference one of your own stars';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- Runs for every UPDATE, including the service role's own (telescope-ingest
+-- never updates rows, but this keeps the guarantee unconditional either way).
+CREATE TRIGGER telescope_events_guard_update_trigger
+  BEFORE UPDATE ON public.telescope_events
+  FOR EACH ROW EXECUTE FUNCTION public.telescope_events_guard_update();
