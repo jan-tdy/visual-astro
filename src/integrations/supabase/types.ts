@@ -523,6 +523,123 @@ export type Database = {
         }
         Relationships: []
       }
+      telescope_events: {
+        Row: {
+          created_at: string
+          dec: string | null
+          device_id: string
+          ended_at: string
+          event_id: string
+          id: string
+          matched_star_id: string | null
+          object_name: string
+          ra: string | null
+          started_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dec?: string | null
+          device_id: string
+          ended_at: string
+          event_id: string
+          id?: string
+          matched_star_id?: string | null
+          object_name: string
+          ra?: string | null
+          started_at: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dec?: string | null
+          device_id?: string
+          ended_at?: string
+          event_id?: string
+          id?: string
+          matched_star_id?: string | null
+          object_name?: string
+          ra?: string | null
+          started_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telescope_events_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "telescope_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telescope_events_matched_star_id_fkey"
+            columns: ["matched_star_id"]
+            isOneToOne: false
+            referencedRelation: "stars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telescope_links: {
+        Row: {
+          created_at: string
+          device_name: string | null
+          device_token_hash: string
+          id: string
+          revoked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_name?: string | null
+          device_token_hash: string
+          id?: string
+          revoked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_name?: string | null
+          device_token_hash?: string
+          id?: string
+          revoked_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      telescope_pairing_requests: {
+        Row: {
+          code_hash: string
+          created_at: string
+          expires_at: string
+          id: string
+          plaintext_token: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          code_hash: string
+          created_at?: string
+          expires_at: string
+          id: string
+          plaintext_token?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          code_hash?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          plaintext_token?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

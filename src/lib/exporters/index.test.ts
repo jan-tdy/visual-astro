@@ -69,6 +69,20 @@ describe("buildVSNET", () => {
     const { text } = buildVSNET([{ ...baseRow, note: "line1\nline2" }], ctx);
     expect(text.trim().split("\n")).toHaveLength(1);
   });
+
+  it("dates a row by its own observedAtOverride instant, without the before-noon rollover", () => {
+    // Regression: rowDate() used to apply the same "before-noon -> next day"
+    // rollover applyUtTimeToDate uses for a shared evening date, even when
+    // observedAtOverride already pins the row to its own exact, correct
+    // instant -- double-applying the rollover shifted every such row one
+    // day late (e.g. 2026-07-16T00:30 UTC exporting as 2026-07-17).
+    const { text } = buildVSNET(
+      [{ ...baseRow, ut_time: "00:30", observedAtOverride: new Date("2026-07-16T00:30:00Z") }],
+      ctx,
+    );
+    const line = text.split("\n").find((l) => l.startsWith("R CYG"));
+    expect(line).toContain("20260716.021");
+  });
 });
 
 describe("buildExportSummary", () => {

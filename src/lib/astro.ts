@@ -139,19 +139,25 @@ export function computeMagnitude(
 }
 
 /**
- * Overlay a "HH:MM" UT time onto a session's (evening) date, mutating `d` in place.
- * Times 00:00–11:59 UT are the post-midnight continuation of the observing night
- * that started the previous UTC evening, so they roll onto the next calendar day —
- * the session itself is always dated by the evening it started.
+ * Overlay a "HH:MM" UT time onto a date, mutating `d` in place.
+ *
+ * `rollover` (default true) is the "post-midnight continuation of the
+ * observing night" rule: when `d` is a session's *evening* date and the
+ * time is 00:00-11:59 UT, that's the small-hours continuation of the night
+ * that started the previous UTC evening, so the date rolls forward one day.
+ * Pass `rollover: false` when `d` is already the row's own exact instant
+ * (e.g. JapyScope's per-event `observedAtOverride`) — there, the hour/minute
+ * are set but the date is already correct as given, and applying the same
+ * rollover a second time would shift it forward by an extra day.
  */
-export function applyUtTimeToDate(d: Date, utTime: string | null | undefined): void {
+export function applyUtTimeToDate(d: Date, utTime: string | null | undefined, rollover: boolean = true): void {
   if (!utTime) return;
   const m = /^(\d{1,2})[:.\s]+(\d{1,2})/.exec(String(utTime).trim());
   if (!m) return;
   const hh = parseInt(m[1], 10);
   const mm = parseInt(m[2], 10);
   d.setUTCHours(hh, mm, 0, 0);
-  if (hh < 12) d.setUTCDate(d.getUTCDate() + 1);
+  if (rollover && hh < 12) d.setUTCDate(d.getUTCDate() + 1);
 }
 
 /**

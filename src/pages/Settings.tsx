@@ -13,7 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, Sparkles, Database, RefreshCw, Lock, Upload, Copy, Cpu, TriangleAlert, LineChart as LineChartIcon, FileText, ScanLine, ShieldAlert } from "lucide-react";
+import { Check, Sparkles, Database, RefreshCw, Lock, Upload, Copy, Cpu, TriangleAlert, LineChart as LineChartIcon, FileText, ScanLine, ShieldAlert, Satellite } from "lucide-react";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
 import { usePrefs, SUBMISSION_PORTALS } from "@/hooks/usePrefs";
@@ -41,6 +41,51 @@ export default function Settings() {
     loading: boolean;
   }>({ bytes: 0, counts: { stars: 0, sessions: 0, observations: 0, promOverrides: 0 }, loading: false });
   const [limitMb, setLimitMb] = useState(400);
+  const [telescopeLinked, setTelescopeLinked] = useState<boolean | null>(null);
+  const [telescopeCode, setTelescopeCode] = useState("");
+  const [telescopeLinking, setTelescopeLinking] = useState(false);
+
+  const checkTelescopeLink = async () => {
+    if (!user) return;
+    const { count } = await supabase
+      .from("telescope_links")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .is("revoked_at", null);
+    setTelescopeLinked((count ?? 0) > 0);
+  };
+
+  useEffect(() => { if (user) checkTelescopeLink(); }, [user]);
+
+  const linkTelescope = async () => {
+    if (!/^\d{6}$/.test(telescopeCode.trim())) {
+      toast.error(t("settings.telescope.invalidCode"));
+      return;
+    }
+    setTelescopeLinking(true);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telescope-pair-claim`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ code: telescopeCode.trim() }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(body?.error || t("japyscope.loadError"));
+      toast.success(t("settings.telescope.linkSuccess"));
+      setTelescopeCode("");
+      setTelescopeLinked(true);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setTelescopeLinking(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -147,6 +192,39 @@ export default function Settings() {
             <p className="text-xs text-muted-foreground mt-1">{t("settings.obsCodeHint")}</p>
           </div>
           <Button onClick={save} disabled={busy}>{t("settings.save")}</Button>
+            </Card>
+
+            <Card className="p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <Satellite className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-lg font-semibold">{t("settings.telescope.title")}</h2>
+              </div>
+              <p className="text-sm text-muted-foreground">{t("settings.telescope.desc")}</p>
+              {telescopeLinked ? (
+                <Badge variant="outline" className="gap-1">
+                  <Check className="h-3 w-3" />
+                  {t("settings.telescope.linked")}
+                </Badge>
+              ) : (
+                <>
+                  <p className="text-xs text-muted-foreground">{t("settings.telescope.notLinked")}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <Label htmlFor="telescopeCode">{t("settings.telescope.codeLabel")}</Label>
+                      <Input
+                        id="telescopeCode"
+                        value={telescopeCode}
+                        placeholder={t("settings.telescope.codePh")}
+                        maxLength={6}
+                        onChange={(e) => setTelescopeCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      />
+                    </div>
+                    <Button onClick={linkTelescope} disabled={telescopeLinking} className="mt-6">
+                      {telescopeLinking ? t("settings.telescope.linking") : t("settings.telescope.link")}
+                    </Button>
+                  </div>
+                </>
+              )}
             </Card>
 
             <Card className="p-6 space-y-5">
