@@ -91,7 +91,10 @@ export function PozorHome({ onJumpTo }: PozorHomeProps) {
                     fill="hsl(var(--primary))"
                     radius={[0, 4, 4, 0]}
                     maxBarSize={22}
-                    onClick={(d: { tab?: string }) => d.tab && onJumpTo(d.tab)}
+                    onClick={(d) => {
+                      const tab = d.payload?.tab as string | undefined;
+                      if (tab) onJumpTo(tab);
+                    }}
                     cursor="pointer"
                   />
                 </BarChart>

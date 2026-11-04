@@ -90,7 +90,7 @@ export default function JapyScope() {
     if (!user) return;
     setLoading(true);
     const [eventsResult, starsResult, profileResult] = await Promise.all([
-      fetchAllRows<TelescopeEvent>((from, to) =>
+      fetchAllRows<Omit<TelescopeEvent, "status"> & { status: string }>((from, to) =>
         supabase
           .from("telescope_events")
           .select("id, object_name, started_at, ended_at, status, matched_star_id")
@@ -103,7 +103,7 @@ export default function JapyScope() {
       supabase.from("profiles").select("obs_code").eq("user_id", user.id).maybeSingle(),
     ]);
     if (eventsResult.error) toast.error(t("japyscope.loadError"));
-    setEvents(eventsResult.data ?? []);
+    setEvents((eventsResult.data ?? []).map((e) => ({ ...e, status: e.status as EventStatus })));
     setStars(starsResult.data ?? []);
     if (profileResult.data) setObsCode(profileResult.data.obs_code);
     setLoading(false);

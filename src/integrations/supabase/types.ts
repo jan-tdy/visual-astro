@@ -333,7 +333,7 @@ export type Database = {
           created_at?: string
           id?: string
           tab: string
-          user_id?: string
+          user_id: string
         }
         Update: {
           created_at?: string
@@ -610,6 +610,27 @@ export type Database = {
         }
         Relationships: []
       }
+      telescope_pair_claim_attempts: {
+        Row: {
+          failed_count: number
+          last_failed_at: string | null
+          locked_until: string | null
+          user_id: string
+        }
+        Insert: {
+          failed_count?: number
+          last_failed_at?: string | null
+          locked_until?: string | null
+          user_id: string
+        }
+        Update: {
+          failed_count?: number
+          last_failed_at?: string | null
+          locked_until?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       telescope_pairing_requests: {
         Row: {
           code_hash: string
@@ -664,6 +685,10 @@ export type Database = {
           limit_reached: boolean
           new_count: number
         }[]
+      }
+      record_telescope_pair_claim_failure: {
+        Args: { p_user_id: string }
+        Returns: undefined
       }
       user_storage_bytes: { Args: { _user_id: string }; Returns: number }
       user_storage_limit_bytes: { Args: { _user_id: string }; Returns: number }

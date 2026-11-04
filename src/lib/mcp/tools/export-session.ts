@@ -67,7 +67,15 @@ export default defineTool({
     const { text, skipped } = format === "vsnet" ? buildVSNET(rows, exportCtx) : buildAAVSO(rows, exportCtx);
     return {
       content: [{ type: "text" as const, text }],
-      structuredContent: { format, obs_code: code, rows: rows.length, text, skipped },
+      // Plain literals, not the SkippedRow interface: the SDK's structured-content
+      // type only accepts shapes with an implicit index signature.
+      structuredContent: {
+        format,
+        obs_code: code,
+        rows: rows.length,
+        text,
+        skipped: skipped.map((s) => ({ star: s.star, reason: s.reason })),
+      },
     };
   },
 });

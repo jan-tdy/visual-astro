@@ -117,10 +117,14 @@ export default function Home() {
   }, [dailyCounts]);
 
   const totalObservations = useMemo(() => sessions.reduce((sum, s) => sum + s.obs_count, 0), [sessions]);
-  const sessionsThisMonth = useMemo(() => {
+  // "This month" is observations logged in the current calendar month, not the
+  // number of sessions opened — the other two stats count the same way.
+  const observationsThisMonth = useMemo(() => {
     const now = new Date();
     const ym = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
-    return sessions.filter((s) => s.observed_at_utc.slice(0, 7) === ym).length;
+    return sessions
+      .filter((s) => s.observed_at_utc.slice(0, 7) === ym)
+      .reduce((sum, s) => sum + s.obs_count, 0);
   }, [sessions]);
 
   const tonightLocation = useMemo(() => resolveLocation(locations, settings.locationId), [locations, settings.locationId]);
@@ -193,7 +197,7 @@ export default function Home() {
                 <div className="text-xs text-muted-foreground">{t("settings.usage.obs")}</div>
               </div>
               <div>
-                <div className="text-2xl font-semibold tabular-nums">{sessionsThisMonth}</div>
+                <div className="text-2xl font-semibold tabular-nums">{observationsThisMonth}</div>
                 <div className="text-xs text-muted-foreground">{t("home.stats.thisMonth")}</div>
               </div>
             </div>

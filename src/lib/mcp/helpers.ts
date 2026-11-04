@@ -1,3 +1,4 @@
+import type { JsonValueInput } from "@lovable.dev/mcp-js";
 import {
   DEFAULT_MIN_ALTITUDE,
   POZOR_LOCATIONS,
@@ -8,7 +9,9 @@ import {
 export function ok(payload: unknown, structured?: Record<string, unknown>) {
   return {
     content: [{ type: "text" as const, text: JSON.stringify(payload) }],
-    ...(structured ? { structuredContent: structured } : {}),
+    // Every payload here is already JSON.stringify-able for `content`, so it is a
+    // valid structuredContent value; the cast only satisfies the SDK's recursive type.
+    ...(structured ? { structuredContent: structured as JsonValueInput } : {}),
   };
 }
 
