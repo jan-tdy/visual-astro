@@ -226,7 +226,6 @@ export function AltitudeChart({
                 fill={m.kind === "primary" ? m.color : "hsl(var(--card))"}
                 stroke={m.color}
                 strokeWidth={1.5}
-                isFront
               />
             ))}
             {horizonMarks.map((m) => (
@@ -236,7 +235,6 @@ export function AltitudeChart({
                 y={m.alt}
                 r={5}
                 shape={(props: { cx?: number; cy?: number }) => <HorizonMarker {...props} color={m.color} />}
-                isFront
                 label={
                   compact
                     ? undefined

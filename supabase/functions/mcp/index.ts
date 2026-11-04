@@ -3297,6 +3297,8 @@ function buildJournal(target, fromIso, toIso, loc, minAltDeg = DEFAULT_MIN_ALTIT
 function ok(payload, structured) {
   return {
     content: [{ type: "text", text: JSON.stringify(payload) }],
+    // Every payload here is already JSON.stringify-able for `content`, so it is a
+    // valid structuredContent value; the cast only satisfies the SDK's recursive type.
     ...structured ? { structuredContent: structured } : {}
   };
 }

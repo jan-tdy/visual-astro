@@ -1,3 +1,4 @@
+import type { JsonValueInput } from "@lovable.dev/mcp-js";
 import {
   DEFAULT_MIN_ALTITUDE,
   POZOR_LOCATIONS,
