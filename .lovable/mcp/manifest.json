@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "sdk_version": "0.26.1",
+  "sdk_version": "3.4.0",
   "path": "/functions/v1/mcp",
   "auth": {
     "type": "oauth",
@@ -26,9 +26,10 @@
           "openWorldHint": false
         },
         "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
-          "properties": {}
+          "properties": {},
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -42,17 +43,17 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "obs_code": {
+              "description": "Observer code, e.g. 'DPV'.",
               "type": "string",
               "minLength": 1,
-              "maxLength": 10,
-              "description": "Observer code, e.g. 'DPV'."
+              "maxLength": 10
             }
           },
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -66,18 +67,18 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "limit": {
+              "default": 20,
+              "description": "Maximum number of sessions to return.",
               "type": "integer",
               "minimum": 1,
-              "maximum": 100,
-              "default": 20,
-              "description": "Maximum number of sessions to return."
+              "maximum": 100
             }
           },
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -91,19 +92,20 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "session_id": {
               "type": "string",
               "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "description": "Session id."
             }
           },
           "required": [
             "session_id"
           ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -117,26 +119,26 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "name": {
+              "description": "Session name.",
               "type": "string",
               "minLength": 1,
-              "maxLength": 200,
-              "description": "Session name."
+              "maxLength": 200
             },
             "observed_at_utc": {
-              "type": "string",
-              "description": "Observation date/time in UTC ISO format; defaults to now."
+              "description": "Observation date/time in UTC ISO format; defaults to now.",
+              "type": "string"
             },
             "notes": {
+              "description": "Free-form session notes.",
               "type": "string",
-              "maxLength": 2000,
-              "description": "Free-form session notes."
+              "maxLength": 2000
             }
           },
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -150,37 +152,38 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "session_id": {
               "type": "string",
               "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "description": "Session id."
             },
             "name": {
+              "description": "New session name.",
               "type": "string",
-              "maxLength": 200,
-              "description": "New session name."
+              "maxLength": 200
             },
             "notes": {
+              "description": "New session notes.",
               "type": "string",
-              "maxLength": 2000,
-              "description": "New session notes."
+              "maxLength": 2000
             },
             "observed_at_utc": {
-              "type": "string",
-              "description": "New observation date/time in UTC ISO format."
+              "description": "New observation date/time in UTC ISO format.",
+              "type": "string"
             },
             "is_favorite": {
-              "type": "boolean",
-              "description": "Mark or unmark as favourite."
+              "description": "Mark or unmark as favourite.",
+              "type": "boolean"
             }
           },
           "required": [
             "session_id"
           ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -194,19 +197,20 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "session_id": {
               "type": "string",
               "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "description": "Session id to delete."
             }
           },
           "required": [
             "session_id"
           ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -220,23 +224,24 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "session_id": {
+              "description": "Session id to read; omit to read the latest observations.",
               "type": "string",
               "format": "uuid",
-              "description": "Session id to read; omit to read the latest observations."
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             },
             "limit": {
+              "default": 100,
+              "description": "Maximum number of observations to return.",
               "type": "integer",
               "minimum": 1,
-              "maximum": 500,
-              "default": 100,
-              "description": "Maximum number of observations to return."
+              "maximum": 500
             }
           },
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -250,62 +255,64 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "session_id": {
               "type": "string",
               "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "description": "Session the observation belongs to."
             },
             "star_id": {
+              "description": "Catalog star id.",
               "type": "string",
               "format": "uuid",
-              "description": "Catalog star id."
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             },
             "star_name": {
+              "description": "Catalog star name (used when star_id is omitted).",
               "type": "string",
-              "minLength": 1,
-              "description": "Catalog star name (used when star_id is omitted)."
+              "minLength": 1
             },
             "a": {
-              "type": "string",
-              "description": "Brighter comparison star (magnitude or comparator letter)."
+              "description": "Brighter comparison star (magnitude or comparator letter).",
+              "type": "string"
             },
             "b": {
-              "type": "string",
-              "description": "Fainter comparison star (magnitude or comparator letter)."
+              "description": "Fainter comparison star (magnitude or comparator letter).",
+              "type": "string"
             },
             "pasos_a": {
+              "description": "Argelander steps to A.",
               "type": "integer",
               "minimum": 0,
-              "maximum": 99,
-              "description": "Argelander steps to A."
+              "maximum": 99
             },
             "pasos_b": {
+              "description": "Argelander steps to B.",
               "type": "integer",
               "minimum": 0,
-              "maximum": 99,
-              "description": "Argelander steps to B."
+              "maximum": 99
             },
             "limit_value": {
-              "type": "string",
-              "description": "Fainter-than limit, e.g. '<14.2'."
+              "description": "Fainter-than limit, e.g. '<14.2'.",
+              "type": "string"
             },
             "ut_time": {
-              "type": "string",
-              "description": "UT time as HH:MM."
+              "description": "UT time as HH:MM.",
+              "type": "string"
             },
             "note": {
+              "description": "Row note, e.g. OUTBURST.",
               "type": "string",
-              "maxLength": 500,
-              "description": "Row note, e.g. OUTBURST."
+              "maxLength": 500
             }
           },
           "required": [
             "session_id"
           ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -319,36 +326,31 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "observation_id": {
               "type": "string",
               "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "description": "Observation id."
             },
             "a": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Brighter comparison star."
+              "description": "Brighter comparison star.",
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "b": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Fainter comparison star."
+              "description": "Fainter comparison star.",
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "pasos_a": {
+              "description": "Argelander steps to A.",
               "anyOf": [
                 {
                   "type": "integer",
@@ -358,10 +360,10 @@
                 {
                   "type": "null"
                 }
-              ],
-              "description": "Argelander steps to A."
+              ]
             },
             "pasos_b": {
+              "description": "Argelander steps to B.",
               "anyOf": [
                 {
                   "type": "integer",
@@ -371,32 +373,24 @@
                 {
                   "type": "null"
                 }
-              ],
-              "description": "Argelander steps to B."
+              ]
             },
             "limit_value": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Fainter-than limit."
+              "description": "Fainter-than limit.",
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "ut_time": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "UT time as HH:MM."
+              "description": "UT time as HH:MM.",
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "note": {
+              "description": "Row note.",
               "anyOf": [
                 {
                   "type": "string",
@@ -405,15 +399,13 @@
                 {
                   "type": "null"
                 }
-              ],
-              "description": "Row note."
+              ]
             }
           },
           "required": [
             "observation_id"
           ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -427,19 +419,20 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "observation_id": {
               "type": "string",
               "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "description": "Observation id to delete."
             }
           },
           "required": [
             "observation_id"
           ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -453,11 +446,13 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "session_id": {
               "type": "string",
               "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "description": "Session to export."
             },
             "format": {
@@ -469,18 +464,17 @@
               "description": "Export format."
             },
             "obs_code": {
+              "description": "Observer code; defaults to the profile setting.",
               "type": "string",
               "minLength": 1,
-              "maxLength": 10,
-              "description": "Observer code; defaults to the profile setting."
+              "maxLength": 10
             }
           },
           "required": [
             "session_id",
             "format"
           ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -494,28 +488,28 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "constellation": {
+              "description": "Filter by constellation code, e.g. 'Dra'.",
               "type": "string",
-              "minLength": 1,
-              "description": "Filter by constellation code, e.g. 'Dra'."
+              "minLength": 1
             },
             "search": {
+              "description": "Case-insensitive star name search.",
               "type": "string",
-              "minLength": 1,
-              "description": "Case-insensitive star name search."
+              "minLength": 1
             },
             "limit": {
+              "default": 200,
+              "description": "Maximum number of stars to return.",
               "type": "integer",
               "minimum": 1,
-              "maximum": 500,
-              "default": 200,
-              "description": "Maximum number of stars to return."
+              "maximum": 500
             }
           },
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -529,6 +523,7 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "name": {
@@ -544,48 +539,48 @@
               "description": "Constellation code, e.g. 'Cyg'."
             },
             "type": {
+              "default": "VISUAL",
+              "description": "Star type.",
               "type": "string",
               "enum": [
                 "VISUAL",
                 "BINAR",
                 "ECL faint",
                 "ECL bright"
-              ],
-              "default": "VISUAL",
-              "description": "Star type."
+              ]
             },
             "vsnet_code": {
+              "description": "VSNET code.",
               "type": "string",
-              "maxLength": 20,
-              "description": "VSNET code."
+              "maxLength": 20
             },
             "aavso_code": {
+              "description": "AAVSO designation.",
               "type": "string",
-              "maxLength": 20,
-              "description": "AAVSO designation."
+              "maxLength": 20
             },
             "chart_id": {
+              "description": "AAVSO chart id.",
               "type": "string",
-              "maxLength": 40,
-              "description": "AAVSO chart id."
+              "maxLength": 40
             },
             "notes": {
+              "description": "Notes.",
               "type": "string",
-              "maxLength": 1000,
-              "description": "Notes."
+              "maxLength": 1000
             },
             "sort_order": {
+              "description": "Position within the constellation.",
               "type": "integer",
               "minimum": 0,
-              "description": "Position within the constellation."
+              "maximum": 9007199254740991
             }
           },
           "required": [
             "name",
             "constellation"
           ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -599,90 +594,76 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "star_id": {
               "type": "string",
               "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "description": "Star id."
             },
             "name": {
+              "description": "Star name.",
               "type": "string",
               "minLength": 1,
-              "maxLength": 120,
-              "description": "Star name."
+              "maxLength": 120
             },
             "constellation": {
+              "description": "Constellation code.",
               "type": "string",
               "minLength": 1,
-              "maxLength": 20,
-              "description": "Constellation code."
+              "maxLength": 20
             },
             "type": {
+              "description": "Star type.",
               "type": "string",
               "enum": [
                 "VISUAL",
                 "BINAR",
                 "ECL faint",
                 "ECL bright"
-              ],
-              "description": "Star type."
+              ]
             },
             "vsnet_code": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "VSNET code."
+              "description": "VSNET code.",
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "aavso_code": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "AAVSO designation."
+              "description": "AAVSO designation.",
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "chart_id": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "AAVSO chart id."
+              "description": "AAVSO chart id.",
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "notes": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Notes."
+              "description": "Notes.",
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "sort_order": {
+              "description": "Position within the constellation.",
               "type": "integer",
               "minimum": 0,
-              "description": "Position within the constellation."
+              "maximum": 9007199254740991
             }
           },
           "required": [
             "star_id"
           ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -696,19 +677,20 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "star_id": {
               "type": "string",
               "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "description": "Star id to delete."
             }
           },
           "required": [
             "star_id"
           ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -722,9 +704,10 @@
           "openWorldHint": false
         },
         "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
-          "properties": {}
+          "properties": {},
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -738,23 +721,23 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "search": {
+              "description": "Case-insensitive target name search.",
               "type": "string",
-              "minLength": 1,
-              "description": "Case-insensitive target name search."
+              "minLength": 1
             },
             "limit": {
+              "default": 200,
+              "description": "Maximum number of targets to return.",
               "type": "integer",
               "minimum": 1,
-              "maximum": 500,
-              "default": 200,
-              "description": "Maximum number of targets to return."
+              "maximum": 500
             }
           },
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -768,6 +751,7 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "name": {
@@ -789,39 +773,40 @@
               "description": "J2000 declination in degrees."
             },
             "constellation": {
+              "description": "Constellation code.",
               "type": "string",
-              "maxLength": 20,
-              "description": "Constellation code."
+              "maxLength": 20
             },
             "catalog_id": {
+              "description": "Target catalog id; defaults to the first catalog.",
               "type": "string",
               "format": "uuid",
-              "description": "Target catalog id; defaults to the first catalog."
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             },
             "catalog_name": {
+              "description": "Catalog name; created if it does not exist.",
               "type": "string",
               "minLength": 1,
-              "maxLength": 120,
-              "description": "Catalog name; created if it does not exist."
+              "maxLength": 120
             },
             "epoch_jd": {
-              "type": "number",
-              "description": "Epoch of primary minimum (JD)."
+              "description": "Epoch of primary minimum (JD).",
+              "type": "number"
             },
             "period_days": {
+              "description": "Orbital/pulsation period in days.",
               "type": "number",
-              "exclusiveMinimum": 0,
-              "description": "Orbital/pulsation period in days."
+              "exclusiveMinimum": 0
             },
             "filters": {
+              "description": "Filters used, e.g. 'V, R'.",
               "type": "string",
-              "maxLength": 60,
-              "description": "Filters used, e.g. 'V, R'."
+              "maxLength": 60
             },
             "notes": {
+              "description": "Notes.",
               "type": "string",
-              "maxLength": 1000,
-              "description": "Notes."
+              "maxLength": 1000
             }
           },
           "required": [
@@ -829,8 +814,7 @@
             "ra_hours",
             "dec_deg"
           ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -844,44 +828,47 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "target_id": {
               "type": "string",
               "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "description": "Target id."
             },
             "name": {
+              "description": "Target name.",
               "type": "string",
               "minLength": 1,
-              "maxLength": 120,
-              "description": "Target name."
+              "maxLength": 120
             },
             "constellation": {
+              "description": "Constellation code.",
               "type": "string",
-              "maxLength": 20,
-              "description": "Constellation code."
+              "maxLength": 20
             },
             "ra_hours": {
+              "description": "J2000 right ascension in hours.",
               "type": "number",
               "minimum": 0,
-              "maximum": 24,
-              "description": "J2000 right ascension in hours."
+              "maximum": 24
             },
             "dec_deg": {
+              "description": "J2000 declination in degrees.",
               "type": "number",
               "minimum": -90,
-              "maximum": 90,
-              "description": "J2000 declination in degrees."
+              "maximum": 90
             },
             "epoch_jd": {
+              "description": "Epoch of primary minimum (JD).",
               "type": [
                 "number",
                 "null"
-              ],
-              "description": "Epoch of primary minimum (JD)."
+              ]
             },
             "period_days": {
+              "description": "Period in days.",
               "anyOf": [
                 {
                   "type": "number",
@@ -890,42 +877,33 @@
                 {
                   "type": "null"
                 }
-              ],
-              "description": "Period in days."
+              ]
             },
             "filters": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filters used."
+              "description": "Filters used.",
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "notes": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Notes."
+              "description": "Notes.",
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "sort_order": {
+              "description": "Position within the catalog.",
               "type": "integer",
               "minimum": 0,
-              "description": "Position within the catalog."
+              "maximum": 9007199254740991
             }
           },
           "required": [
             "target_id"
           ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -939,19 +917,20 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "target_id": {
               "type": "string",
               "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "description": "Target id to delete."
             }
           },
           "required": [
             "target_id"
           ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -965,6 +944,7 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "date": {
@@ -973,31 +953,30 @@
               "description": "Evening date of the night, YYYY-MM-DD (UTC)."
             },
             "location": {
-              "type": "string",
-              "description": "Site key: piconcillo, kolonica, hlohovec, madeira."
+              "description": "Site key: piconcillo, kolonica, hlohovec, madeira.",
+              "type": "string"
             },
             "lat": {
+              "description": "Custom latitude (degrees north).",
               "type": "number",
               "minimum": -90,
-              "maximum": 90,
-              "description": "Custom latitude (degrees north)."
+              "maximum": 90
             },
             "lon": {
+              "description": "Custom longitude (degrees east).",
               "type": "number",
               "minimum": -180,
-              "maximum": 180,
-              "description": "Custom longitude (degrees east)."
+              "maximum": 180
             },
             "elevation": {
-              "type": "number",
-              "description": "Custom elevation in metres."
+              "description": "Custom elevation in metres.",
+              "type": "number"
             }
           },
           "required": [
             "date"
           ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -1011,6 +990,7 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "datetime_utc": {
@@ -1018,62 +998,62 @@
               "description": "UTC instant in ISO format, e.g. 2026-08-01T22:30:00Z."
             },
             "target_id": {
+              "description": "CCD catalog target id.",
               "type": "string",
               "format": "uuid",
-              "description": "CCD catalog target id."
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             },
             "target_name": {
+              "description": "CCD catalog target name.",
               "type": "string",
-              "minLength": 1,
-              "description": "CCD catalog target name."
+              "minLength": 1
             },
             "ra_hours": {
+              "description": "J2000 RA in hours (instead of a catalog target).",
               "type": "number",
               "minimum": 0,
-              "maximum": 24,
-              "description": "J2000 RA in hours (instead of a catalog target)."
+              "maximum": 24
             },
             "dec_deg": {
+              "description": "J2000 Dec in degrees.",
               "type": "number",
               "minimum": -90,
-              "maximum": 90,
-              "description": "J2000 Dec in degrees."
+              "maximum": 90
             },
             "epoch_jd": {
-              "type": "number",
-              "description": "Epoch of minimum (JD) for phase."
+              "description": "Epoch of minimum (JD) for phase.",
+              "type": "number"
             },
             "period_days": {
+              "description": "Period in days for phase.",
               "type": "number",
-              "exclusiveMinimum": 0,
-              "description": "Period in days for phase."
+              "exclusiveMinimum": 0
             },
             "location": {
-              "type": "string",
-              "description": "Site key: piconcillo, kolonica, hlohovec, madeira."
+              "description": "Site key: piconcillo, kolonica, hlohovec, madeira.",
+              "type": "string"
             },
             "lat": {
+              "description": "Custom latitude.",
               "type": "number",
               "minimum": -90,
-              "maximum": 90,
-              "description": "Custom latitude."
+              "maximum": 90
             },
             "lon": {
+              "description": "Custom longitude.",
               "type": "number",
               "minimum": -180,
-              "maximum": 180,
-              "description": "Custom longitude."
+              "maximum": 180
             },
             "elevation": {
-              "type": "number",
-              "description": "Custom elevation in metres."
+              "description": "Custom elevation in metres.",
+              "type": "number"
             }
           },
           "required": [
             "datetime_utc"
           ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -1087,6 +1067,7 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "from": {
@@ -1100,75 +1081,75 @@
               "description": "Last evening date, YYYY-MM-DD."
             },
             "target_id": {
+              "description": "CCD catalog target id.",
               "type": "string",
               "format": "uuid",
-              "description": "CCD catalog target id."
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             },
             "target_name": {
+              "description": "CCD catalog target name.",
               "type": "string",
-              "minLength": 1,
-              "description": "CCD catalog target name."
+              "minLength": 1
             },
             "ra_hours": {
+              "description": "J2000 RA in hours.",
               "type": "number",
               "minimum": 0,
-              "maximum": 24,
-              "description": "J2000 RA in hours."
+              "maximum": 24
             },
             "dec_deg": {
+              "description": "J2000 Dec in degrees.",
               "type": "number",
               "minimum": -90,
-              "maximum": 90,
-              "description": "J2000 Dec in degrees."
+              "maximum": 90
             },
             "epoch_jd": {
-              "type": "number",
-              "description": "Epoch of minimum (JD)."
+              "description": "Epoch of minimum (JD).",
+              "type": "number"
             },
             "period_days": {
+              "description": "Period in days.",
               "type": "number",
-              "exclusiveMinimum": 0,
-              "description": "Period in days."
+              "exclusiveMinimum": 0
             },
             "min_altitude": {
+              "default": 30,
+              "description": "Minimum usable altitude in degrees.",
               "type": "number",
               "minimum": 0,
-              "maximum": 90,
-              "default": 30,
-              "description": "Minimum usable altitude in degrees."
+              "maximum": 90
             },
             "only_observable": {
-              "type": "boolean",
               "default": true,
-              "description": "Return only nights with at least one window."
+              "description": "Return only nights with at least one window.",
+              "type": "boolean"
             },
             "location": {
-              "type": "string",
-              "description": "Site key: piconcillo, kolonica, hlohovec, madeira."
+              "description": "Site key: piconcillo, kolonica, hlohovec, madeira.",
+              "type": "string"
             },
             "lat": {
+              "description": "Custom latitude.",
               "type": "number",
               "minimum": -90,
-              "maximum": 90,
-              "description": "Custom latitude."
+              "maximum": 90
             },
             "lon": {
+              "description": "Custom longitude.",
               "type": "number",
               "minimum": -180,
-              "maximum": 180,
-              "description": "Custom longitude."
+              "maximum": 180
             },
             "elevation": {
-              "type": "number",
-              "description": "Custom elevation in metres."
+              "description": "Custom elevation in metres.",
+              "type": "number"
             }
           },
           "required": [
             "from",
             "to"
           ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -1182,6 +1163,7 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "from": {
@@ -1195,75 +1177,75 @@
               "description": "Range end date, YYYY-MM-DD."
             },
             "target_id": {
+              "description": "CCD catalog target id.",
               "type": "string",
               "format": "uuid",
-              "description": "CCD catalog target id."
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             },
             "target_name": {
+              "description": "CCD catalog target name.",
               "type": "string",
-              "minLength": 1,
-              "description": "CCD catalog target name."
+              "minLength": 1
             },
             "ra_hours": {
+              "description": "J2000 RA in hours.",
               "type": "number",
               "minimum": 0,
-              "maximum": 24,
-              "description": "J2000 RA in hours."
+              "maximum": 24
             },
             "dec_deg": {
+              "description": "J2000 Dec in degrees.",
               "type": "number",
               "minimum": -90,
-              "maximum": 90,
-              "description": "J2000 Dec in degrees."
+              "maximum": 90
             },
             "epoch_jd": {
-              "type": "number",
-              "description": "Epoch of primary minimum (JD)."
+              "description": "Epoch of primary minimum (JD).",
+              "type": "number"
             },
             "period_days": {
+              "description": "Period in days.",
               "type": "number",
-              "exclusiveMinimum": 0,
-              "description": "Period in days."
+              "exclusiveMinimum": 0
             },
             "min_altitude": {
+              "default": 30,
+              "description": "Minimum usable altitude in degrees.",
               "type": "number",
               "minimum": 0,
-              "maximum": 90,
-              "default": 30,
-              "description": "Minimum usable altitude in degrees."
+              "maximum": 90
             },
             "only_observable": {
-              "type": "boolean",
               "default": true,
-              "description": "Keep only minima observable from the site."
+              "description": "Keep only minima observable from the site.",
+              "type": "boolean"
             },
             "location": {
-              "type": "string",
-              "description": "Site key: piconcillo, kolonica, hlohovec, madeira."
+              "description": "Site key: piconcillo, kolonica, hlohovec, madeira.",
+              "type": "string"
             },
             "lat": {
+              "description": "Custom latitude.",
               "type": "number",
               "minimum": -90,
-              "maximum": 90,
-              "description": "Custom latitude."
+              "maximum": 90
             },
             "lon": {
+              "description": "Custom longitude.",
               "type": "number",
               "minimum": -180,
-              "maximum": 180,
-              "description": "Custom longitude."
+              "maximum": 180
             },
             "elevation": {
-              "type": "number",
-              "description": "Custom elevation in metres."
+              "description": "Custom elevation in metres.",
+              "type": "number"
             }
           },
           "required": [
             "from",
             "to"
           ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -1277,19 +1259,19 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "jd": {
-              "type": "number",
-              "description": "Julian Date to convert to UTC."
+              "description": "Julian Date to convert to UTC.",
+              "type": "number"
             },
             "datetime_utc": {
-              "type": "string",
-              "description": "UTC ISO date/time to convert to Julian Date."
+              "description": "UTC ISO date/time to convert to Julian Date.",
+              "type": "string"
             }
           },
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -1303,6 +1285,7 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "data": {
@@ -1325,19 +1308,19 @@
               "description": "VSNET code or AAVSO designation of the star."
             },
             "obs_code": {
+              "description": "Observer code; defaults to the profile setting.",
               "type": "string",
-              "maxLength": 10,
-              "description": "Observer code; defaults to the profile setting."
+              "maxLength": 10
             },
             "filter": {
+              "description": "Override the filter detected in the file header.",
               "type": "string",
-              "maxLength": 20,
-              "description": "Override the filter detected in the file header."
+              "maxLength": 20
             },
             "chart_id": {
+              "description": "AAVSO chart id (AAVSO format only).",
               "type": "string",
-              "maxLength": 40,
-              "description": "AAVSO chart id (AAVSO format only)."
+              "maxLength": 40
             }
           },
           "required": [
@@ -1345,8 +1328,7 @@
             "format",
             "star_code"
           ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       },
@@ -1360,6 +1342,7 @@
           "openWorldHint": false
         },
         "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
           "properties": {
             "data": {
@@ -1374,22 +1357,21 @@
               "description": "AAVSO designation of the star."
             },
             "obs_code": {
+              "description": "Observer code; defaults to the profile setting.",
               "type": "string",
-              "maxLength": 10,
-              "description": "Observer code; defaults to the profile setting."
+              "maxLength": 10
             },
             "chart_id": {
+              "description": "AAVSO chart id.",
               "type": "string",
-              "maxLength": 40,
-              "description": "AAVSO chart id."
+              "maxLength": 40
             }
           },
           "required": [
             "data",
             "aavso_code"
           ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
+          "additionalProperties": false
         },
         "outputSchema": null
       }
