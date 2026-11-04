@@ -197,7 +197,7 @@ export default function Home() {
                 <div className="text-xs text-muted-foreground">{t("settings.usage.obs")}</div>
               </div>
               <div>
-                <div className="text-2xl font-semibold tabular-nums">{sessionsThisMonth}</div>
+                <div className="text-2xl font-semibold tabular-nums">{observationsThisMonth}</div>
                 <div className="text-xs text-muted-foreground">{t("home.stats.thisMonth")}</div>
               </div>
             </div>
