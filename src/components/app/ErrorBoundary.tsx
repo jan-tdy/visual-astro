@@ -1,5 +1,4 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
-import { Button } from "@/components/ui/button";
 
 interface Props {
   children: ReactNode;
@@ -8,14 +7,6 @@ interface Props {
 interface State {
   error: Error | null;
 }
-
-const isSk = () => {
-  try {
-    return (localStorage.getItem("lang") ?? "sk") === "sk";
-  } catch {
-    return true;
-  }
-};
 
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null };
@@ -30,24 +21,19 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.error) {
-      const sk = isSk();
       return (
         <div className="min-h-screen flex items-center justify-center px-4">
-          <div className="max-w-md w-full text-center space-y-4">
-            <h1 className="text-xl font-semibold">
-              {sk ? "Niečo sa pokazilo" : "Something went wrong"}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {sk
-                ? "Stránka narazila na neočakávanú chybu. Skús ju znovu načítať."
-                : "The page hit an unexpected error. Try reloading it."}
-            </p>
-            <pre className="text-xs text-left text-muted-foreground bg-secondary/50 rounded-lg p-3 overflow-auto max-h-40">
-              {this.state.error.message}
-            </pre>
-            <Button onClick={() => window.location.reload()}>
-              {sk ? "Znovu načítať" : "Reload"}
-            </Button>
+          <div className="w-full max-w-xs rounded-lg border bg-background shadow-lg">
+            <div className="border-b px-4 py-2 text-sm font-semibold">Error</div>
+            <div className="space-y-4 px-4 py-6 text-center">
+              <p className="text-lg">The application was</p>
+              <a
+                href="/"
+                className="inline-block rounded border px-6 py-1.5 text-sm font-medium hover:bg-muted"
+              >
+                OK
+              </a>
+            </div>
           </div>
         </div>
       );
