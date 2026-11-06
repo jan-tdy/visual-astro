@@ -88,8 +88,14 @@ function useCatalogChartId(code: string, chartId: string, setChartId: (v: string
   return status;
 }
 
-function ChartLookupWarning({ status }: { status: ChartLookupStatus }) {
+/** Real AAVSO chart ids are short (e.g. "X15932DAB"); anything way past this is a mistake (or an easter egg). */
+const CHART_ID_MAX_LEN = 40;
+
+function ChartLookupWarning({ chartId, status }: { chartId: string; status: ChartLookupStatus }) {
   const { t } = useI18n();
+  if (chartId.trim().length > CHART_ID_MAX_LEN) {
+    return <p className="text-xs text-destructive font-semibold">{t("tools.chart.tooLong")}</p>;
+  }
   if (status !== "not_found" && status !== "ambiguous") return null;
   return (
     <p className="text-xs text-destructive">
@@ -259,7 +265,7 @@ export default function Tools() {
                 <Label htmlFor="chart">{t("tools.chart")}</Label>
                 <Input id="chart" value={chartId} onChange={(e) => setChartId(e.target.value)} placeholder={t("tools.chart.ph")} />
                 <p className="text-xs text-muted-foreground">{t("tools.chart.hint")}</p>
-                <ChartLookupWarning status={chartStatus} />
+                <ChartLookupWarning chartId={chartId} status={chartStatus} />
               </div>
             </div>
 
@@ -345,7 +351,7 @@ export default function Tools() {
                 <Label htmlFor="vsnet-chart">{t("tools.chart")}</Label>
                 <Input id="vsnet-chart" value={vsnetChartId} onChange={(e) => setVsnetChartId(e.target.value)} placeholder={t("tools.chart.ph")} />
                 <p className="text-xs text-muted-foreground">{t("tools.chart.hint")}</p>
-                <ChartLookupWarning status={vsnetChartStatus} />
+                <ChartLookupWarning chartId={vsnetChartId} status={vsnetChartStatus} />
               </div>
             </div>
 
@@ -426,7 +432,7 @@ export default function Tools() {
                 <Label htmlFor="ascii3-chart">{t("tools.chart")}</Label>
                 <Input id="ascii3-chart" value={ascii3ChartId} onChange={(e) => setAscii3ChartId(e.target.value)} placeholder={t("tools.chart.ph")} />
                 <p className="text-xs text-muted-foreground">{t("tools.chart.hint")}</p>
-                <ChartLookupWarning status={ascii3ChartStatus} />
+                <ChartLookupWarning chartId={ascii3ChartId} status={ascii3ChartStatus} />
               </div>
             </div>
 

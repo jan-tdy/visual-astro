@@ -9,6 +9,9 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** A real JD value is at most ~15 characters; anything way past this is pasted garbage. */
+const JD_MAX_LEN = 40;
+
 export function JdConverter() {
   const { t } = useI18n();
   const [date, setDate] = useState(todayIso());
@@ -51,6 +54,9 @@ export function JdConverter() {
               onChange={(e) => setJd(e.target.value)}
               placeholder="2461252.41667"
             />
+            {jd.trim().length > JD_MAX_LEN && (
+              <p className="text-xs text-destructive font-semibold">{t("tools.jd.tooLong")}</p>
+            )}
           </div>
           <p className="text-2xl font-semibold tabular-nums">
             {back ? `${back.toISOString().slice(0, 10)} ${back.toISOString().slice(11, 19)} UT` : "—"}
