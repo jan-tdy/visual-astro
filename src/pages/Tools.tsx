@@ -21,40 +21,81 @@ import {
   buildAAVSOFromVSNET,
 } from "@/lib/sips";
 
+/** A few fictional "stars" that resolve to a joke chart id instead of hitting the database. */
+const CHART_ID_EASTER_EGGS: Record<string, string> = {
+  NIBIRU: "42",
+  "PLANET X": "42",
+  AREA51: "TOP-SECRET",
+  ROSWELL: "UFO-001",
+  DEATHSTAR: "THATS-NOT-A-MOON",
+  ALDERAAN: "WE-WERE-TOO-LATE",
+  WOLF359: "RESISTANCE-IS-FUTILE",
+  STORAGEHACK: "Congratulations! You are eligible to increase your storage from 400000KB to 400001KB for free! Contact us with code easteregg0001",
+};
+
 /** Look up a star's chart_id in the catalog by AAVSO code, VSNET code, or name (case-insensitive). */
-async function fetchCatalogChartId(code: string): Promise<string | null> {
-  if (/[,()]/.test(code)) return null; // would break the .or() filter syntax below
+async function fetchCatalogChartMatches(code: string): Promise<{ chart_id: string | null }[]> {
+  const egg = CHART_ID_EASTER_EGGS[code.trim().toUpperCase()];
+  if (egg) return [{ chart_id: egg }];
+  if (/[,()]/.test(code)) return []; // would break the .or() filter syntax below
   const { data } = await supabase
     .from("stars")
     .select("chart_id")
     .or(`aavso_code.ilike.${code},vsnet_code.ilike.${code},name.ilike.${code}`)
-    .limit(1)
-    .maybeSingle();
-  return data?.chart_id?.trim() || null;
+    .limit(2);
+  return data ?? [];
 }
+
+export type ChartLookupStatus = "idle" | "found" | "not_found" | "ambiguous";
 
 /**
  * Debounced auto-fill of a chart-id field from the star catalog, keyed off the AAVSO
  * code field. Only touches the field while it still holds our own previous auto-fill —
- * once the observer edits it by hand, further catalog lookups leave it alone.
+ * once the observer edits it by hand, further catalog lookups leave it alone. Also
+ * reports whether the lookup found nothing or more than one match, so the caller can
+ * warn that the chart id won't be in the exported file.
  */
-function useCatalogChartId(code: string, chartId: string, setChartId: (v: string) => void) {
+function useCatalogChartId(code: string, chartId: string, setChartId: (v: string) => void): ChartLookupStatus {
   const chartIdRef = useRef(chartId);
   const autoFilledRef = useRef("");
+  const [status, setStatus] = useState<ChartLookupStatus>("idle");
   chartIdRef.current = chartId;
 
   useEffect(() => {
     const trimmed = code.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      setStatus("idle");
+      return;
+    }
     const handle = setTimeout(async () => {
       const current = chartIdRef.current.trim();
       if (current && current !== autoFilledRef.current) return;
-      const found = await fetchCatalogChartId(trimmed);
+      const matches = await fetchCatalogChartMatches(trimmed);
+      if (matches.length > 1) {
+        autoFilledRef.current = "";
+        if (current) setChartId("");
+        setStatus("ambiguous");
+        return;
+      }
+      const found = matches[0]?.chart_id?.trim() || null;
       autoFilledRef.current = found ?? "";
       if (found || current) setChartId(found ?? "");
+      setStatus(found ? "found" : "not_found");
     }, 400);
     return () => clearTimeout(handle);
   }, [code, setChartId]);
+
+  return status;
+}
+
+function ChartLookupWarning({ status }: { status: ChartLookupStatus }) {
+  const { t } = useI18n();
+  if (status !== "not_found" && status !== "ambiguous") return null;
+  return (
+    <p className="text-xs text-destructive">
+      {t(status === "not_found" ? "tools.chart.notFound" : "tools.chart.ambiguous")}
+    </p>
+  );
 }
 
 export default function Tools() {
@@ -77,9 +118,9 @@ export default function Tools() {
   const [ascii3ChartId, setAscii3ChartId] = useState("");
   const [ascii3Filter, setAscii3Filter] = useState("");
 
-  useCatalogChartId(aavsoCode, chartId, setChartId);
-  useCatalogChartId(vsnetAavsoCode, vsnetChartId, setVsnetChartId);
-  useCatalogChartId(ascii3AavsoCode, ascii3ChartId, setAscii3ChartId);
+  const chartStatus = useCatalogChartId(aavsoCode, chartId, setChartId);
+  const vsnetChartStatus = useCatalogChartId(vsnetAavsoCode, vsnetChartId, setVsnetChartId);
+  const ascii3ChartStatus = useCatalogChartId(ascii3AavsoCode, ascii3ChartId, setAscii3ChartId);
 
   const parsed = useMemo(
     () =>
@@ -218,6 +259,7 @@ export default function Tools() {
                 <Label htmlFor="chart">{t("tools.chart")}</Label>
                 <Input id="chart" value={chartId} onChange={(e) => setChartId(e.target.value)} placeholder={t("tools.chart.ph")} />
                 <p className="text-xs text-muted-foreground">{t("tools.chart.hint")}</p>
+                <ChartLookupWarning status={chartStatus} />
               </div>
             </div>
 
@@ -303,6 +345,7 @@ export default function Tools() {
                 <Label htmlFor="vsnet-chart">{t("tools.chart")}</Label>
                 <Input id="vsnet-chart" value={vsnetChartId} onChange={(e) => setVsnetChartId(e.target.value)} placeholder={t("tools.chart.ph")} />
                 <p className="text-xs text-muted-foreground">{t("tools.chart.hint")}</p>
+                <ChartLookupWarning status={vsnetChartStatus} />
               </div>
             </div>
 
@@ -383,6 +426,7 @@ export default function Tools() {
                 <Label htmlFor="ascii3-chart">{t("tools.chart")}</Label>
                 <Input id="ascii3-chart" value={ascii3ChartId} onChange={(e) => setAscii3ChartId(e.target.value)} placeholder={t("tools.chart.ph")} />
                 <p className="text-xs text-muted-foreground">{t("tools.chart.hint")}</p>
+                <ChartLookupWarning status={ascii3ChartStatus} />
               </div>
             </div>
 
