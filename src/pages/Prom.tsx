@@ -188,7 +188,7 @@ export default function Prom() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("catalog.delete.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("prom.delete.desc").replace("{name}", String(confirmDelete ?? ""))}
+              {t("prom.delete.desc", { name: confirmDelete ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -266,7 +266,7 @@ function PromDialog({
       const v = parseFloat(p.mag);
       if (!k) continue;
       if (!Number.isFinite(v)) {
-        toast.error(t("prom.err.mag").replace("{k}", k));
+        toast.error(t("prom.err.mag", { k }));
         return;
       }
       letters[k] = v;

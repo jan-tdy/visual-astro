@@ -1558,7 +1558,7 @@ function InnerProvider({ children }: { children: ReactNode }) {
       },
       t: (k, params) => {
         const key = k as string;
-        const v = tTrans(key);
+        const v = tTrans(key, params);
         const normalized = v?.replace(/[\u200B-\u200D\uFEFF]/g, "") ?? "";
         const skText = (dict.sk as Record<string, string>)[key];
         const enText = (dict.en as Record<string, string>)[key];

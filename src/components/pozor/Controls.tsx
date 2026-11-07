@@ -133,7 +133,7 @@ export function MultiTargetPicker({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline" role="combobox" className="w-[220px] h-9 justify-between font-normal">
-            {values.length ? t("pozor.selectedN").replace("{n}", String(values.length)) : t("pozor.pickTarget")}
+            {values.length ? t("pozor.selectedN", { n: values.length }) : t("pozor.pickTarget")}
             <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
           </Button>
         </PopoverTrigger>

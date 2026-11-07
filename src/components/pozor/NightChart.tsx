@@ -111,10 +111,11 @@ export function NightChart({
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <span className="text-xs text-muted-foreground">
-                    {t("pozor.chart.pageOf")
-                      .replace("{a}", String(page * 6 + 1))
-                      .replace("{b}", String(Math.min(targets.length, page * 6 + 6)))
-                      .replace("{n}", String(targets.length))}
+                    {t("pozor.chart.pageOf", {
+                      a: page * 6 + 1,
+                      b: Math.min(targets.length, page * 6 + 6),
+                      n: targets.length,
+                    })}
                   </span>
                   <Button
                     size="sm"

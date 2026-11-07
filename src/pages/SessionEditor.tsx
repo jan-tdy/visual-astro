@@ -393,7 +393,7 @@ export default function SessionEditor() {
     if (unmatched.length) toast.error(`Nerozpoznané: ${unmatched.length}`);
     // An autocorrect the observer never notices is worse than none, so it gets
     // its own toast on top of the persistent list in the report below.
-    if (corrections.length) toast.warning(t("editor.raw.fixToast").replace("{n}", String(corrections.length)));
+    if (corrections.length) toast.warning(t("editor.raw.fixToast", { n: corrections.length }));
   };
 
   // Serialize existing observations back into raw format
@@ -918,7 +918,7 @@ export default function SessionEditor() {
 
   const reportSkipped = (skipped: SkippedRow[]) => {
     if (!skipped.length) return;
-    toast.warning(t("editor.exportSkipped").replace("{n}", String(skipped.length)), {
+    toast.warning(t("editor.exportSkipped", { n: skipped.length }), {
       description: skipped.map((s) => `${s.star}: ${skippedReasonLabel(s.reason)}`).join("\n"),
       duration: 12000,
     });
@@ -1060,8 +1060,7 @@ export default function SessionEditor() {
         }
       }
       toast.success(
-        t("editor.importDone").replace("{matched}", String(matched)) +
-          (skipped ? t("editor.importSkipped").replace("{skipped}", String(skipped)) : ""),
+        t("editor.importDone", { matched }) + (skipped ? t("editor.importSkipped", { skipped }) : ""),
       );
       return { matched, skipped };
     } catch (e: any) {
@@ -1115,7 +1114,7 @@ export default function SessionEditor() {
       // inherent, and paper-ocr now answers in seconds, so the plain call is
       // both the simplest and the most reliable option available.
       const runPart = async (partImage: string, part: number) => {
-        appendOcrLog(t("editor.ocrDialog.logStartPart").replace("{part}", String(part)).replace("{total}", String(total)));
+        appendOcrLog(t("editor.ocrDialog.logStartPart", { part, total }));
         const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paper-ocr`, {
           method: "POST",
           headers: {
@@ -1135,10 +1134,7 @@ export default function SessionEditor() {
         if (part === 1 && typeof body.splitToken === "string") splitTokenRef = body.splitToken;
 
         const obsArr: any[] = Array.isArray(body.observations) ? body.observations : [];
-        appendOcrLog(
-          t("editor.ocrDialog.logDonePart")
-            .replace("{part}", String(part)).replace("{total}", String(total)).replace("{n}", String(obsArr.length)),
-        );
+        appendOcrLog(t("editor.ocrDialog.logDonePart", { part, total, n: obsArr.length }));
         return { observations: obsArr, used: body.used, lim: body.dailyLimit };
       };
 
@@ -1156,7 +1152,7 @@ export default function SessionEditor() {
           results.push(await runPart(quadrants[i], i + 1));
         } catch (e: any) {
           const msg = e?.message ?? t("editor.ocrUnknown");
-          appendOcrLog(t("editor.ocrDialog.logErrorPart").replace("{part}", String(i + 1)).replace("{total}", String(total)).replace("{msg}", msg));
+          appendOcrLog(t("editor.ocrDialog.logErrorPart", { part: i + 1, total, msg }));
           partFailures.push(i + 1);
         }
       }
@@ -1170,13 +1166,13 @@ export default function SessionEditor() {
       const result = await handleImportFile(new File([blob], "ocr.json", { type: "application/json" }));
       if (used && lim) toast.info(`${t("editor.ocrCount")}: ${used}/${lim}`);
       if (partFailures.length) {
-        toast.error(t("editor.ocrPartialFailed").replace("{n}", String(partFailures.length)).replace("{total}", String(total)));
+        toast.error(t("editor.ocrPartialFailed", { n: partFailures.length, total }));
       }
       setOcrResult(result ?? { matched: 0, skipped: 0 });
       setOcrPhase("done");
     } catch (e: any) {
       const msg = e?.message ?? t("editor.ocrUnknown");
-      appendOcrLog(t("editor.ocrDialog.logError").replace("{msg}", msg));
+      appendOcrLog(t("editor.ocrDialog.logError", { msg }));
       setOcrErrorMsg(msg);
       setOcrPhase("error");
       toast.error(t("editor.ocrFailed") + ": " + msg);
@@ -1431,12 +1427,12 @@ export default function SessionEditor() {
               <div className="font-semibold mb-1">
                 {incompleteWarnings.length === 1
                   ? t("editor.warnTitleOne")
-                  : t("editor.warnTitleMany").replace("{n}", String(incompleteWarnings.length))}
+                  : t("editor.warnTitleMany", { n: incompleteWarnings.length })}
               </div>
               <ul className="list-disc pl-5 space-y-0.5">
                 {incompleteWarnings.map((w, i) => (
                   <li key={i}>
-                    <span className="font-medium">{w.name}</span>{w.row && t("editor.warnRow").replace("{n}", w.row.replace(/\D/g, ""))}
+                    <span className="font-medium">{w.name}</span>{w.row && t("editor.warnRow", { n: w.row.replace(/\D/g, "") })}
                   </li>
                 ))}
               </ul>
@@ -1466,7 +1462,7 @@ export default function SessionEditor() {
             <div className="mt-3 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-xs text-yellow-700 dark:text-yellow-300">
               <div className="flex items-start justify-between gap-2">
                 <div className="font-semibold mb-1">
-                  {t("editor.raw.fixTitle").replace("{n}", String(appliedFixes.length))}
+                  {t("editor.raw.fixTitle", { n: appliedFixes.length })}
                 </div>
                 <button
                   type="button"
@@ -1497,7 +1493,7 @@ export default function SessionEditor() {
             <div className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
               <div className="flex items-start justify-between gap-2">
                 <div className="font-semibold mb-1">
-                  {t("editor.raw.unmatchedTitle").replace("{n}", String(unmatchedLines.length))}
+                  {t("editor.raw.unmatchedTitle", { n: unmatchedLines.length })}
                 </div>
                 <button
                   type="button"
@@ -1520,13 +1516,13 @@ export default function SessionEditor() {
           {historyWarnings.length > 0 && (
             <div className="mt-3 rounded-md border border-sky-500/40 bg-sky-500/10 p-3 text-xs text-sky-700 dark:text-sky-300">
               <div className="font-semibold mb-1">
-                {t("editor.histTitle").replace("{n}", String(historyWarnings.length))}
+                {t("editor.histTitle", { n: historyWarnings.length })}
               </div>
               <ul className="list-disc pl-5 space-y-0.5">
                 {historyWarnings.map((w, i) => (
                   <li key={i}>
                     <span className="font-medium">{w.name}</span>
-                    {w.row && t("editor.warnRow").replace("{n}", w.row)}
+                    {w.row && t("editor.warnRow", { n: w.row })}
                     {": "}
                     <span className="font-mono">{w.outliers.map(describeOutlier).join(" · ")}</span>
                   </li>
@@ -1695,7 +1691,7 @@ export default function SessionEditor() {
                   <div className="font-semibold text-sm">
                     {t("editor.rawPreview")}
                     <span className="ml-2 text-xs font-normal text-muted-foreground">
-                      {t("editor.rawPreviewHint").replace("{action}", t("editor.rawApply"))}
+                      {t("editor.rawPreviewHint", { action: t("editor.rawApply") })}
                     </span>
                   </div>
                   <div className="flex items-center gap-1 text-xs flex-wrap">
@@ -1837,7 +1833,7 @@ export default function SessionEditor() {
                     {fixes.length > 0 && (
                       <div className="rounded-md border border-yellow-500/40 bg-yellow-500/10 p-2 text-xs text-yellow-700 dark:text-yellow-300">
                         <div className="font-semibold">
-                          {t("editor.raw.fixTitle").replace("{n}", String(fixes.length))}
+                          {t("editor.raw.fixTitle", { n: fixes.length })}
                         </div>
                         <ul className="list-disc pl-5 mt-1 space-y-0.5">
                           {fixes.map((r) => (
@@ -1852,7 +1848,7 @@ export default function SessionEditor() {
                     {flagged.length > 0 && (
                       <div className="rounded-md border border-sky-500/40 bg-sky-500/10 p-2 text-xs text-sky-700 dark:text-sky-300">
                         <div className="font-semibold">
-                          {t("editor.histTitle").replace("{n}", String(flagged.length))}
+                          {t("editor.histTitle", { n: flagged.length })}
                         </div>
                         <ul className="list-disc pl-5 mt-1 space-y-0.5">
                           {flagged.map((r) => (
@@ -2222,8 +2218,8 @@ export default function SessionEditor() {
               )}
               {ocrPhase === "done" && ocrResult && (
                 <span>
-                  {t("editor.importDone").replace("{matched}", String(ocrResult.matched))}
-                  {ocrResult.skipped ? t("editor.importSkipped").replace("{skipped}", String(ocrResult.skipped)) : ""}
+                  {t("editor.importDone", { matched: ocrResult.matched })}
+                  {ocrResult.skipped ? t("editor.importSkipped", { skipped: ocrResult.skipped }) : ""}
                 </span>
               )}
               {ocrPhase === "error" && <span>{ocrErrorMsg}</span>}

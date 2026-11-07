@@ -91,7 +91,7 @@ export function YearContributionGraph({
           </Button>
         </div>
         <span className="text-xs text-muted-foreground">
-          {t("graphs.year.total").replace("{n}", String(totalYear))}
+          {t("graphs.year.total", { n: totalYear })}
         </span>
       </div>
 
@@ -121,7 +121,7 @@ export function YearContributionGraph({
                   d.inYear ? (
                     <div
                       key={d.isoDate}
-                      title={`${d.isoDate} — ${t("graphs.year.tooltipCount").replace("{n}", String(d.count))}`}
+                      title={`${d.isoDate} — ${t("graphs.year.tooltipCount", { n: d.count })}`}
                       className="h-[11px] w-[11px] rounded-[2px] border border-border/60"
                       style={{ backgroundColor: heatmapCellColor(d.count, maxCount) }}
                     />
