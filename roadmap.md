@@ -1,5 +1,8 @@
 # Roadmap
 
+## Current request
+- [ ] Replace POZOR's tab-visit chart with tonight's altitude plot of frequently selected POZOR stars, and verify selection-to-home flow.
+
 ## Done this session
 - [x] Preview typecheck errors fixed (recharts v3 / react-resizable-panels v4 mismatches, MCP structuredContent typing, dead shadcn wrappers removed)
 - [x] Missing live tables/columns applied from repo migrations: `pozor_tab_visits`, `profiles.display_name`; types regenerated

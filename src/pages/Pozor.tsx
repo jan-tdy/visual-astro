@@ -85,7 +85,7 @@ export default function Pozor() {
             <TabsTrigger value="catalog">{t("pozor.catalog")}</TabsTrigger>
           </TabsList>
           <TabsContent value="home" className="mt-4">
-            <PozorHome onJumpTo={handleTabChange} />
+            <PozorHome onJumpTo={handleTabChange} targets={targets} loading={targetsLoading} settings={settings} locations={locations} />
           </TabsContent>
           <TabsContent value="chart" className="mt-4">
             <NightChart targets={targets} settings={settings} setSettings={setSettings} locations={locations} />
