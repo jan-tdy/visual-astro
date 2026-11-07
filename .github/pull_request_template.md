@@ -16,17 +16,4 @@ Fixes # <!-- (Links an issue WITH closing it) -->
 - [ ] I have performed a self-review of my own code
 - [ ] I have commented my code, particularly in hard-to-understand areas
 - [ ] My changes generate no new warnings
-
-
-<!-- ONLY  FOR BIG CHANGES, OTHERWISE DELETE THE FOLLOWING SECTION-->
-<!-- ONLY  FOR BIG CHANGES, OTHERWISE DELETE THE FOLLOWING SECTION-->
-<!-- ONLY  FOR BIG CHANGES, OTHERWISE DELETE THE FOLLOWING SECTION-->
-<!-- ONLY  FOR BIG CHANGES, OTHERWISE DELETE THE FOLLOWING SECTION-->
-
-## Note
-
-In this PR, we will do everything related to issue <!-- FILL IN THE ISSUE IF AVAILABLE --> , then merge it and deploy live (ETA: <!-- FILL IN THE ETA IF AVAILABLE --> )
-
-## FAQ
-- Why like that (everything in one PR) this time:
-  - We will do it like this from now on, because we now have previews (thanks to Vercel) without the need to merge!
+- [ ] I have NOT run all test 10 times on every commit mindlessly
