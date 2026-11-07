@@ -30,7 +30,8 @@ const TAB_DEFS: { tab: string; labelKey: string; icon: typeof Moon }[] = [
 export function PozorHome({ onJumpTo, targets, loading, settings, locations }: PozorHomeProps) {
   const { user } = useAuth();
   const { t } = useI18n();
-  const topTargets = useMemo(() => mostUsedTargets(targets, user ? readTargetUsage(user.id) : {}), [targets, user?.id]);
+  const userId = user?.id;
+  const topTargets = useMemo(() => mostUsedTargets(targets, userId ? readTargetUsage(userId) : {}), [targets, userId]);
   const location = resolveLocation(locations, settings.locationId);
   const date = todayIso();
 
