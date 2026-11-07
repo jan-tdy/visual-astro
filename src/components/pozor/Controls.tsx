@@ -13,6 +13,9 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import type { CcdTarget, PozorLocationRow, PozorSettings } from "./shared";
+import { useAuth } from "@/hooks/useAuth";
+import { getPrefs } from "@/hooks/usePrefs";
+import { recordTargetUsage } from "@/lib/pozorTargetUsage";
 
 export function LocationPicker({
   settings,
@@ -77,6 +80,7 @@ export function TargetPicker({
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const selected = targets.find((x) => x.id === value);
+  const { user } = useAuth();
   return (
     <div className="space-y-1">
       <Label className="text-xs">{label ?? t("pozor.target")}</Label>
@@ -98,6 +102,7 @@ export function TargetPicker({
                     key={x.id}
                     value={`${x.name} ${x.constellation}`}
                     onSelect={() => {
+                      if (user && x.id !== value && getPrefs().pozorActivityLogging) recordTargetUsage(user.id, [x.id]);
                       onChange(x.id);
                       setOpen(false);
                     }}
@@ -127,6 +132,7 @@ export function MultiTargetPicker({
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const { user } = useAuth();
   return (
     <div className="space-y-1">
       <Label className="text-xs">{t("pozor.targets")}</Label>
@@ -144,7 +150,10 @@ export function MultiTargetPicker({
               <CommandEmpty>{t("pozor.noTargets")}</CommandEmpty>
               <CommandGroup>
                 {targets.map((x) => (
-                  <CommandItem key={x.id} value={`${x.name} ${x.constellation}`} onSelect={() => onToggle(x.id)}>
+                  <CommandItem key={x.id} value={`${x.name} ${x.constellation}`} onSelect={() => {
+                    if (user && !values.includes(x.id) && getPrefs().pozorActivityLogging) recordTargetUsage(user.id, [x.id]);
+                    onToggle(x.id);
+                  }}>
                     <Check
                       className={cn("mr-2 h-4 w-4", values.includes(x.id) ? "opacity-100" : "opacity-0")}
                     />
