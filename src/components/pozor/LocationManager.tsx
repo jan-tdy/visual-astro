@@ -182,7 +182,7 @@ export function LocationManager() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("pozor.loc.delete.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("pozor.loc.delete.desc").replace("{name}", confirmDelete?.name ?? "")}
+              {t("pozor.loc.delete.desc", { name: confirmDelete?.name ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

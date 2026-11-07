@@ -268,7 +268,7 @@ export default function JapyScope() {
     const { text, skipped } = kind === "vsnet" ? buildVSNET(rows, ctx) : buildAAVSO(rows, ctx);
     const filename = `${kind}_${filenameDate(ctx.observedAt)}.txt`;
     downloadText(filename, text);
-    if (skipped.length) toast.warning(t("editor.exportSkipped").replace("{n}", String(skipped.length)));
+    if (skipped.length) toast.warning(t("editor.exportSkipped", { n: skipped.length }));
   };
 
   // ------- Create session from this day's draft -------

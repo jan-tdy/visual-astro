@@ -95,7 +95,7 @@ export function Journal({
 
       {truncated && (
         <div className="rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-xs text-yellow-700 dark:text-yellow-300">
-          {t("pozor.journal.truncated").replace("{n}", String(rows.length))}
+          {t("pozor.journal.truncated", { n: rows.length })}
         </div>
       )}
 

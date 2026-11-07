@@ -101,7 +101,7 @@ export default function Compare() {
       return;
     }
     if (stars.length >= MAX_STARS) {
-      toast({ title: t("compare.maxStars").replace("{n}", String(MAX_STARS)), variant: "destructive" });
+      toast({ title: t("compare.maxStars", { n: MAX_STARS }), variant: "destructive" });
       return;
     }
     setStars([...stars, { id: crypto.randomUUID(), name, t0: "", filters: ["Vis."] }]);
@@ -137,7 +137,7 @@ export default function Compare() {
       .map((s) => ({ star: s, t0: parseFloat(s.t0) }))
       .filter(({ star, t0 }) => {
         if (!Number.isFinite(t0) || t0 <= 0) {
-          toast({ title: t("compare.errT0").replace("{star}", star.name), variant: "destructive" });
+          toast({ title: t("compare.errT0", { star: star.name }), variant: "destructive" });
           return false;
         }
         return true;
@@ -170,13 +170,13 @@ export default function Compare() {
       const id = `${star.id}::${filter}`;
       if (res.status === "rejected") {
         toast({
-          title: t("compare.fetchError").replace("{star}", star.name).replace("{filter}", filter),
+          title: t("compare.fetchError", { star: star.name, filter }),
           variant: "destructive",
         });
         return { id, star: star.name, filter, color, points: [], limitPoints: [] };
       }
       if (res.value.length === 0) {
-        toast({ title: t("compare.noData").replace("{star}", star.name).replace("{filter}", filter) });
+        toast({ title: t("compare.noData", { star: star.name, filter }) });
       }
       const toPoint = (o: AavsoObservation): Point => ({
         day: +(o.jd - t0).toFixed(5),

@@ -239,7 +239,7 @@ export function AltitudeChart({
                   compact
                     ? undefined
                     : {
-                        value: t("pozor.horizonSafeFrom").replace("{time}", m.time),
+                        value: t("pozor.horizonSafeFrom", { time: m.time }),
                         position: "top",
                         fill: m.color,
                         fontSize: 9,

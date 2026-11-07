@@ -131,22 +131,22 @@ export default function Tools() {
   const parsed = useMemo(
     () =>
       parseSIPS(input, {
-        minCols: (n) => t("tools.error.minCols").replace("{line}", String(n)),
-        nonNumeric: (n) => t("tools.error.nonNumeric").replace("{line}", String(n)),
+        minCols: (n) => t("tools.error.minCols", { line: n }),
+        nonNumeric: (n) => t("tools.error.nonNumeric", { line: n }),
       }),
     [input, t],
   );
 
   const vsnetParsed = useMemo(
-    () => parseVSNET(vsnetInput, { badLine: (n) => t("tools.vsnet.error.badLine").replace("{line}", String(n)) }),
+    () => parseVSNET(vsnetInput, { badLine: (n) => t("tools.vsnet.error.badLine", { line: n }) }),
     [vsnetInput, t],
   );
 
   const ascii3Parsed = useMemo(
     () =>
       parseSIPS(ascii3Input, {
-        minCols: (n) => t("tools.error.minCols").replace("{line}", String(n)),
-        nonNumeric: (n) => t("tools.error.nonNumeric").replace("{line}", String(n)),
+        minCols: (n) => t("tools.error.minCols", { line: n }),
+        nonNumeric: (n) => t("tools.error.nonNumeric", { line: n }),
       }),
     [ascii3Input, t],
   );

@@ -193,7 +193,7 @@ export function CatalogSwitcher({
           <AlertDialogHeader>
             <AlertDialogTitle>{t("pozor.catalog.delete.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("pozor.catalog.delete.desc").replace("{name}", active?.name ?? "")}
+              {t("pozor.catalog.delete.desc", { name: active?.name ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -482,10 +482,11 @@ export default function Settings() {
               ))}
 
               <p className="text-xs text-muted-foreground">
-                {t("settings.nightRangePreview")
-                  .replace("{before}", String(pozor.range.padBeforeMinutes))
-                  .replace("{anchor}", t(`settings.nightAnchor.${pozor.range.anchor}`))
-                  .replace("{after}", String(pozor.range.padAfterMinutes))}
+                {t("settings.nightRangePreview", {
+                  before: pozor.range.padBeforeMinutes,
+                  anchor: t(`settings.nightAnchor.${pozor.range.anchor}`),
+                  after: pozor.range.padAfterMinutes,
+                })}
               </p>
 
               <div className="flex items-start justify-between gap-4 pt-1 border-t">
@@ -745,7 +746,7 @@ export default function Settings() {
                     </div>
                     <Progress value={pct} className="mt-2 h-2" />
                     <p className="text-xs text-muted-foreground mt-2">
-                      {t("settings.usage.used").replace("{pct}", pct.toFixed(2)).replace("{plan}", "Free")}
+                      {t("settings.usage.used", { pct: pct.toFixed(2), plan: "Free" })}
                     </p>
                   </>
                 );

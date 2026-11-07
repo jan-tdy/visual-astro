@@ -301,7 +301,7 @@ export default function Catalog() {
       }
     }
 
-    toast.success(t("catalog.toast.imported").replace("{n}", String(rows.length)));
+    toast.success(t("catalog.toast.imported", { n: rows.length }));
     setConfirmImport(null);
     reload();
   };
@@ -432,7 +432,7 @@ export default function Catalog() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("catalog.delete.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("catalog.delete.desc").replace("{name}", confirmDelete?.name ?? "")}
+              {t("catalog.delete.desc", { name: confirmDelete?.name ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -455,7 +455,7 @@ export default function Catalog() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("catalog.import.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("catalog.import.desc").replace("{n}", String(confirmImport?.data.length ?? 0))}
+              {t("catalog.import.desc", { n: confirmImport?.data.length ?? 0 })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-wrap gap-2">

@@ -63,8 +63,8 @@ export function NightContributionGraph({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <span className="text-sm font-medium">{t("graphs.night.nights").replace("{n}", String(nights.length))}</span>
-        <span className="text-xs text-muted-foreground">{t("graphs.night.total").replace("{n}", String(total))}</span>
+        <span className="text-sm font-medium">{t("graphs.night.nights", { n: nights.length })}</span>
+        <span className="text-xs text-muted-foreground">{t("graphs.night.total", { n: total })}</span>
       </div>
 
       <div className="flex gap-1">
@@ -96,10 +96,11 @@ export function NightContributionGraph({
                     return (
                       <div
                         key={hour}
-                        title={t("graphs.night.tooltipCell")
-                          .replace("{date}", n.date)
-                          .replace("{hour}", String(hour).padStart(2, "0"))
-                          .replace("{n}", String(count))}
+                        title={t("graphs.night.tooltipCell", {
+                          date: n.date,
+                          hour: String(hour).padStart(2, "0"),
+                          n: count,
+                        })}
                         className="h-[10px] w-[10px] rounded-[2px] border border-border/60"
                         style={{ backgroundColor: heatmapCellColor(count, maxCount) }}
                       />
@@ -125,7 +126,7 @@ export function NightContributionGraph({
       </div>
 
       {untimedCount > 0 && (
-        <p className="text-xs text-muted-foreground">{t("graphs.night.untimed").replace("{n}", String(untimedCount))}</p>
+        <p className="text-xs text-muted-foreground">{t("graphs.night.untimed", { n: untimedCount })}</p>
       )}
     </div>
   );
