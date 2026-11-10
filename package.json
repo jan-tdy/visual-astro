@@ -46,7 +46,7 @@
     "@radix-ui/react-tooltip": "^1.4.1",
     "@supabase/supabase-js": "^2.119.0",
     "@tanstack/react-query": "^5.102.8",
-    "@tolgee/react": "^7.1.0",
+    "@tolgee/react": "^7.3.0",
     "@tolgee/web": "^7.1.0",
     "astronomy-engine": "^2.1.19",
     "class-variance-authority": "^0.7.1",
