@@ -313,23 +313,26 @@ export default function Tools() {
           </div>
         </div>
 
-        <div className="columns-1 lg:columns-2 xl:columns-3 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
-        <div>
-          <JdConverter />
-        </div>
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold mb-3">{t("tools.section.coordinates")}</h2>
+          <div className="columns-1 lg:columns-2 xl:columns-3 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
+            <div>
+              <JdConverter />
+            </div>
 
-        <div>
-          <RaDecConverter />
-        </div>
+            <div>
+              <RaDecConverter />
+            </div>
 
-        <div>
-          <DegToRaDecConverter />
-        </div>
+            <div>
+              <DegToRaDecConverter />
+            </div>
+          </div>
+        </section>
 
-        <div>
-          <ExposureTimeCalculator />
-        </div>
-
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold mb-3">{t("tools.section.converters")}</h2>
+          <div className="columns-1 lg:columns-2 xl:columns-3 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">{t("tools.converter.title")}</CardTitle>
@@ -664,43 +667,63 @@ export default function Tools() {
             </p>
           </CardContent>
         </Card>
+          </div>
+        </section>
 
-        <div>
-          <TelescopeFovCalculator />
-        </div>
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold mb-3">{t("tools.section.telescope")}</h2>
+          <div className="columns-1 lg:columns-2 xl:columns-3 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
+            <div>
+              <ExposureTimeCalculator />
+            </div>
 
-        <div>
-          <PlateScaleCalculator />
-        </div>
+            <div>
+              <TelescopeFovCalculator />
+            </div>
 
-        <div>
-          <DistanceConverter />
-        </div>
+            <div>
+              <PlateScaleCalculator />
+            </div>
 
-        <div>
-          <MagnitudeFluxConverter />
-        </div>
+            <div>
+              <MagnitudeFluxConverter />
+            </div>
 
-        <div>
-          <ClearSkyChecker />
-        </div>
+            <div>
+              <DistanceConverter />
+            </div>
+          </div>
+        </section>
 
-        <div>
-          <CatalogImportConverter />
-        </div>
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold mb-3">{t("tools.section.planning")}</h2>
+          <div className="columns-1 lg:columns-2 xl:columns-3 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
+            <div>
+              <ClearSkyChecker />
+            </div>
 
-        <div>
-          <CloudyNightExcuseGenerator />
-        </div>
+            <div>
+              <CatalogImportConverter />
+            </div>
+          </div>
+        </section>
 
-        <div>
-          <StarNamer />
-        </div>
+        <section>
+          <h2 className="text-lg font-semibold mb-3">{t("tools.section.fun")}</h2>
+          <div className="columns-1 lg:columns-2 xl:columns-3 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
+            <div>
+              <CloudyNightExcuseGenerator />
+            </div>
 
-        <div>
-          <TelescopeHoroscope />
-        </div>
-        </div>
+            <div>
+              <StarNamer />
+            </div>
+
+            <div>
+              <TelescopeHoroscope />
+            </div>
+          </div>
+        </section>
       </div>
     </AppShell>
   );
