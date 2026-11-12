@@ -10,7 +10,7 @@ import { defineTool } from "npm:@lovable.dev/mcp-js@3.4.0";
 import { z } from "npm:zod@^4.6.7";
 
 // src/lib/mcp/supabase.ts
-import { createClient } from "npm:@supabase/supabase-js@^2.118.0";
+import { createClient } from "npm:@supabase/supabase-js@^2.119.0";
 function runtimeEnv(name) {
   const runtime = globalThis;
   return runtime.Deno?.env?.get?.(name) ?? runtime.process?.env?.[name];
@@ -4423,7 +4423,7 @@ function parseVSNET(text, msgs = {
       errors.push(msgs.badLine(i + 1));
       return;
     }
-    const [, dateToken, magToken, , filterToken] = parts;
+    const [starCode, dateToken, magToken, obsToken, filterToken] = parts;
     const jd = vsnetDateToJD(dateToken);
     const fainterThan = magToken.startsWith("<");
     const mag = parseFloat(fainterThan ? magToken.slice(1) : magToken);
@@ -4431,7 +4431,14 @@ function parseVSNET(text, msgs = {
       errors.push(msgs.badLine(i + 1));
       return;
     }
-    rows.push({ jd, mag, fainterThan, filter: filterToken ?? null });
+    rows.push({
+      starCode: starCode.trim(),
+      jd,
+      mag,
+      fainterThan,
+      obsCode: obsToken?.trim() || null,
+      filter: filterToken ?? null
+    });
   });
   return { rows, errors };
 }
