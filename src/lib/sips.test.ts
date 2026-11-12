@@ -26,6 +26,8 @@ describe("parseVSNET", () => {
     const { rows, errors } = parseVSNET("DRADO    20240115.234   9.8234 DPV V");
     expect(errors).toEqual([]);
     expect(rows).toHaveLength(1);
+    expect(rows[0].starCode).toBe("DRADO");
+    expect(rows[0].obsCode).toBe("DPV");
     expect(rows[0].mag).toBeCloseTo(9.8234, 4);
     expect(rows[0].fainterThan).toBe(false);
     expect(rows[0].filter).toBe("V");
