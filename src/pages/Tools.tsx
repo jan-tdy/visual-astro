@@ -303,6 +303,14 @@ export default function Tools() {
     downloadText(name, text);
   };
 
+  const tocSections = [
+    { id: "tools-coordinates", label: t("tools.section.coordinates") },
+    { id: "tools-converters", label: t("tools.section.converters") },
+    { id: "tools-telescope", label: t("tools.section.telescope") },
+    { id: "tools-planning", label: t("tools.section.planning") },
+    { id: "tools-fun", label: t("tools.section.fun") },
+  ];
+
   return (
     <AppShell>
       <div className="container mx-auto px-4 py-6 max-w-6xl">
@@ -313,7 +321,23 @@ export default function Tools() {
           </div>
         </div>
 
-        <section className="mb-8">
+        <nav aria-label={t("tools.toc.title")} className="mb-8 rounded-lg border bg-muted/30 p-3">
+          <p className="text-xs font-medium text-muted-foreground mb-2">{t("tools.toc.title")}</p>
+          <ul className="flex flex-wrap gap-2">
+            {tocSections.map((s) => (
+              <li key={s.id}>
+                <a
+                  href={`#${s.id}`}
+                  className="inline-block rounded-full border bg-background px-3 py-1 text-xs hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  {s.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <section id="tools-coordinates" className="mb-8 scroll-mt-20">
           <h2 className="text-lg font-semibold mb-3">{t("tools.section.coordinates")}</h2>
           <div className="columns-1 lg:columns-2 xl:columns-3 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
             <div>
@@ -330,7 +354,7 @@ export default function Tools() {
           </div>
         </section>
 
-        <section className="mb-8">
+        <section id="tools-converters" className="mb-8 scroll-mt-20">
           <h2 className="text-lg font-semibold mb-3">{t("tools.section.converters")}</h2>
           <div className="columns-1 lg:columns-2 xl:columns-3 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
         <Card>
@@ -670,7 +694,7 @@ export default function Tools() {
           </div>
         </section>
 
-        <section className="mb-8">
+        <section id="tools-telescope" className="mb-8 scroll-mt-20">
           <h2 className="text-lg font-semibold mb-3">{t("tools.section.telescope")}</h2>
           <div className="columns-1 lg:columns-2 xl:columns-3 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
             <div>
@@ -695,7 +719,7 @@ export default function Tools() {
           </div>
         </section>
 
-        <section className="mb-8">
+        <section id="tools-planning" className="mb-8 scroll-mt-20">
           <h2 className="text-lg font-semibold mb-3">{t("tools.section.planning")}</h2>
           <div className="columns-1 lg:columns-2 xl:columns-3 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
             <div>
@@ -708,7 +732,7 @@ export default function Tools() {
           </div>
         </section>
 
-        <section>
+        <section id="tools-fun" className="scroll-mt-20">
           <h2 className="text-lg font-semibold mb-3">{t("tools.section.fun")}</h2>
           <div className="columns-1 lg:columns-2 xl:columns-3 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
             <div>
