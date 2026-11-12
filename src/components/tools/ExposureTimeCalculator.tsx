@@ -9,15 +9,34 @@ import {
   NARROWBAND_FILTERS,
   POINT_FILTERS,
   computeExposure,
+  angularToLinearSize,
+  linearToAngularSize,
   type EtcMode,
   type EtcResult,
 } from "@/lib/etc";
+import { DISTANCE_UNITS, convertDistance, type DistanceUnit } from "@/lib/scopeTools";
 
 function parseOrNull(raw: string): number | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;
   const v = parseFloat(trimmed);
   return Number.isFinite(v) ? v : null;
+}
+
+/** Format an arcsecond value as arcsec, arcmin or degrees, whichever reads best. */
+function formatAngularSize(arcsec: number): string {
+  if (!Number.isFinite(arcsec)) return "—";
+  const abs = Math.abs(arcsec);
+  if (abs >= 3600) return `${(arcsec / 3600).toFixed(4)}°`;
+  if (abs >= 60) return `${(arcsec / 60).toFixed(3)}′`;
+  return `${arcsec.toFixed(3)}″`;
+}
+
+function formatLinearSize(km: number): string {
+  if (!Number.isFinite(km)) return "—";
+  const abs = Math.abs(km);
+  if (abs !== 0 && (abs < 0.001 || abs >= 1e9)) return `${km.toExponential(4)} km`;
+  return `${km.toLocaleString("en-US", { maximumFractionDigits: 3 })} km`;
 }
 
 /** A compact "label on top, input below" field, matching the other Tools cards. */
@@ -55,6 +74,29 @@ export function ExposureTimeCalculator() {
   const [lineFlux, setLineFlux] = useState("4e-17");
   const [narrowFilter, setNarrowFilter] = useState("Ha");
   const [bwOverride, setBwOverride] = useState("");
+
+  const [sizeDistance, setSizeDistance] = useState("1");
+  const [sizeDistanceUnit, setSizeDistanceUnit] = useState<DistanceUnit>("au");
+  const [angularSizeIn, setAngularSizeIn] = useState("1");
+  const [linearSizeIn, setLinearSizeIn] = useState("1000");
+
+  const sizeDistanceKm = useMemo(() => {
+    const v = parseOrNull(sizeDistance);
+    if (v === null) return null;
+    return convertDistance(v, sizeDistanceUnit).km;
+  }, [sizeDistance, sizeDistanceUnit]);
+
+  const linearFromAngular = useMemo(() => {
+    const angle = parseOrNull(angularSizeIn);
+    if (angle === null || sizeDistanceKm === null) return null;
+    return angularToLinearSize(sizeDistanceKm, angle);
+  }, [angularSizeIn, sizeDistanceKm]);
+
+  const angularFromLinear = useMemo(() => {
+    const size = parseOrNull(linearSizeIn);
+    if (size === null || sizeDistanceKm === null || sizeDistanceKm <= 0) return null;
+    return linearToAngularSize(sizeDistanceKm, size);
+  }, [linearSizeIn, sizeDistanceKm]);
 
   const { result, error } = useMemo((): { result: EtcResult | null; error: string | null } => {
     const common = {
@@ -159,6 +201,7 @@ export function ExposureTimeCalculator() {
           </Field>
           <Field label={t("tools.etc.skyMag")}>
             <Input className="h-9" value={skyMag} onChange={(e) => setSkyMag(e.target.value)} />
+            <p className="text-xs text-muted-foreground">{t("tools.etc.skyMag.hint")}</p>
           </Field>
           <Field label={t("tools.etc.airmass")}>
             <Input className="h-9" value={airmass} onChange={(e) => setAirmass(e.target.value)} />
@@ -267,6 +310,50 @@ export function ExposureTimeCalculator() {
             </details>
           </div>
         )}
+
+        <div className="space-y-3 pt-2 border-t">
+          <div>
+            <h3 className="font-medium text-sm">{t("tools.etc.sizeAngle.title")}</h3>
+            <p className="text-xs text-muted-foreground">{t("tools.etc.sizeAngle.desc")}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={t("tools.distances.value")}>
+              <Input className="h-9" value={sizeDistance} onChange={(e) => setSizeDistance(e.target.value)} />
+            </Field>
+            <Field label={t("tools.distances.unit")}>
+              <Select value={sizeDistanceUnit} onValueChange={(v) => setSizeDistanceUnit(v as DistanceUnit)}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {DISTANCE_UNITS.map((u) => (
+                    <SelectItem key={u} value={u}>{t(`tools.distances.unit.${u}`)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Field label={t("tools.etc.sizeAngle.angularIn")}>
+                <Input className="h-9" value={angularSizeIn} onChange={(e) => setAngularSizeIn(e.target.value)} />
+              </Field>
+              <p className="text-xs text-muted-foreground">
+                {t("tools.etc.sizeAngle.linearOut")}: <span className="font-mono">{linearFromAngular !== null ? formatLinearSize(linearFromAngular) : "—"}</span>
+              </p>
+            </div>
+            <div className="space-y-1">
+              <Field label={t("tools.etc.sizeAngle.linearIn")}>
+                <Input className="h-9" value={linearSizeIn} onChange={(e) => setLinearSizeIn(e.target.value)} />
+              </Field>
+              <p className="text-xs text-muted-foreground">
+                {t("tools.etc.sizeAngle.angularOut")}: <span className="font-mono">{angularFromLinear !== null ? formatAngularSize(angularFromLinear) : "—"}</span>
+              </p>
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground">{t("tools.etc.sizeAngle.note")}</p>
+        </div>
       </CardContent>
     </Card>
   );

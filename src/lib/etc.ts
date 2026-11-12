@@ -156,9 +156,13 @@ export function computeExposure(common: EtcCommonInputs, modeInputs: EtcModeInpu
     const bw = modeInputs.bandwidthOverrideNm ?? filterDef.bw;
     const lambdaM = filterDef.lambda * 1e-9;
     const photonFlux = (modeInputs.lineFluxErgCm2SArcsec2 * 1e-3 * lambdaM) / (PLANCK_H * SPEED_OF_LIGHT);
-    sourceElectronsPerFrame = photonFlux * telescopeAreaM2 * throughput * expTimeSec * apArea;
+    // There's no per-narrowband-filter extinction table, so this approximates all three
+    // (Ha/[OIII]/[SII]) with the V-band coefficient — applied to the source too, not just
+    // the sky, so SNR doesn't incorrectly improve as airmass rises.
+    const k = POINT_EXTINCTION.V;
+    const extinctionFactor = Math.pow(10, -0.4 * k * (airmass - 1));
+    sourceElectronsPerFrame = photonFlux * telescopeAreaM2 * throughput * expTimeSec * apArea * extinctionFactor;
 
-    const k = POINT_EXTINCTION.V; // approximate V-band extinction for the sky in a narrowband
     const skyFlux = ZP_V * Math.pow(10, -0.4 * (skyMagPerArcsec2 + k * (airmass - 1))) * (bw / REF_BW_NM);
     skyElectronsPerFrame = skyFlux * telescopeAreaM2 * throughput * expTimeSec * apArea;
   }
@@ -197,4 +201,23 @@ export function computeExposure(common: EtcCommonInputs, modeInputs: EtcModeInpu
     snrPerArcsec2Stacked,
     noteKey: modeInputs.mode,
   };
+}
+
+const ARCSEC_PER_RADIAN = (180 * 3600) / Math.PI;
+
+/**
+ * Angular size <-> linear (physical) size at a given distance — the other half of
+ * "how big will this look", complementing the SNR estimate above. Exact (not
+ * small-angle) relation: linearSize = 2 * distance * tan(angularSize / 2).
+ */
+export function angularToLinearSize(distanceKm: number, angularSizeArcsec: number): number {
+  const angleRad = angularSizeArcsec / ARCSEC_PER_RADIAN;
+  return 2 * distanceKm * Math.tan(angleRad / 2);
+}
+
+/** Inverse of {@link angularToLinearSize}: linearSize = 2 * distance * tan(angularSize / 2)
+ *  solved for the angle, returned in arcsec. */
+export function linearToAngularSize(distanceKm: number, linearSizeKm: number): number {
+  const angleRad = 2 * Math.atan(linearSizeKm / (2 * distanceKm));
+  return angleRad * ARCSEC_PER_RADIAN;
 }

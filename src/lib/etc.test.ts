@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeExposure, unknownFilterError } from "@/lib/etc";
+import { computeExposure, unknownFilterError, angularToLinearSize, linearToAngularSize } from "@/lib/etc";
 
 /** Default common inputs matching the original tool's defaults. */
 const defaults = {
@@ -142,6 +142,21 @@ describe("computeExposure — narrowband (emission line)", () => {
       }),
     ).toThrow(unknownFilterError("nope").message);
   });
+
+  it("applies extinction to the source counts too, not just the sky, so SNR doesn't rise with airmass", () => {
+    const zenith = computeExposure(defaults, {
+      mode: "narrow",
+      lineFluxErgCm2SArcsec2: 4e-17,
+      filter: "Ha",
+      bandwidthOverrideNm: null,
+    });
+    const highAirmass = computeExposure(
+      { ...defaults, airmass: 2.0 },
+      { mode: "narrow", lineFluxErgCm2SArcsec2: 4e-17, filter: "Ha", bandwidthOverrideNm: null },
+    );
+    expect(highAirmass.sourceElectronsPerFrame).toBeLessThan(zenith.sourceElectronsPerFrame);
+    expect(highAirmass.snrPerFrame).toBeLessThan(zenith.snrPerFrame);
+  });
 });
 
 describe("computeExposure — noise model", () => {
@@ -163,5 +178,35 @@ describe("computeExposure — noise model", () => {
     expect(result.noisePerFrame).toBe(0);
     expect(result.snrPerFrame).toBe(0);
     expect(Number.isFinite(result.snrStacked)).toBe(true);
+  });
+});
+
+describe("angularToLinearSize / linearToAngularSize", () => {
+  it("matches the small-angle approximation (linearSize ~= distance * angleRad) for a small angle", () => {
+    const distanceKm = 1.495978707e8; // 1 AU
+    const angularSizeArcsec = 1; // 1" at 1 AU
+    const linear = angularToLinearSize(distanceKm, angularSizeArcsec);
+    const angleRad = (angularSizeArcsec / 3600) * (Math.PI / 180);
+    expect(linear).toBeCloseTo(distanceKm * angleRad, 0);
+  });
+
+  it("round-trips through the inverse function", () => {
+    const distanceKm = 3.0857e13; // ~1 pc
+    const angularSizeArcsec = 2.5;
+    const linear = angularToLinearSize(distanceKm, angularSizeArcsec);
+    const angleBack = linearToAngularSize(distanceKm, linear);
+    expect(angleBack).toBeCloseTo(angularSizeArcsec, 6);
+  });
+
+  it("doubling the distance at a fixed angular size doubles the linear size", () => {
+    const a = angularToLinearSize(1000, 10);
+    const b = angularToLinearSize(2000, 10);
+    expect(b).toBeCloseTo(2 * a, 6);
+  });
+
+  it("doubling the linear size at a fixed distance doubles the angular size for small angles", () => {
+    const a = linearToAngularSize(1e9, 1000);
+    const b = linearToAngularSize(1e9, 2000);
+    expect(b).toBeCloseTo(2 * a, 3);
   });
 });
