@@ -119,6 +119,7 @@ export default function Tools() {
   const [vsnetChartId, setVsnetChartId] = useState("");
 
   const [ascii3Input, setAscii3Input] = useState("");
+  const [ascii3StarCode, setAscii3StarCode] = useState("");
   const [ascii3AavsoCode, setAscii3AavsoCode] = useState("");
   const [ascii3ObsCode, setAscii3ObsCode] = useState("");
   const [ascii3ChartId, setAscii3ChartId] = useState("");
@@ -215,6 +216,15 @@ export default function Tools() {
     const name = `${(ascii3AavsoCode || "aavso").trim()}_aavso.txt`;
     downloadText(name, text);
     openPortal("aavso");
+  };
+
+  const dlAscii3ToVsnet = () => {
+    if (!ascii3StarCode.trim() || !ascii3ObsCode.trim()) return;
+    if (ascii3Parsed.rows.length === 0) return;
+    const text = buildVSNETFromSIPS(ascii3Parsed.rows, ascii3StarCode, ascii3ObsCode, ascii3Filter || null);
+    const name = `${(ascii3StarCode || "vsnet").trim()}.txt`;
+    downloadText(name, text);
+    openPortal("vsnet");
   };
 
   return (
@@ -417,6 +427,10 @@ export default function Tools() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
+                <Label htmlFor="ascii3-star">{t("tools.starVSNET")}</Label>
+                <Input id="ascii3-star" value={ascii3StarCode} onChange={(e) => setAscii3StarCode(e.target.value)} placeholder={t("tools.starVSNET.ph")} />
+              </div>
+              <div className="space-y-1">
                 <Label htmlFor="ascii3-aavso">{t("tools.starAAVSO")}</Label>
                 <Input id="ascii3-aavso" value={ascii3AavsoCode} onChange={(e) => setAscii3AavsoCode(e.target.value)} placeholder={t("tools.starAAVSO.ph")} />
               </div>
@@ -475,6 +489,13 @@ export default function Tools() {
 
             <div className="flex flex-wrap gap-2 pt-2">
               <Button
+                onClick={dlAscii3ToVsnet}
+                disabled={ascii3Parsed.rows.length === 0 || !ascii3StarCode.trim() || !ascii3ObsCode.trim()}
+              >
+                {t("tools.download.vsnet")}
+              </Button>
+              <Button
+                variant="outline"
                 onClick={dlAscii3ToAavso}
                 disabled={ascii3Parsed.rows.length === 0 || !ascii3AavsoCode.trim() || !ascii3ObsCode.trim()}
               >
