@@ -6,6 +6,8 @@ import {
   buildAAVSOFromVSNET,
   parseSIPS,
   buildAAVSOFromSIPS,
+  parseAAVSO,
+  buildVSNETFromAAVSO,
 } from "@/lib/sips";
 
 describe("vsnetDateToJD", () => {
@@ -76,5 +78,62 @@ describe("ASCII 3-column input reused for AAVSO output", () => {
     const lines = text.trim().split("\n").filter((l) => !l.startsWith("#"));
     expect(lines).toHaveLength(2);
     expect(lines[0].split(",")[4]).toBe("V");
+  });
+});
+
+describe("parseAAVSO", () => {
+  const sample = [
+    "#TYPE=Extended",
+    "#OBSCODE=DPV",
+    "#SOFTWARE=Visual-Astro (japysoft)",
+    "#DELIM=,",
+    "#DATE=JD",
+    "#OBSTYPE=CCD",
+    "DODRA,2461204.398287,9.8234,0.0256,V,NO,STD,ENSEMBLE,na,na,na,na,na,X12345,na",
+    "DODRA,2461205.412001,<11.5,na,V,NO,STD,ENSEMBLE,na,na,na,na,na,X12345,na",
+  ].join("\n");
+
+  it("extracts the observer code from the #OBSCODE header", () => {
+    const { obsCode } = parseAAVSO(sample);
+    expect(obsCode).toBe("DPV");
+  });
+
+  it("parses each body row, including a fainter-than magnitude and an 'na' error", () => {
+    const { rows, errors } = parseAAVSO(sample);
+    expect(errors).toEqual([]);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ starCode: "DODRA", mag: 9.8234, err: 0.0256, filter: "V", fainterThan: false });
+    expect(rows[1]).toMatchObject({ starCode: "DODRA", mag: 11.5, err: 0, fainterThan: true });
+  });
+
+  it("reports an error for a row with too few fields", () => {
+    const { rows, errors } = parseAAVSO("DODRA,2461204.398287,9.8234");
+    expect(rows).toHaveLength(0);
+    expect(errors).toHaveLength(1);
+  });
+
+  it("round-trips through buildAAVSOFromVSNET", () => {
+    const { rows: vsnetRows } = parseVSNET("DRADO 20240115.234 <11.5 DPV V\nDRADO 20240116.512 9.9 DPV V");
+    const aavsoText = buildAAVSOFromVSNET(vsnetRows, "DODRA", "DPV", "X12345");
+    const { rows, obsCode } = parseAAVSO(aavsoText);
+    expect(obsCode).toBe("DPV");
+    expect(rows).toHaveLength(2);
+    expect(rows[0].fainterThan).toBe(true);
+    expect(rows[0].mag).toBeCloseTo(11.5, 4);
+    expect(rows[1].mag).toBeCloseTo(9.9, 4);
+  });
+});
+
+describe("buildVSNETFromAAVSO", () => {
+  it("emits VSNET rows, preserving the fainter-than prefix", () => {
+    const { rows } = parseAAVSO(
+      "DODRA,2461204.398287,<11.5,na,V,NO,STD,ENSEMBLE,na,na,na,na,na,na,na\n" +
+        "DODRA,2461205.412001,9.9,0.01,V,NO,STD,ENSEMBLE,na,na,na,na,na,na,na",
+    );
+    const text = buildVSNETFromAAVSO(rows, "DRADO", "DPV");
+    const lines = text.trim().split("\n");
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toBe(`DRADO    ${vsnetDateFromJD(2461204.398287)} <11.5000 DPV V`);
+    expect(lines[1]).toBe(`DRADO    ${vsnetDateFromJD(2461205.412001)}  9.9000 DPV V`);
   });
 });

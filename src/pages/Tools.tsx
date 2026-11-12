@@ -28,6 +28,8 @@ import {
   aavsoFilter,
   parseVSNET,
   buildAAVSOFromVSNET,
+  parseAAVSO,
+  buildVSNETFromAAVSO,
 } from "@/lib/sips";
 
 /** A few fictional "stars" that resolve to a joke chart id instead of hitting the database. */
@@ -42,33 +44,43 @@ const CHART_ID_EASTER_EGGS: Record<string, string> = {
   STORAGEHACK: "Congratulations! You are eligible to increase your storage from 400000KB to 400001KB for free! Contact us with code easteregg0001",
 };
 
-/** Look up a star's chart_id in the catalog by AAVSO code, VSNET code, or name (case-insensitive). */
-async function fetchCatalogChartMatches(code: string): Promise<{ chart_id: string | null }[]> {
-  const egg = CHART_ID_EASTER_EGGS[code.trim().toUpperCase()];
-  if (egg) return [{ chart_id: egg }];
+type CatalogField = "chart_id" | "aavso_code" | "vsnet_code";
+
+/** Look up a star's chart_id/aavso_code/vsnet_code in the catalog by AAVSO code, VSNET code, or name (case-insensitive). */
+async function fetchCatalogStarMatches(code: string, field: CatalogField): Promise<{ value: string | null }[]> {
+  if (field === "chart_id") {
+    const egg = CHART_ID_EASTER_EGGS[code.trim().toUpperCase()];
+    if (egg) return [{ value: egg }];
+  }
   if (/[,()]/.test(code)) return []; // would break the .or() filter syntax below
   const { data } = await supabase
     .from("stars")
-    .select("chart_id")
+    .select(field)
     .or(`aavso_code.ilike.${code},vsnet_code.ilike.${code},name.ilike.${code}`)
     .limit(2);
-  return data ?? [];
+  return (data ?? []).map((row) => ({ value: (row as Record<CatalogField, string | null>)[field] }));
 }
 
 export type ChartLookupStatus = "idle" | "found" | "not_found" | "ambiguous";
 
 /**
- * Debounced auto-fill of a chart-id field from the star catalog, keyed off the AAVSO
- * code field. Only touches the field while it still holds our own previous auto-fill —
- * once the observer edits it by hand, further catalog lookups leave it alone. Also
- * reports whether the lookup found nothing or more than one match, so the caller can
- * warn that the chart id won't be in the exported file.
+ * Debounced auto-fill of a field from the star catalog, keyed off some other code
+ * typed by the observer (AAVSO code, VSNET code, or name). Only touches the field
+ * while it still holds our own previous auto-fill — once the observer edits it by
+ * hand, further catalog lookups leave it alone. Also reports whether the lookup
+ * found nothing or more than one match, so the caller can warn the field won't be
+ * filled in automatically.
  */
-function useCatalogChartId(code: string, chartId: string, setChartId: (v: string) => void): ChartLookupStatus {
-  const chartIdRef = useRef(chartId);
+function useCatalogAutoFill(
+  code: string,
+  field: CatalogField,
+  value: string,
+  setValue: (v: string) => void,
+): ChartLookupStatus {
+  const valueRef = useRef(value);
   const autoFilledRef = useRef("");
   const [status, setStatus] = useState<ChartLookupStatus>("idle");
-  chartIdRef.current = chartId;
+  valueRef.current = value;
 
   useEffect(() => {
     const trimmed = code.trim();
@@ -77,22 +89,22 @@ function useCatalogChartId(code: string, chartId: string, setChartId: (v: string
       return;
     }
     const handle = setTimeout(async () => {
-      const current = chartIdRef.current.trim();
+      const current = valueRef.current.trim();
       if (current && current !== autoFilledRef.current) return;
-      const matches = await fetchCatalogChartMatches(trimmed);
+      const matches = await fetchCatalogStarMatches(trimmed, field);
       if (matches.length > 1) {
         autoFilledRef.current = "";
-        if (current) setChartId("");
+        if (current) setValue("");
         setStatus("ambiguous");
         return;
       }
-      const found = matches[0]?.chart_id?.trim() || null;
+      const found = matches[0]?.value?.trim() || null;
       autoFilledRef.current = found ?? "";
-      if (found || current) setChartId(found ?? "");
+      if (found || current) setValue(found ?? "");
       setStatus(found ? "found" : "not_found");
     }, 400);
     return () => clearTimeout(handle);
-  }, [code, setChartId]);
+  }, [code, field, setValue]);
 
   return status;
 }
@@ -109,6 +121,18 @@ function ChartLookupWarning({ chartId, status }: { chartId: string; status: Char
   return (
     <p className="text-xs text-destructive">
       {t(status === "not_found" ? "tools.chart.notFound" : "tools.chart.ambiguous")}
+    </p>
+  );
+}
+
+/** Same idea as {@link ChartLookupWarning}, for a catalog lookup that fills in a star
+ *  code (VSNET or AAVSO) rather than a chart id. */
+function StarLookupWarning({ status }: { status: ChartLookupStatus }) {
+  const { t } = useI18n();
+  if (status !== "not_found" && status !== "ambiguous") return null;
+  return (
+    <p className="text-xs text-destructive">
+      {t(status === "not_found" ? "tools.starLookup.notFound" : "tools.starLookup.ambiguous")}
     </p>
   );
 }
@@ -139,9 +163,12 @@ export default function Tools() {
   const vsnetStarCode = vsnetParsed.rows[0]?.starCode ?? "";
   const vsnetObsCode = vsnetParsed.rows[0]?.obsCode ?? "";
 
-  const chartStatus = useCatalogChartId(aavsoCode, chartId, setChartId);
-  const vsnetChartStatus = useCatalogChartId(vsnetStarCode, vsnetChartId, setVsnetChartId);
-  const ascii3ChartStatus = useCatalogChartId(ascii3AavsoCode, ascii3ChartId, setAscii3ChartId);
+  const [aavsoInput, setAavsoInput] = useState("");
+  const [aavsoVsnetCode, setAavsoVsnetCode] = useState("");
+
+  const chartStatus = useCatalogAutoFill(aavsoCode, "chart_id", chartId, setChartId);
+  const vsnetChartStatus = useCatalogAutoFill(vsnetStarCode, "chart_id", vsnetChartId, setVsnetChartId);
+  const ascii3ChartStatus = useCatalogAutoFill(ascii3AavsoCode, "chart_id", ascii3ChartId, setAscii3ChartId);
 
   const parsed = useMemo(
     () =>
@@ -161,6 +188,21 @@ export default function Tools() {
     [ascii3Input, t],
   );
 
+  const aavsoParsed = useMemo(
+    () => parseAAVSO(aavsoInput, { badLine: (n) => t("tools.aavso.error.badLine", { line: n }) }),
+    [aavsoInput, t],
+  );
+  const aavsoStarCode = aavsoParsed.rows[0]?.starCode ?? "";
+  const aavsoObsCode = aavsoParsed.obsCode ?? "";
+  // A single VSNET star code gets applied to every row on export, so a file mixing
+  // observations of more than one star would silently mislabel everything but the
+  // first star. Detect that and block the download rather than exporting bad data.
+  const aavsoHasMixedStars = useMemo(
+    () => new Set(aavsoParsed.rows.map((r) => r.starCode)).size > 1,
+    [aavsoParsed],
+  );
+  const aavsoVsnetStatus = useCatalogAutoFill(aavsoStarCode, "vsnet_code", aavsoVsnetCode, setAavsoVsnetCode);
+
   const handleFile = async (f: File | null) => {
     if (!f) return;
     const text = await f.text();
@@ -177,6 +219,12 @@ export default function Tools() {
     if (!f) return;
     const text = await f.text();
     setAscii3Input(text);
+  };
+
+  const handleAavsoFile = async (f: File | null) => {
+    if (!f) return;
+    const text = await f.text();
+    setAavsoInput(text);
   };
 
   const openPortal = (kind: "vsnet" | "aavso") => {
@@ -232,6 +280,15 @@ export default function Tools() {
     if (ascii3Parsed.rows.length === 0) return;
     const text = buildVSNETFromSIPS(ascii3Parsed.rows, ascii3StarCode, ascii3ObsCode, ascii3Filter || null);
     const name = `${(ascii3StarCode || "vsnet").trim()}.txt`;
+    downloadText(name, text);
+    openPortal("vsnet");
+  };
+
+  const dlAavsoToVsnet = () => {
+    if (!aavsoVsnetCode.trim() || !aavsoObsCode.trim()) return;
+    if (aavsoParsed.rows.length === 0 || aavsoHasMixedStars) return;
+    const text = buildVSNETFromAAVSO(aavsoParsed.rows, aavsoVsnetCode, aavsoObsCode);
+    const name = `${(aavsoVsnetCode || "vsnet").trim()}.txt`;
     downloadText(name, text);
     openPortal("vsnet");
   };
@@ -404,6 +461,83 @@ export default function Tools() {
                 disabled={vsnetParsed.rows.length === 0 || !vsnetStarCode.trim() || !vsnetObsCode.trim()}
               >
                 {t("tools.download.aavso")}
+              </Button>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              {t("tools.portal.info")}{" "}
+              <span className="font-medium">{t("tools.portal.settings")}</span>.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{t("tools.aavso.title")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">{t("tools.aavso.desc")}</p>
+
+            <div className="space-y-1">
+              <Label htmlFor="aavso-file">{t("tools.aavso.file")}</Label>
+              <Input
+                id="aavso-file"
+                type="file"
+                accept=".txt,text/plain"
+                onChange={(e) => handleAavsoFile(e.target.files?.[0] ?? null)}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="aavso-input">{t("tools.paste")}</Label>
+              <Textarea
+                id="aavso-input"
+                value={aavsoInput}
+                onChange={(e) => setAavsoInput(e.target.value)}
+                rows={6}
+                placeholder={"#TYPE=Extended\n#OBSCODE=DPV\n#SOFTWARE=Visual-Astro (japysoft)\n#DELIM=,\n#DATE=JD\n#OBSTYPE=CCD\nDODRA,2461204.398287,9.8234,0.0256,V,NO,STD,ENSEMBLE,na,na,na,na,na,na,na"}
+                className="font-mono text-xs"
+              />
+            </div>
+
+            {(aavsoStarCode || aavsoObsCode || aavsoParsed.rows.length > 0) && (
+              <div className="text-xs text-muted-foreground space-y-0.5">
+                {aavsoStarCode && <div>{t("tools.aavso.parsed.star")}: <span className="font-mono">{aavsoStarCode}</span></div>}
+                {aavsoObsCode && <div>{t("tools.aavso.parsed.obs")}: <span className="font-mono">{aavsoObsCode}</span></div>}
+                <div>{t("tools.parsed.count")}: <span className="font-mono">{aavsoParsed.rows.length}</span></div>
+              </div>
+            )}
+
+            {aavsoParsed.errors.length > 0 && (
+              <div className="text-xs text-destructive space-y-0.5">
+                {aavsoParsed.errors.slice(0, 10).map((e, i) => <div key={i}>{e}</div>)}
+                {aavsoParsed.errors.length > 10 && (
+                  <div>{t("tools.errors.more", { n: aavsoParsed.errors.length - 10 })}</div>
+                )}
+              </div>
+            )}
+
+            {aavsoHasMixedStars && (
+              <p className="text-xs text-destructive font-semibold">{t("tools.aavso.error.mixedStars")}</p>
+            )}
+
+            <div className="space-y-1">
+              <Label htmlFor="aavso-vsnet-code">{t("tools.starVSNET")}</Label>
+              <Input
+                id="aavso-vsnet-code"
+                value={aavsoVsnetCode}
+                onChange={(e) => setAavsoVsnetCode(e.target.value)}
+                placeholder={t("tools.starVSNET.ph")}
+              />
+              <StarLookupWarning status={aavsoVsnetStatus} />
+            </div>
+
+            <div className="flex flex-wrap gap-2 pt-2">
+              <Button
+                onClick={dlAavsoToVsnet}
+                disabled={aavsoParsed.rows.length === 0 || !aavsoVsnetCode.trim() || !aavsoObsCode.trim() || aavsoHasMixedStars}
+              >
+                {t("tools.download.vsnet")}
               </Button>
             </div>
 

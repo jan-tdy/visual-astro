@@ -258,3 +258,81 @@ export function buildAAVSOFromVSNET(
   }
   return header + "\n" + body.join("\n") + "\n";
 }
+export interface AavsoRow {
+  starCode: string;
+  jd: number;
+  mag: number;
+  fainterThan: boolean;
+  err: number;
+  filter: string | null;
+}
+
+export interface AavsoParsed {
+  rows: AavsoRow[];
+  obsCode: string | null;
+  errors: string[];
+}
+
+/** Parse an AAVSO Extended-format file (as produced by {@link buildAAVSOFromSIPS} /
+ *  {@link buildAAVSOFromVSNET}): `#`-prefixed header lines, then comma-delimited rows
+ *  `STARID,JD,MAG,MERR,FILTER,TRANS,MTYPE,CNAME,CMAG,KNAME,KMAG,AMASS,GROUP,CHART,NOTES`. */
+export function parseAAVSO(
+  text: string,
+  msgs: { badLine: (line: number) => string } = {
+    badLine: (n) => `Line ${n}: unrecognized AAVSO row`,
+  },
+): AavsoParsed {
+  const rows: AavsoRow[] = [];
+  const errors: string[] = [];
+  let obsCode: string | null = null;
+  const lines = text.split(/\r?\n/);
+  lines.forEach((raw, i) => {
+    const line = raw.trim();
+    if (!line) return;
+    if (line.startsWith("#")) {
+      const mObs = line.match(/^#OBSCODE\s*=\s*(.+?)\s*$/i);
+      if (mObs) obsCode = mObs[1].trim();
+      return;
+    }
+    const parts = line.split(",");
+    if (parts.length < 5) { errors.push(msgs.badLine(i + 1)); return; }
+    const [starCode, jdToken, magToken, errToken, filterToken] = parts;
+    const jd = parseFloat(jdToken);
+    const fainterThan = magToken.trim().startsWith("<");
+    const mag = parseFloat(fainterThan ? magToken.trim().slice(1) : magToken);
+    if (!Number.isFinite(jd) || !Number.isFinite(mag)) { errors.push(msgs.badLine(i + 1)); return; }
+    const errTrim = errToken.trim().toLowerCase();
+    const err = errTrim === "na" || errTrim === "" ? 0 : parseFloat(errToken);
+    rows.push({
+      starCode: starCode.trim(),
+      jd,
+      mag,
+      fainterThan,
+      err: Number.isFinite(err) ? err : 0,
+      filter: filterToken?.trim() || null,
+    });
+  });
+  return { rows, obsCode, errors };
+}
+
+export function buildVSNETFromAAVSO(rows: AavsoRow[], starCode: string, obsCode: string): string {
+  const code = starCode.trim().padEnd(8, " ");
+  const obs = obsCode.trim();
+  const out: string[] = [];
+  for (const r of rows) {
+    const dateStr = vsnetDateFromJD(r.jd);
+    const magToken = (r.fainterThan ? "<" : "") + r.mag.toFixed(4);
+    const magStr = magToken.padStart(7, " ");
+    out.push(`${code} ${dateStr} ${magStr} ${obs} ${vsnetFilter(r.filter)}`);
+  }
+  return out.join("\n") + (out.length ? "\n" : "");
+}
+
+export function buildThreeColFromAAVSO(rows: AavsoRow[]): string {
+  const out: string[] = [];
+  for (const r of rows) {
+    const magToken = (r.fainterThan ? "<" : "") + r.mag.toFixed(4);
+    out.push(`${r.jd.toFixed(6)} ${magToken} ${r.err.toFixed(4)}`);
+  }
+  return out.join("\n") + (out.length ? "\n" : "");
+}
