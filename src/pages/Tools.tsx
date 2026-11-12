@@ -50,7 +50,7 @@ const CHART_ID_EASTER_EGGS: Record<string, string> = {
 type CatalogField = "chart_id" | "aavso_code" | "vsnet_code";
 
 /** Look up a star's chart_id/aavso_code/vsnet_code in the catalog by AAVSO code, VSNET code, or name (case-insensitive). */
-async function fetchCatalogStarMatches(code: string, field: CatalogField): Promise<{ value: string | null }[]> {
+async function fetchCatalogStarMatches(code: string, field: CatalogField): Promise<{ value: string | null }[] | null> {
   if (field === "chart_id") {
     const egg = CHART_ID_EASTER_EGGS[code.trim().toUpperCase()];
     if (egg) return [{ value: egg }];
@@ -58,7 +58,7 @@ async function fetchCatalogStarMatches(code: string, field: CatalogField): Promi
   if (/[,()]/.test(code)) return []; // would break the .or() filter syntax below
   // Anonymous visitors have no catalog of their own (stars are private per observer), so skip the lookup.
   const { data: auth } = await supabase.auth.getSession();
-  if (!auth.session) return [];
+  if (!auth.session) return null;
   const { data } = await supabase
     .from("stars")
     .select(field)
@@ -98,6 +98,10 @@ function useCatalogAutoFill(
       const current = valueRef.current.trim();
       if (current && current !== autoFilledRef.current) return;
       const matches = await fetchCatalogStarMatches(trimmed, field);
+      if (matches === null) {
+        setStatus("idle");
+        return;
+      }
       if (matches.length > 1) {
         autoFilledRef.current = "";
         if (current) setValue("");
