@@ -12,6 +12,15 @@ import { useI18n } from "@/hooks/useI18n";
 import { supabase } from "@/integrations/supabase/client";
 import { JdConverter } from "@/components/tools/JdConverter";
 import { RaDecConverter } from "@/components/tools/RaDecConverter";
+import { TelescopeFovCalculator } from "@/components/tools/TelescopeFovCalculator";
+import { PlateScaleCalculator } from "@/components/tools/PlateScaleCalculator";
+import { DistanceConverter } from "@/components/tools/DistanceConverter";
+import { MagnitudeFluxConverter } from "@/components/tools/MagnitudeFluxConverter";
+import { ClearSkyChecker } from "@/components/tools/ClearSkyChecker";
+import { CatalogImportConverter } from "@/components/tools/CatalogImportConverter";
+import { CloudyNightExcuseGenerator } from "@/components/tools/CloudyNightExcuseGenerator";
+import { StarNamer } from "@/components/tools/StarNamer";
+import { TelescopeHoroscope } from "@/components/tools/TelescopeHoroscope";
 import {
   parseSIPS,
   buildVSNETFromSIPS,
@@ -235,11 +244,6 @@ export default function Tools() {
             <h1 className="text-2xl font-semibold mb-1">{t("tools.title")}</h1>
             <p className="text-sm text-muted-foreground">{t("tools.subtitle")}</p>
           </div>
-          <Button variant="outline" size="sm" asChild>
-            <a href="https://jan-tdy.github.io/useless-astro" target="_blank" rel="noopener noreferrer">
-              {t("tools.moreTools")}
-            </a>
-          </Button>
         </div>
 
         <div className="columns-1 lg:columns-2 xl:columns-3 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
@@ -501,6 +505,42 @@ export default function Tools() {
             </p>
           </CardContent>
         </Card>
+
+        <div>
+          <TelescopeFovCalculator />
+        </div>
+
+        <div>
+          <PlateScaleCalculator />
+        </div>
+
+        <div>
+          <DistanceConverter />
+        </div>
+
+        <div>
+          <MagnitudeFluxConverter />
+        </div>
+
+        <div>
+          <ClearSkyChecker />
+        </div>
+
+        <div>
+          <CatalogImportConverter />
+        </div>
+
+        <div>
+          <CloudyNightExcuseGenerator />
+        </div>
+
+        <div>
+          <StarNamer />
+        </div>
+
+        <div>
+          <TelescopeHoroscope />
+        </div>
         </div>
       </div>
     </AppShell>
