@@ -8,6 +8,7 @@ import {
   buildAAVSOFromSIPS,
   parseAAVSO,
   buildVSNETFromAAVSO,
+  buildThreeColFromAAVSO,
 } from "@/lib/sips";
 
 describe("vsnetDateToJD", () => {
@@ -135,5 +136,20 @@ describe("buildVSNETFromAAVSO", () => {
     expect(lines).toHaveLength(2);
     expect(lines[0]).toBe(`DRADO    ${vsnetDateFromJD(2461204.398287)} <11.5000 DPV V`);
     expect(lines[1]).toBe(`DRADO    ${vsnetDateFromJD(2461205.412001)}  9.9000 DPV V`);
+  });
+});
+
+describe("buildThreeColFromAAVSO", () => {
+  it("emits plain JD/mag/err rows, preserving the fainter-than prefix and 'na' error as 0", () => {
+    const { rows } = parseAAVSO(
+      "DODRA,2461204.398287,<11.5,na,V,NO,STD,ENSEMBLE,na,na,na,na,na,na,na\n" +
+        "DODRA,2461205.412001,9.9,0.0123,V,NO,STD,ENSEMBLE,na,na,na,na,na,na,na",
+    );
+    const text = buildThreeColFromAAVSO(rows);
+    const lines = text.trim().split("\n");
+    expect(lines).toEqual([
+      "2461204.398287 <11.5000 0.0000",
+      "2461205.412001 9.9000 0.0123",
+    ]);
   });
 });
