@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   applyUtTimeToDate,
   computeMagnitude,
+  formatSexagesimal,
   parseLimitMagnitude,
   parseSexagesimal,
   resolveCompValue,
@@ -206,5 +207,55 @@ describe("applyUtTimeToDate", () => {
     const d2 = sessionDate();
     applyUtTimeToDate(d2, "not a time");
     expect(d2.toISOString()).toBe("2026-07-15T18:00:00.000Z");
+  });
+});
+
+describe("formatSexagesimal", () => {
+  it("formats RA (decimal degrees -> HH MM SS.sss, no sign)", () => {
+    expect(formatSexagesimal(15 * (18 + 36 / 60 + 56.3 / 3600), true)).toBe("18 36 56.300");
+    expect(formatSexagesimal(0, true)).toBe("00 00 00.000");
+  });
+
+  it("formats Dec (decimal degrees -> ±DD MM SS.sss)", () => {
+    expect(formatSexagesimal(38 + 47 / 60 + 1.3 / 3600, false)).toBe("+38 47 01.300");
+    expect(formatSexagesimal(-(38 + 47 / 60 + 1.3 / 3600), false)).toBe("-38 47 01.300");
+    expect(formatSexagesimal(0, false)).toBe("+00 00 00.000");
+  });
+
+  it("round-trips through parseSexagesimal", () => {
+    const ra = parseSexagesimal("07 11 26.5", true)!;
+    expect(formatSexagesimal(ra, true)).toBe("07 11 26.500");
+    const dec = parseSexagesimal("-44 04 05.2", false)!;
+    expect(formatSexagesimal(dec, false)).toBe("-44 04 05.200");
+  });
+
+  it("carries a rounded 60.000s into the next minute", () => {
+    // 1.9999999 degrees of RA -> 0.1333... hours -> 00h07m59.9999... -> rounds to 08m00.000s
+    expect(formatSexagesimal(1.9999999, true)).toBe("00 08 00.000");
+  });
+
+  it("rejects out-of-range RA and non-finite input", () => {
+    expect(formatSexagesimal(360, true)).toBe("—");
+    expect(formatSexagesimal(-1, true)).toBe("—");
+    expect(formatSexagesimal(null, false)).toBe("—");
+    expect(formatSexagesimal(NaN, false)).toBe("—");
+  });
+
+  it("rejects out-of-range Dec", () => {
+    expect(formatSexagesimal(90.1, false)).toBe("—");
+    expect(formatSexagesimal(-90.1, false)).toBe("—");
+    expect(formatSexagesimal(91, false)).toBe("—");
+  });
+
+  it("accepts Dec exactly at ±90°", () => {
+    expect(formatSexagesimal(90, false)).toBe("+90 00 00.000");
+    expect(formatSexagesimal(-90, false)).toBe("-90 00 00.000");
+  });
+
+  it("wraps an RA that rounds up to 24h back to 00h", () => {
+    // 23h59m59.9997s rounds to 24:00:00, which must wrap to 00:00:00 rather than
+    // being displayed as an out-of-range "24 00 00.000".
+    const almost24h = 23 + 59 / 60 + 59.9997 / 3600;
+    expect(formatSexagesimal(almost24h * 15, true)).toBe("00 00 00.000");
   });
 });
