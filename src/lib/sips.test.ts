@@ -104,7 +104,7 @@ describe("parseAAVSO", () => {
     expect(errors).toEqual([]);
     expect(rows).toHaveLength(2);
     expect(rows[0]).toMatchObject({ starCode: "DODRA", mag: 9.8234, err: 0.0256, filter: "V", fainterThan: false });
-    expect(rows[1]).toMatchObject({ starCode: "DODRA", mag: 11.5, err: 0, fainterThan: true });
+    expect(rows[1]).toMatchObject({ starCode: "DODRA", mag: 11.5, err: null, fainterThan: true });
   });
 
   it("reports an error for a row with too few fields", () => {
@@ -140,7 +140,7 @@ describe("buildVSNETFromAAVSO", () => {
 });
 
 describe("buildThreeColFromAAVSO", () => {
-  it("emits plain JD/mag/err rows, preserving the fainter-than prefix and 'na' error as 0", () => {
+  it("emits plain JD/mag/err rows, preserving the fainter-than prefix and a missing error as 'NA'", () => {
     const { rows } = parseAAVSO(
       "DODRA,2461204.398287,<11.5,na,V,NO,STD,ENSEMBLE,na,na,na,na,na,na,na\n" +
         "DODRA,2461205.412001,9.9,0.0123,V,NO,STD,ENSEMBLE,na,na,na,na,na,na,na",
@@ -148,7 +148,7 @@ describe("buildThreeColFromAAVSO", () => {
     const text = buildThreeColFromAAVSO(rows);
     const lines = text.trim().split("\n");
     expect(lines).toEqual([
-      "2461204.398287 <11.5000 0.0000",
+      "2461204.398287 <11.5000 NA",
       "2461205.412001 9.9000 0.0123",
     ]);
   });
