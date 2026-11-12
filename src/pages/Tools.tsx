@@ -114,8 +114,6 @@ export default function Tools() {
   const [chartId, setChartId] = useState("");
 
   const [vsnetInput, setVsnetInput] = useState("");
-  const [vsnetAavsoCode, setVsnetAavsoCode] = useState("");
-  const [vsnetObsCode, setVsnetObsCode] = useState("");
   const [vsnetChartId, setVsnetChartId] = useState("");
 
   const [ascii3Input, setAscii3Input] = useState("");
@@ -124,8 +122,15 @@ export default function Tools() {
   const [ascii3ChartId, setAscii3ChartId] = useState("");
   const [ascii3Filter, setAscii3Filter] = useState("");
 
+  const vsnetParsed = useMemo(
+    () => parseVSNET(vsnetInput, { badLine: (n) => t("tools.vsnet.error.badLine", { line: n }) }),
+    [vsnetInput, t],
+  );
+  const vsnetStarCode = vsnetParsed.rows[0]?.starCode ?? "";
+  const vsnetObsCode = vsnetParsed.rows[0]?.obsCode ?? "";
+
   const chartStatus = useCatalogChartId(aavsoCode, chartId, setChartId);
-  const vsnetChartStatus = useCatalogChartId(vsnetAavsoCode, vsnetChartId, setVsnetChartId);
+  const vsnetChartStatus = useCatalogChartId(vsnetStarCode, vsnetChartId, setVsnetChartId);
   const ascii3ChartStatus = useCatalogChartId(ascii3AavsoCode, ascii3ChartId, setAscii3ChartId);
 
   const parsed = useMemo(
@@ -135,11 +140,6 @@ export default function Tools() {
         nonNumeric: (n) => t("tools.error.nonNumeric", { line: n }),
       }),
     [input, t],
-  );
-
-  const vsnetParsed = useMemo(
-    () => parseVSNET(vsnetInput, { badLine: (n) => t("tools.vsnet.error.badLine", { line: n }) }),
-    [vsnetInput, t],
   );
 
   const ascii3Parsed = useMemo(
@@ -200,10 +200,10 @@ export default function Tools() {
   };
 
   const dlVsnetToAavso = () => {
-    if (!vsnetAavsoCode.trim() || !vsnetObsCode.trim()) return;
+    if (!vsnetStarCode.trim() || !vsnetObsCode.trim()) return;
     if (vsnetParsed.rows.length === 0) return;
-    const text = buildAAVSOFromVSNET(vsnetParsed.rows, vsnetAavsoCode, vsnetObsCode, vsnetChartId);
-    const name = `${(vsnetAavsoCode || "aavso").trim()}_aavso.txt`;
+    const text = buildAAVSOFromVSNET(vsnetParsed.rows, vsnetStarCode, vsnetObsCode, vsnetChartId);
+    const name = `${(vsnetStarCode || "aavso").trim()}_aavso.txt`;
     downloadText(name, text);
     openPortal("aavso");
   };
@@ -338,21 +338,11 @@ export default function Tools() {
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">{t("tools.vsnet.desc")}</p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="vsnet-aavso">{t("tools.starAAVSO")}</Label>
-                <Input id="vsnet-aavso" value={vsnetAavsoCode} onChange={(e) => setVsnetAavsoCode(e.target.value)} placeholder={t("tools.starAAVSO.ph")} />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="vsnet-obs">{t("tools.obs")}</Label>
-                <Input id="vsnet-obs" value={vsnetObsCode} onChange={(e) => setVsnetObsCode(e.target.value)} placeholder={t("tools.obs.ph")} />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="vsnet-chart">{t("tools.chart")}</Label>
-                <Input id="vsnet-chart" value={vsnetChartId} onChange={(e) => setVsnetChartId(e.target.value)} placeholder={t("tools.chart.ph")} />
-                <p className="text-xs text-muted-foreground">{t("tools.chart.hint")}</p>
-                <ChartLookupWarning chartId={vsnetChartId} status={vsnetChartStatus} />
-              </div>
+            <div className="space-y-1">
+              <Label htmlFor="vsnet-chart">{t("tools.chart")}</Label>
+              <Input id="vsnet-chart" value={vsnetChartId} onChange={(e) => setVsnetChartId(e.target.value)} placeholder={t("tools.chart.ph")} />
+              <p className="text-xs text-muted-foreground">{t("tools.chart.hint")}</p>
+              <ChartLookupWarning chartId={vsnetChartId} status={vsnetChartStatus} />
             </div>
 
             <div className="space-y-1">
@@ -377,8 +367,10 @@ export default function Tools() {
               />
             </div>
 
-            {vsnetParsed.rows.length > 0 && (
+            {(vsnetStarCode || vsnetObsCode || vsnetParsed.rows.length > 0) && (
               <div className="text-xs text-muted-foreground space-y-0.5">
+                {vsnetStarCode && <div>{t("tools.aavso.parsed.star")}: <span className="font-mono">{vsnetStarCode}</span></div>}
+                {vsnetObsCode && <div>{t("tools.aavso.parsed.obs")}: <span className="font-mono">{vsnetObsCode}</span></div>}
                 <div>{t("tools.parsed.count")}: <span className="font-mono">{vsnetParsed.rows.length}</span></div>
               </div>
             )}
@@ -395,7 +387,7 @@ export default function Tools() {
             <div className="flex flex-wrap gap-2 pt-2">
               <Button
                 onClick={dlVsnetToAavso}
-                disabled={vsnetParsed.rows.length === 0 || !vsnetAavsoCode.trim() || !vsnetObsCode.trim()}
+                disabled={vsnetParsed.rows.length === 0 || !vsnetStarCode.trim() || !vsnetObsCode.trim()}
               >
                 {t("tools.download.aavso")}
               </Button>

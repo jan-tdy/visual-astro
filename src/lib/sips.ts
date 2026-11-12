@@ -178,9 +178,11 @@ export function buildAAVSOFromSIPS(
 }
 
 export interface VsnetRow {
+  starCode: string;
   jd: number;
   mag: number;
   fainterThan: boolean;
+  obsCode: string | null;
   filter: string | null;
 }
 
@@ -204,12 +206,19 @@ export function parseVSNET(
     if (!line || line.startsWith("#")) return;
     const parts = line.split(/\s+/);
     if (parts.length < 3) { errors.push(msgs.badLine(i + 1)); return; }
-    const [, dateToken, magToken, , filterToken] = parts;
+    const [starCode, dateToken, magToken, obsToken, filterToken] = parts;
     const jd = vsnetDateToJD(dateToken);
     const fainterThan = magToken.startsWith("<");
     const mag = parseFloat(fainterThan ? magToken.slice(1) : magToken);
     if (jd == null || !Number.isFinite(mag)) { errors.push(msgs.badLine(i + 1)); return; }
-    rows.push({ jd, mag, fainterThan, filter: filterToken ?? null });
+    rows.push({
+      starCode: starCode.trim(),
+      jd,
+      mag,
+      fainterThan,
+      obsCode: obsToken?.trim() || null,
+      filter: filterToken ?? null,
+    });
   });
   return { rows, errors };
 }
