@@ -194,6 +194,13 @@ export default function Tools() {
   );
   const aavsoStarCode = aavsoParsed.rows[0]?.starCode ?? "";
   const aavsoObsCode = aavsoParsed.obsCode ?? "";
+  // A single VSNET star code gets applied to every row on export, so a file mixing
+  // observations of more than one star would silently mislabel everything but the
+  // first star. Detect that and block the download rather than exporting bad data.
+  const aavsoHasMixedStars = useMemo(
+    () => new Set(aavsoParsed.rows.map((r) => r.starCode)).size > 1,
+    [aavsoParsed],
+  );
   const aavsoVsnetStatus = useCatalogAutoFill(aavsoStarCode, "vsnet_code", aavsoVsnetCode, setAavsoVsnetCode);
 
   const handleFile = async (f: File | null) => {
@@ -279,7 +286,7 @@ export default function Tools() {
 
   const dlAavsoToVsnet = () => {
     if (!aavsoVsnetCode.trim() || !aavsoObsCode.trim()) return;
-    if (aavsoParsed.rows.length === 0) return;
+    if (aavsoParsed.rows.length === 0 || aavsoHasMixedStars) return;
     const text = buildVSNETFromAAVSO(aavsoParsed.rows, aavsoVsnetCode, aavsoObsCode);
     const name = `${(aavsoVsnetCode || "vsnet").trim()}.txt`;
     downloadText(name, text);
@@ -510,6 +517,10 @@ export default function Tools() {
               </div>
             )}
 
+            {aavsoHasMixedStars && (
+              <p className="text-xs text-destructive font-semibold">{t("tools.aavso.error.mixedStars")}</p>
+            )}
+
             <div className="space-y-1">
               <Label htmlFor="aavso-vsnet-code">{t("tools.starVSNET")}</Label>
               <Input
@@ -524,7 +535,7 @@ export default function Tools() {
             <div className="flex flex-wrap gap-2 pt-2">
               <Button
                 onClick={dlAavsoToVsnet}
-                disabled={aavsoParsed.rows.length === 0 || !aavsoVsnetCode.trim() || !aavsoObsCode.trim()}
+                disabled={aavsoParsed.rows.length === 0 || !aavsoVsnetCode.trim() || !aavsoObsCode.trim() || aavsoHasMixedStars}
               >
                 {t("tools.download.vsnet")}
               </Button>
