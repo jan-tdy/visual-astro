@@ -12,6 +12,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { supabase } from "@/integrations/supabase/client";
 import { JdConverter } from "@/components/tools/JdConverter";
 import { RaDecConverter } from "@/components/tools/RaDecConverter";
+import { DegToRaDecConverter } from "@/components/tools/DegToRaDecConverter";
 import { TelescopeFovCalculator } from "@/components/tools/TelescopeFovCalculator";
 import { PlateScaleCalculator } from "@/components/tools/PlateScaleCalculator";
 import { DistanceConverter } from "@/components/tools/DistanceConverter";
@@ -318,6 +319,10 @@ export default function Tools() {
 
         <div>
           <RaDecConverter />
+        </div>
+
+        <div>
+          <DegToRaDecConverter />
         </div>
 
         <Card>

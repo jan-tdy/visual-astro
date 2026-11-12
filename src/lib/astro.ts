@@ -281,3 +281,40 @@ export function formatDecimalDegrees(v: number | null): string {
   if (v === null || !Number.isFinite(v)) return "—";
   return v.toFixed(6);
 }
+
+/** Inverse of {@link parseSexagesimal}: format a decimal-degree value as sexagesimal.
+ *  For RA (isHours=true) the degrees are first divided by 15 to get hours, and the
+ *  result has no sign. For Dec, the sign is always shown explicitly.
+ *  Returns "—" for null/non-finite input, or if an RA value falls outside [0, 360). */
+export function formatSexagesimal(v: number | null, isHours = false): string {
+  if (v === null || !Number.isFinite(v)) return "—";
+  if (isHours && (v < 0 || v >= 360)) return "—";
+  if (!isHours && (v < -90 || v > 90)) return "—";
+
+  const sign = v < 0 ? "-" : isHours ? "" : "+";
+  const total = (isHours ? Math.abs(v) / 15 : Math.abs(v));
+
+  let whole = Math.floor(total);
+  const minutesFull = (total - whole) * 60;
+  let minutes = Math.floor(minutesFull);
+  let seconds = (minutesFull - minutes) * 60;
+
+  // Round the seconds, and carry into minutes/whole on rollover (e.g. 59.9999 -> 60.0).
+  seconds = Math.round(seconds * 1000) / 1000;
+  if (seconds >= 60) {
+    seconds -= 60;
+    minutes += 1;
+  }
+  if (minutes >= 60) {
+    minutes -= 60;
+    whole += 1;
+  }
+  // For RA, a value rounded up from just under 24h (e.g. 23.9999997h) wraps to 00h,
+  // not an out-of-range "24h".
+  if (isHours && whole >= 24) {
+    whole -= 24;
+  }
+
+  const secStr = seconds.toFixed(3).padStart(6, "0");
+  return `${sign}${String(whole).padStart(2, "0")} ${String(minutes).padStart(2, "0")} ${secStr}`;
+}
