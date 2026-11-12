@@ -22,6 +22,7 @@ import { CatalogImportConverter } from "@/components/tools/CatalogImportConverte
 import { CloudyNightExcuseGenerator } from "@/components/tools/CloudyNightExcuseGenerator";
 import { StarNamer } from "@/components/tools/StarNamer";
 import { TelescopeHoroscope } from "@/components/tools/TelescopeHoroscope";
+import { ExposureTimeCalculator } from "@/components/tools/ExposureTimeCalculator";
 import {
   parseSIPS,
   buildVSNETFromSIPS,
@@ -323,6 +324,10 @@ export default function Tools() {
 
         <div>
           <DegToRaDecConverter />
+        </div>
+
+        <div>
+          <ExposureTimeCalculator />
         </div>
 
         <Card>
