@@ -219,6 +219,17 @@ export default function Auth() {
           </svg>
           {t("auth.microsoft")}
         </Button>
+        <div className="space-y-1.5 pt-1">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full border-dashed text-muted-foreground hover:text-foreground"
+            onClick={() => navigate("/tools", { replace: true })}
+          >
+            {t("auth.guest")}
+          </Button>
+          <p className="text-center text-xs text-muted-foreground">{t("auth.guestHint")}</p>
+        </div>
         <button
           type="button"
           onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
