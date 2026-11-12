@@ -56,6 +56,9 @@ async function fetchCatalogStarMatches(code: string, field: CatalogField): Promi
     if (egg) return [{ value: egg }];
   }
   if (/[,()]/.test(code)) return []; // would break the .or() filter syntax below
+  // Anonymous visitors have no catalog of their own (stars are private per observer), so skip the lookup.
+  const { data: auth } = await supabase.auth.getSession();
+  if (!auth.session) return [];
   const { data } = await supabase
     .from("stars")
     .select(field)
