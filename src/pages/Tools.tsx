@@ -30,6 +30,7 @@ import {
   buildAAVSOFromVSNET,
   parseAAVSO,
   buildVSNETFromAAVSO,
+  buildThreeColFromAAVSO,
 } from "@/lib/sips";
 
 /** A few fictional "stars" that resolve to a joke chart id instead of hitting the database. */
@@ -293,6 +294,13 @@ export default function Tools() {
     openPortal("vsnet");
   };
 
+  const dlAavsoToThreeCol = () => {
+    if (aavsoParsed.rows.length === 0) return;
+    const text = buildThreeColFromAAVSO(aavsoParsed.rows);
+    const name = `${(aavsoStarCode || "ascii3").trim()}.dat`;
+    downloadText(name, text);
+  };
+
   return (
     <AppShell>
       <div className="container mx-auto px-4 py-6 max-w-6xl">
@@ -538,6 +546,13 @@ export default function Tools() {
                 disabled={aavsoParsed.rows.length === 0 || !aavsoVsnetCode.trim() || !aavsoObsCode.trim() || aavsoHasMixedStars}
               >
                 {t("tools.download.vsnet")}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={dlAavsoToThreeCol}
+                disabled={aavsoParsed.rows.length === 0}
+              >
+                {t("tools.download.ascii3")}
               </Button>
             </div>
 

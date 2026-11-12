@@ -263,7 +263,9 @@ export interface AavsoRow {
   jd: number;
   mag: number;
   fainterThan: boolean;
-  err: number;
+  /** null when the source row's MERR was "na"/blank — a genuinely unknown
+   *  uncertainty, not a measured zero. */
+  err: number | null;
   filter: string | null;
 }
 
@@ -302,13 +304,13 @@ export function parseAAVSO(
     const mag = parseFloat(fainterThan ? magToken.trim().slice(1) : magToken);
     if (!Number.isFinite(jd) || !Number.isFinite(mag)) { errors.push(msgs.badLine(i + 1)); return; }
     const errTrim = errToken.trim().toLowerCase();
-    const err = errTrim === "na" || errTrim === "" ? 0 : parseFloat(errToken);
+    const errParsed = errTrim === "na" || errTrim === "" ? null : parseFloat(errToken);
     rows.push({
       starCode: starCode.trim(),
       jd,
       mag,
       fainterThan,
-      err: Number.isFinite(err) ? err : 0,
+      err: errParsed !== null && Number.isFinite(errParsed) ? errParsed : null,
       filter: filterToken?.trim() || null,
     });
   });
@@ -332,7 +334,8 @@ export function buildThreeColFromAAVSO(rows: AavsoRow[]): string {
   const out: string[] = [];
   for (const r of rows) {
     const magToken = (r.fainterThan ? "<" : "") + r.mag.toFixed(4);
-    out.push(`${r.jd.toFixed(6)} ${magToken} ${r.err.toFixed(4)}`);
+    const errToken = r.err !== null ? r.err.toFixed(4) : "NA";
+    out.push(`${r.jd.toFixed(6)} ${magToken} ${errToken}`);
   }
   return out.join("\n") + (out.length ? "\n" : "");
 }
