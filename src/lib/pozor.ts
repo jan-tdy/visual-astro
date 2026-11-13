@@ -56,15 +56,15 @@ export function formatHMS(hours: number): string {
   return `${h}h${String(m).padStart(2, "0")}m${String(s).padStart(2, "0")}s`;
 }
 
-/** Degrees → "+60°21′05″". */
+/** Degrees → "60d21m05s" (negative: "-60d21m05s"). Parseable by parseSexagesimal. */
 export function formatDMS(deg: number): string {
-  const sign = deg < 0 ? "−" : "+";
+  const sign = deg < 0 ? "-" : "";
   const a = Math.abs(deg);
   const total = Math.round(a * 3600);
   const d = Math.floor(total / 3600);
   const m = Math.floor((total - d * 3600) / 60);
   const s = total - d * 3600 - m * 60;
-  return `${sign}${d}°${String(m).padStart(2, "0")}′${String(s).padStart(2, "0")}″`;
+  return `${sign}${d}d${String(m).padStart(2, "0")}m${String(s).padStart(2, "0")}s`;
 }
 
 /** "HH:MM" or "HH:MM:SS" of a Date, in UT. */
