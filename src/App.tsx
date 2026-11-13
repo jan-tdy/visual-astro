@@ -22,6 +22,7 @@ import Compare from "./pages/Compare.tsx";
 import Settings from "./pages/Settings.tsx";
 import AuditLog from "./pages/AuditLog.tsx";
 import Tools from "./pages/Tools.tsx";
+import ToolPage from "./pages/tools/ToolPage.tsx";
 import Info from "./pages/Info.tsx";
 import JulianDateConverterPage from "./pages/JulianDateConverter.tsx";
 import Changelog from "./pages/Changelog.tsx";
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/audit-log" element={<ProtectedRoute><AuditLog /></ProtectedRoute>} />
             <Route path="/tools" element={<Tools />} />
+            <Route path="/tools/:slug" element={<ToolPage />} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
