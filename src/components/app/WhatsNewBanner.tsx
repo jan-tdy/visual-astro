@@ -4,11 +4,13 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/hooks/useI18n";
 
-const DISMISS_KEY = "whats_new_v2_dismissed";
+const DISMISS_KEY = "whats_new_since_1_13_dismissed";
 
 /**
- * One-time "what's new" announcement for the v2.0 homepage/navigation refresh.
- * Dismissal is per-browser (localStorage), same pattern as DataLossNotice.
+ * One-time "what's new" announcement summarizing what's landed since v1.13.0
+ * on the way to v2. Dismissal is per-browser (localStorage), same pattern as
+ * DataLossNotice. The key is versioned so a content refresh (like this one)
+ * resurfaces the banner even for people who dismissed an earlier version.
  */
 export function WhatsNewBanner() {
   const { t } = useI18n();
@@ -32,7 +34,9 @@ export function WhatsNewBanner() {
           <li>{t("notice.whatsNew.home")}</li>
           <li>{t("notice.whatsNew.nav")}</li>
           <li>{t("notice.whatsNew.japyscope")}</li>
+          <li>{t("notice.whatsNew.security")}</li>
         </ul>
+        <p className="text-xs text-muted-foreground mt-2">{t("notice.whatsNew.todo")}</p>
       </AlertDescription>
       <Button
         variant="ghost"
