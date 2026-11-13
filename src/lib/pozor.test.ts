@@ -8,6 +8,7 @@ import {
   DEFAULT_MIN_ALTITUDE,
   duskTime,
   firstRisingCrossing,
+  formatDMS,
   getLocation,
   helioCorrection,
   hlohovecHorizonLimit,
@@ -446,5 +447,17 @@ describe("firstRisingCrossing", () => {
       { minutes: 20, alt: 10 },
     ];
     expect(firstRisingCrossing(samples, 25)).toBeNull();
+  });
+});
+
+describe("formatDMS", () => {
+  it("formats positive degrees as NNdNNmNNs", () => {
+    expect(formatDMS(16 + 11 / 60 + 15 / 3600)).toBe("16d11m15s");
+  });
+  it("prefixes negative values with an ASCII minus", () => {
+    expect(formatDMS(-(16 + 11 / 60 + 15 / 3600))).toBe("-16d11m15s");
+  });
+  it("pads minutes and seconds to two digits", () => {
+    expect(formatDMS(0.5 + 2 / 3600)).toBe("0d30m02s");
   });
 });
