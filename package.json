@@ -63,7 +63,7 @@
     "react-dom": "^18.3.1",
     "react-helmet-async": "^3.0.0",
     "react-hook-form": "^7.92.0",
-    "react-resizable-panels": "^4.15.2",
+    "react-resizable-panels": "^4.22.0",
     "react-router-dom": "^7.18.5",
     "recharts": "^3.10.1",
     "sonner": "^1.7.4",
