@@ -81,7 +81,7 @@
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^4.3.3",
-    "autoprefixer": "^10.6.2",
+    "autoprefixer": "^10.7.0",
     "drizzle-kit": "0.x",
     "drizzle-orm": "0.x",
     "eslint": "^10.11.0",
