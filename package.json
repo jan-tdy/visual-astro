@@ -14,7 +14,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@hookform/resolvers": "^7.0.6",
+    "@hookform/resolvers": "^7.0.7",
     "@lovable.dev/cloud-auth-js": "^1.2.3",
     "@lovable.dev/mcp-js": "^3.4.0",
     "@radix-ui/react-accordion": "^1.3.1",
